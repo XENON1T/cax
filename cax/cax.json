@@ -1,0 +1,15 @@
+[{
+    "name": "eb0",
+    "receive": null,
+    "take_method": "scp",
+    "directory": "/data/xenon1t_data/",
+    "upload_options": ["nikhef"],
+    "download_options": []
+}, {
+    "name": "nikhef",
+    "receive": "scp",
+    "take_method": "scp",
+    "directory": "/data/xenon/xenon1t/",
+    "upload_options": [],
+    "download_options": []
+}]
