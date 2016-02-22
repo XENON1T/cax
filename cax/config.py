@@ -7,7 +7,7 @@ import os
 FILENAME = 'cax.json'
 
 def get_hostname():
-    return socket.gethostname()
+    return socket.gethostname().split('.')[0]
 
 def load():
     return json.loads(open(FILENAME, 'r').read())
