@@ -4,6 +4,8 @@ import config
 import os
 import tempfile
 import argparse
+import subprocess
+import qsub
 
 def process(name, location):
     '''Submit XENON100 pax processing jobs to ULite
@@ -18,21 +20,13 @@ def process(name, location):
     script_template = """#!/bin/bash
     export PATH=/data/xenon/anaconda/envs/pax/bin:$PATH
     source activate pax
-    echo paxer --input {location} --output {location} --cpus 6 --config XENON1T
-    paxer --input {location} --output {location} --cpus 6 --config XENON1T
+    echo paxer --input {location} --output {location} --config XENON1T
+    paxer --input {location} --output {location} --config XENON1T
     """
 
-    submission_command_template = "qsub -l nodes=1:ppn=4 -S /bin/bash -N {job_name} {script_filename}"
-
-    script_file = tempfile.NamedTemporaryFile(delete=False)
-
     script = script_template.format(location=location)
-    script_file.write(script.encode('utf-8'))
+    qsub.submit_job(script, 'test', 'generic')
 
-    subm_command = submission_command_template.format(job_name=name,
-                                                      script_filename=script_file.name)
-
-    os.system(subm_command)
 
 def verify():
     pass
@@ -72,13 +66,13 @@ def process_all():
             datum = {'type' : 'processed',
                      'host' : config.get_hostname(),
                      'status' : 'processing',
-                     'location' : local_config['directory'],
+                     'location' : have_raw['location'] + '.root',
                      'checksum' : None}
             #collection.update({'_id': doc['_id']},
             #                  {'$push': {'data': datum}})
-            print('processing', doc['name'])
+            print('processing', doc['name'], have_raw['location'])
             process(doc['name'],
-                    datum['location'])
+                    have_raw['location'])
 
             datum['status'] = 'verifying'
             #collection.update({'_id': doc['_id'],
