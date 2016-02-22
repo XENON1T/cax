@@ -1,5 +1,6 @@
 [{
     "name": "eb0",
+    "hostname" : "eb0",
     "receive": null,
     "directory": "/data/xenon1t_data/",
     "upload_options": ["xecluster06", "lena"],
