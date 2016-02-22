@@ -78,10 +78,9 @@ def upload():
                      remote_config['hostname'],
                      remote_config['username'])
 
-                datum_there_old = datum_there.copy()
                 datum_there['status'] = 'verifying'
                 collection.update({'_id': doc['_id'],
-                                   'data' : datum_there_old},
+                                   'data.host' : datum_there['host']},
                                   {'$set': {'data.$' : datum_there}})
     
     
