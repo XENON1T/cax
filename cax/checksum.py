@@ -31,4 +31,4 @@ def checksums(missing_only = True):
             else:
                 assert datum['checksum'] == value
 
-checksums(False)
+checksums()
