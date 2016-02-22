@@ -25,7 +25,7 @@ def checksums(missing_only = True):
             
                 print("Updating", doc['name'])
                 collection.update({'_id': doc['_id'],
-                                   'data.name' : datum['host']},
+                                   'data.host' : datum['host']},
                                   {'$set': {'data.$' : datum}})
             else:
                 assert datum['checksum'] == value
