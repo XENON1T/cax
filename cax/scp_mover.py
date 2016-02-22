@@ -53,17 +53,18 @@ def upload():
                 if 'host' not in datum:
                     continue
 
-                # Is the data transferred?
-                if datum['status'] != 'transferred':
-                    continue
-
                 # If the location refers to here
                 if datum['host'] == config.get_hostname():
-                    datum_here = datum
-                elif datum['host'] == remote_host:
-                    there  = True
+                    # Was data transferred here?
+                    if datum['status'] == 'transferred':
+                        # If so, store info on it.
+                        datum_here = datum
+                elif datum['host'] == remote_host:  # This the remote host?
+                    # Is the data already there (checked or not)?
+                    if datum['status'] == 'transferred' or datum['status'] == 'verifying':
+                        there  = True
             
-            if location_here and not there:
+            if datum_here and not there:
                 datum_there = {'type' : datum_here['type'],
                                'host' : remote_host,
                                'status' : 'transferring',
@@ -72,7 +73,7 @@ def upload():
                 collection.update({'_id': doc['_id']},
                                   {'$push': {'data': datum_there}})
                 print('copying', remote_host)
-                copy(location,
+                copy(datum_here['location'],
                      remote_config['directory'],
                      remote_config['hostname'],
                      remote_config['username'])
