@@ -26,7 +26,6 @@ def get_options(option_type = 'upload', method=None):
 
     for x in get_options(option_type,
                          None):
-        print(x, get_config(x), method)
         if get_config(x)['receive'] == method:
             options.append(x)
 

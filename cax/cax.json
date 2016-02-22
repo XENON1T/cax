@@ -1,15 +1,24 @@
 [{
     "name": "eb0",
     "receive": null,
-    "take_method": "scp",
     "directory": "/data/xenon1t_data/",
-    "upload_options": ["nikhef"],
+    "upload_options": ["xecluster06", "lena"],
     "download_options": []
 }, {
-    "name": "nikhef",
+    "name": "lena",
     "receive": "scp",
-    "take_method": "scp",
+    "hostname" : "login.nikhef.nl",
     "directory": "/data/xenon/xenon1t/",
     "upload_options": [],
+    "username" : "ctunnell",
     "download_options": []
-}]
+},{
+    "name": "xecluster06",
+    "receive": "scp",
+    "hostname" : "xecluster06.lngs.infn.it",
+    "directory": "/archive_lngs100TB/common/daqtest/xenon1t",
+    "upload_options": [],
+    "username" : "tunnell",
+    "download_options": []
+}
+]

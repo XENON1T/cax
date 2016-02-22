@@ -10,28 +10,81 @@ import http.client
 
 from html.parser import HTMLParser
 
-from paramiko import SSHClient
+from paramiko import SSHClient, util
 from scp import SCPClient
 import config
 
-BASE_URL = '/data/xenon/xenon1t'
-
-
-def upload_run(run_name, directory_local):    
+def copy(f1, f2,
+         server,
+         username):
+    util.log_to_file('ssh.log')
     ssh = SSHClient()
     ssh.load_system_host_keys()
-    ssh.connect('login.nikhef.nl', username='ctunnell')
+    
+    ssh.connect(server,
+                username=username)
+
 
     # SCPCLient takes a paramiko transport as its only argument
     scp = SCPClient(ssh.get_transport())
 
-    scp.put('/home/xedaq/test.txt', '/user/ctunnell/test.txt')
+    scp.put(f1, f2,
+            recursive=True)
 
     scp.close()
 
-def main():
-    print(config.upload_options('scp'))
+def upload():
+    # Grab the Run DB so we can query it
+    collection = config.mongo_collection()
 
+    # For each TPC run, check if should be uploaded
+    for doc in collection.find({'detector' : 'tpc'}):
+        # For this run, where can we upload to?
+        for remote_host in config.upload_options():
+            # Grab the configuration of this host
+            remote_config = config.get_config(remote_host)
+
+            there = False # Is data remote?
+            datum_here = None # Information about data here
+
+            # Iterate over data locations to know status
+            for datum in doc['data']:
+                # Is host known?
+                if 'host' not in datum:
+                    continue
+
+                # Is the data transferred?
+                if datum['status'] != 'transferred':
+                    continue
+
+                # If the location refers to here
+                if datum['host'] == config.get_hostname():
+                    datum_here = datum
+                elif datum['host'] == remote_host:
+                    there  = True
+            
+            if location_here and not there:
+                datum_there = {'type' : datum_here['type'],
+                               'host' : remote_host,
+                               'status' : 'transferring',
+                               'location' : remote_config['directory'],
+                               'checksum' : None}
+                collection.update({'_id': doc['_id']},
+                                  {'$push': {'data': datum_there}})
+                print('copying', remote_host)
+                copy(location,
+                     remote_config['directory'],
+                     remote_config['hostname'],
+                     remote_config['username'])
+
+                datum_there_old = datum_there.copy()
+                datum_there['status'] = 'verifying'
+                collection.update({'_id': doc['_id'],
+                                   'data' : datum_there_old},
+                                  {'$set': {'data.$' : datum_there}})
+    
+    
 
 if __name__ == "__main__":
-    main()
+    
+    upload()
