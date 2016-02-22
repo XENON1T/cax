@@ -77,7 +77,8 @@ def process_all():
             #collection.update({'_id': doc['_id']},
             #                  {'$push': {'data': datum}})
             print('processing', doc['name'])
-            process()
+            process(doc['name'],
+                    datum['location'])
 
             datum['status'] = 'verifying'
             #collection.update({'_id': doc['_id'],
