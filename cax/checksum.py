@@ -20,13 +20,12 @@ def checksums(missing_only = True):
                                         'sha512')
 
             if datum['checksum'] == None:
-                datum_old = datum.copy()
                 datum['checksum'] = value
                 datum['status'] = 'transferred'
             
                 print("Updating", doc['name'])
                 collection.update({'_id': doc['_id'],
-                                   'data' : datum_old},
+                                   'data.name' : datum['host']},
                                   {'$set': {'data.$' : datum}})
             else:
                 assert datum['checksum'] == value
