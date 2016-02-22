@@ -1,15 +1,3 @@
-import checksumdir
-import socket
-import os
-
-from urllib.request import Request, urlopen, HTTPSHandler, build_opener
-import tempfile
-import os
-from urllib.error import URLError, HTTPError
-import http.client
-
-from html.parser import HTMLParser
-
 from paramiko import SSHClient, util
 from scp import SCPClient
 import config
