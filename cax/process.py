@@ -1,33 +1,35 @@
 import config
 import qsub
 import sys
-from pax import core
+import checksum
 from pax import __version__ as pax_version
 
-def process(name, location, config='XENON1T_LED'):
+def process(name, location, host, pax_config='XENON1T_LED'):
+    from pax import core
     # Grab the Run DB so we can query it
     collection = config.mongo_collection()
 
     # New data
     datum = {'type' : 'processed',
-             'host' : config.get_hostname(),
+             'host' : host,
              'status' : 'processing',
              'location' : location + '.root',
              'checksum' : None,
              'pax_version' : pax_version}
-    query = {'detector' : 'tpc', 'name' : name}
+    query = {'detector' : 'tpc',
+             'name' : name}
     collection.update(query,
                       {'$push': {'data': datum}})
 
-    query['data.type'] = 'processed'
-    query['data.host'] = 'host'
-    query['data.pax_version'] = pax_version
+    query['data.type']        = datum['type']
+    query['data.host']        = datum['host']
+    query['data.pax_version'] = datum['pax_version']
 
     try:
         print('processing', name, location)
-        p = core.Processor(config_names=config,
-                                      config_dict={'pax': { 'input_name':  location,
-                                                            'output_name': location}})
+        p = core.Processor(config_names=pax_config,
+                           config_dict={'pax': { 'input_name':  location,
+                                                 'output_name': location}})
         p.run()
     except Exception as exception:
         datum['status'] = 'error'
@@ -39,6 +41,7 @@ def process(name, location, config='XENON1T_LED'):
     collection.update(query,
                        {'$set': {'data.$' : datum}})
 
+    datum['checksum'] = checksum.filehash(datum['location'])
     if verify():
         datum['status'] = 'processed'
     else:
@@ -46,7 +49,7 @@ def process(name, location, config='XENON1T_LED'):
     collection.update(query,
                        {'$set': {'data.$' : datum}})
 
-def submit(name, location):
+def submit(name, location, host):
     '''Submit XENON100 pax processing jobs to ULite
     Author: Chris, Bart, Jelle, Nikhef
     Last update:   2015.09.07
@@ -59,15 +62,16 @@ def submit(name, location):
     script_template = """#!/bin/bash
 export PATH=/data/xenon/anaconda/envs/pax/bin:$PATH
 source activate pax
-python /user/ctunnell/cax/cax/process.py {name} {location}
+cd /user/ctunnell/cax/cax/
+python /user/ctunnell/cax/cax/process.py {name} {location} {host}
     """
 
-    script = script_template.format(name=name, location=location)
+    script = script_template.format(name=name, location=location, host=host)
     qsub.submit_job(script, name, 'generic')
 
 
 def verify():
-    pass
+    return True
 
 def process_all():
     # Grab the Run DB so we can query it
@@ -75,7 +79,8 @@ def process_all():
 
     # For each TPC run, check if should be uploaded
     for doc in collection.find({'detector' : 'tpc'}):
-        # For this run, where can we upload to?
+        if 'data' not in doc:
+            continue
 
         have_raw = False
         have_processed = False
@@ -98,14 +103,15 @@ def process_all():
                 have_processed = True
 
         if have_raw and not have_processed:
+            print("Submitting", doc['name'])
+            
             submit(doc['name'],
-                   have_raw['location'])
-
-
+                   have_raw['location'],
+                   have_raw['host'])
 
 
 if __name__ == "__main__":
     if len(sys.argv) == 1:
         process_all()
     else:
-        process(sys.argv[1], sys.argv[2])
+        process(sys.argv[1], sys.argv[2], sys.argv[3])
