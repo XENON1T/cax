@@ -6,8 +6,13 @@ import tempfile
 import argparse
 import subprocess
 import qsub
+from pax import __version__ as pax_version
 
-def process(name, location):
+def process():
+    pax_instance = core.Processor(config_names=config)
+    pass
+
+def submit(name, location, config='XENON1T_LED'):
     '''Submit XENON100 pax processing jobs to ULite
     Author: Chris, Bart, Jelle, Nikhef
     Last update:   2015.09.07
@@ -18,14 +23,15 @@ def process(name, location):
     '''
 
     script_template = """#!/bin/bash
-    export PATH=/data/xenon/anaconda/envs/pax/bin:$PATH
-    source activate pax
-    echo paxer --input {location} --output {location} --config XENON1T
-    paxer --input {location} --output {location} --config XENON1T
+export PATH=/data/xenon/anaconda/envs/pax/bin:$PATH
+source activate pax
+echo paxer --input {location} --output {location} --config {config}
+paxer --input {location} --output {location} --config {config}
     """
 
-    script = script_template.format(location=location)
-    qsub.submit_job(script, 'test', 'generic')
+    script = script_template.format(location=location,
+                                    config=config)
+    qsub.submit_job(script, name, 'generic')
 
 
 def verify():
@@ -67,12 +73,13 @@ def process_all():
                      'host' : config.get_hostname(),
                      'status' : 'processing',
                      'location' : have_raw['location'] + '.root',
-                     'checksum' : None}
+                     'checksum' : None,
+                     'pax_version' : pax_version}
             #collection.update({'_id': doc['_id']},
             #                  {'$push': {'data': datum}})
             print('processing', doc['name'], have_raw['location'])
-            process(doc['name'],
-                    have_raw['location'])
+            submit(doc['name'],
+                   have_raw['location'])
 
             datum['status'] = 'verifying'
             #collection.update({'_id': doc['_id'],
