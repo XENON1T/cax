@@ -35,6 +35,7 @@ def upload_options(method=None):
 
 def mongo_collection():
     c = pymongo.MongoClient('mongodb://eb:%s@copslx50.fysik.su.se:27017/run' % os.environ.get('MONGO_PASSWORD'),
+                            replicaSet='run',
                             read_preference=pymongo.ReadPreference.SECONDARY_PREFERRED)
     db = c['run']
     collection = db['runs_new']

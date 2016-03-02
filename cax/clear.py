@@ -8,7 +8,9 @@ def remove_untriggered(datum):
     db = client.untriggered
     db.authenticate('eb',
                     os.environ.get('MONGO_PASSWORD'))
-    print('db.drop()')
+    print("Dropping", datum['collection'])
+    db.drop_collection(datum['collection'])
+
 
 def check_copies(copies):
     checksums = [x['checksum'] for x in copies]
@@ -40,6 +42,9 @@ def clear():
         #print('%08d' % doc['number'], mongo_untriggered, len(copies), check_copies(copies))
 
         if len(copies) > 2:
+            collection.update({'_id': doc['_id']},
+                              {'$pull' : {'data': mongo_untriggered}})
+                               
             remove_untriggered(mongo_untriggered)
 #        print(here, copies)
 
