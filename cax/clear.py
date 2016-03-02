@@ -1,23 +1,19 @@
 import config
-
-def copy(f1, f2,
-         server,
-         username):
-    util.log_to_file('ssh.log')
-    ssh = SSHClient()
-    ssh.load_system_host_keys()
-
-    ssh.connect(server,
-                username=username)
+import pymongo
+import os
 
 
-    # SCPCLient takes a paramiko transport as its only argument
-    scp = SCPClient(ssh.get_transport())
+def remove_untriggered(datum):
+    client = pymongo.MongoClient(datum['location'])
+    db = client.untriggered
+    db.authenticate('eb',
+                    os.environ.get('MONGO_PASSWORD'))
+    print('db.drop()')
 
-    scp.put(f1, f2,
-            recursive=True)
-
-    scp.close()
+def check_copies(copies):
+    checksums = [x['checksum'] for x in copies]
+    for checksum in checksums:
+        assert checksum == checksums[0]
 
 def clear():
     # Grab the Run DB so we can query it
@@ -25,7 +21,7 @@ def clear():
 
     # For each TPC run, check if should be uploaded
     for doc in collection.find({'detector' : 'tpc'}):
-        here = None
+        mongo_untriggered = None
         copies = []
 
         if 'data' not in doc:
@@ -33,23 +29,18 @@ def clear():
         
         # Iterate over data locations to know status
         for datum in doc['data']:
-            # Is host known?
-            if 'host' not in datum:
-                continue
+            # If not transfered
+            if datum['status'] != 'transferred':  continue
 
-            if datum['status'] != 'transferred':
-                continue
-
-            # If the location refers to here
-            if datum['host'] == config.get_hostname():
-                # Was data transferred here?
-                if datum['status'] == 'transferred':
-                    # If so, store info on it.
-                    here = datum
-            else:
+            if datum['type'] == 'untriggered':
+                mongo_untriggered = datum
+            elif datum['type'] == 'raw':
                 copies.append(datum)
 
-        print(doc['name'], len(copies))
+        #print('%08d' % doc['number'], mongo_untriggered, len(copies), check_copies(copies))
+
+        if len(copies) > 2:
+            remove_untriggered(mongo_untriggered)
 #        print(here, copies)
 
 
