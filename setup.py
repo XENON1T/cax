@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+PROJECT = 'cliffdemo'
 
+VERSION = '0.1.0'
 
-try:
-    from setuptools import setup
-except ImportError:
-    from distutils.core import setup
-
+from setuptools import setup, find_packages
 
 with open('README.rst') as readme_file:
     readme = readme_file.read()
@@ -15,7 +13,7 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = [
-    'pycurl', 'checksumdir', 'scp'
+    'pycurl', 'checksumdir', 'scp', 'cliff',
 ]
 
 test_requirements = [
@@ -24,19 +22,16 @@ test_requirements = [
 
 setup(
     name='cax',
-    version='0.1.0',
-    description="Copying XENON1T data around",
+    version=VERSION,
+    description="Copying Around XENON1T data",
     long_description=readme + '\n\n' + history,
     author="Christopher Tunnell",
     author_email='ctunnell@nikhef.nl',
     url='https://github.com/tunnell/cax',
-    packages=[
-        'cax',
-    ],
-    package_dir={'cax':
-                 'cax'},
+    packages=find_packages(),
     include_package_data=True,
     install_requires=requirements,
+    data_files=[('cax', ['cax/*.json'])],
     license="ISCL",
     zip_safe=False,
     keywords='cax',
@@ -45,14 +40,20 @@ setup(
         'Intended Audience :: Developers',
         'License :: OSI Approved :: ISC License (ISCL)',
         'Natural Language :: English',
-        "Programming Language :: Python :: 2",
-        'Programming Language :: Python :: 2.6',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
     ],
     test_suite='tests',
-    tests_require=test_requirements
+    tests_require=test_requirements,
+    entry_points={
+        'console_scripts': [
+            'cax = cax.main:main'
+        ],
+        'cax.app': [
+            'check = cax.checksum:Checksum',
+            'transfer = cax.transfer:Transfer'
+        ],
+    },
 )
