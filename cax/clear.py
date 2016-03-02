@@ -41,11 +41,12 @@ def clear():
 
         #print('%08d' % doc['number'], mongo_untriggered, len(copies), check_copies(copies))
 
-        if len(copies) > 2:
+        if len(copies) > 2 and mongo_untriggered:
+            remove_untriggered(mongo_untriggered)
             collection.update({'_id': doc['_id']},
                               {'$pull' : {'data': mongo_untriggered}})
                                
-            remove_untriggered(mongo_untriggered)
+            #remove_untriggered(mongo_untriggered)
 #        print(here, copies)
 
 
