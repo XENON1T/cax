@@ -34,7 +34,8 @@ def upload_options(method=None):
     return get_options('upload', method=method)
 
 def mongo_collection():
-    c = pymongo.MongoClient('mongodb://eb:%s@xenon1t-daq.lngs.infn.it:27017/run' % os.environ.get('MONGO_PASSWORD'))
+    c = pymongo.MongoClient('mongodb://eb:%s@copslx50.fysik.su.se:27017/run' % os.environ.get('MONGO_PASSWORD'),
+                            read_preference=pymongo.ReadPreference.SECONDARY_PREFERRED)
     db = c['run']
     collection = db['runs_new']
     return collection
