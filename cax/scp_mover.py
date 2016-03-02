@@ -1,6 +1,7 @@
 from paramiko import SSHClient, util
 from scp import SCPClient
 import config
+import os
 
 def copy(f1, f2,
          server,
@@ -27,6 +28,9 @@ def upload():
 
     # For each TPC run, check if should be uploaded
     for doc in collection.find({'detector' : 'tpc'}):
+        if 'data' not in doc:
+            continue
+
         # For this run, where can we upload to?
         for remote_host in config.upload_options():
             # Grab the configuration of this host
@@ -56,7 +60,7 @@ def upload():
                 datum_there = {'type' : datum_here['type'],
                                'host' : remote_host,
                                'status' : 'transferring',
-                               'location' : remote_config['directory'],
+                               'location' : os.path.join(remote_config['directory'], doc['name']),
                                'checksum' : None}
                 collection.update({'_id': doc['_id']},
                                   {'$push': {'data': datum_there}})

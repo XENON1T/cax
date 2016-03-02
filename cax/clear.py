@@ -1,4 +1,3 @@
-f
 import config
 
 def copy(f1, f2,
@@ -20,7 +19,7 @@ def copy(f1, f2,
 
     scp.close()
 
-def upload():
+def clear():
     # Grab the Run DB so we can query it
     collection = config.mongo_collection()
 
@@ -29,6 +28,9 @@ def upload():
         here = None
         copies = []
 
+        if 'data' not in doc:
+            continue
+        
         # Iterate over data locations to know status
         for datum in doc['data']:
             # Is host known?
@@ -47,7 +49,8 @@ def upload():
             else:
                 copies.append(datum)
 
-        print(here, copies)
+        print(doc['name'], len(copies))
+#        print(here, copies)
 
 
 

@@ -17,7 +17,7 @@
     "name": "xecluster06",
     "receive": "scp",
     "hostname" : "xecluster06.lngs.infn.it",
-    "directory": "/archive_lngs100TB/common/daqtest/xenon1t",
+    "directory": "/archive_lngs100TB/common/daqtest/xenon1t/",
     "upload_options": [],
     "username" : "tunnell",
     "download_options": []
