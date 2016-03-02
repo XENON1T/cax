@@ -3,7 +3,7 @@
     "hostname" : "eb0",
     "receive": null,
     "directory": "/data/xenon1t_data/",
-    "upload_options": ["xecluster06", "lena"],
+    "upload_options": ["xecluster06", "lena", "midway-login1"],
     "download_options": []
 }, {
     "name": "lena",
@@ -18,6 +18,14 @@
     "receive": "scp",
     "hostname" : "xecluster06.lngs.infn.it",
     "directory": "/archive_lngs100TB/common/daqtest/xenon1t/",
+    "upload_options": [],
+    "username" : "tunnell",
+    "download_options": []
+},{
+    "name": "midway-login1",
+    "receive": "scp",
+    "hostname" : "midway-login1.rcc.uchicago.edu",
+    "directory": "/project/lgrandi/xenon1t",
     "upload_options": [],
     "username" : "tunnell",
     "download_options": []
