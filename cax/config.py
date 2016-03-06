@@ -4,6 +4,16 @@ import pymongo
 import os
 import logging
 
+def password():
+    mongo_password = os.environ.get('MONGO_PASSWORD')
+    if mongo_password is None:
+        raise EnvironmentError('Environmental variable MONGO_PASSWORD not set.'
+                               ' This is required for communicating with the '
+                               'run database.  To fix this problem, Do:'
+                               '\n\n\texport MONGO_PASSWORD=xxx\n\n'
+                               'Then rerun this command.')
+    return mongo_password
+
 def get_hostname():
     return socket.gethostname().split('.')[0]
 

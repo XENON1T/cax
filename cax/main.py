@@ -3,11 +3,13 @@ import os
 import sys
 import logging
 import time
+from cax.config import password
 
 import daemonocle
 
+def main2():
+    password()  # Check password specified
 
-def main():
     logging.basicConfig(filename='example.log',
                         level=logging.DEBUG,
                         format='%(asctime)s [%(levelname)s] %(message)s')
@@ -27,14 +29,12 @@ def main():
         logging.debug('Sleeping.')
         time.sleep(10)
 
+def main():
+    password()  # Check password specified
 
-if __name__ == '__main__':
-    if os.environ.get('MONGO_PASSWORD') is None:
-        raise EnvironmentError('Environmental variable MONGO_PASSWORD not set.'
-                               ' This is required for communicating with the '
-                               'run database.  To fix this problem, Do:'
-                               '\n\n\texport MONGO_PASSWORD=xxx\n\n'
-                               'Then rerun this command.')
     daemon = daemonocle.Daemon(worker=main,
                                pidfile='/var/run/daemonocle_example.pid')
     daemon.do_action(sys.argv[1])
+
+if __name__ == '__main__':
+    main2()

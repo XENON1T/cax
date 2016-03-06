@@ -27,17 +27,14 @@ def copy(f1, f2,
 class SCPPush(Task):
     "Perform a checksum on accessible data."
 
+
+
     def each_run(self):
-        try:
-            upload_options = config.upload_options()
-        except LookupError as e:
-            self.log.exception(e)
+        if self.upload_options is None:
             return
 
-        self.log.info("Upload options: %s" % str(upload_options))
-
         # For this run, where can we upload to?
-        for remote_host in upload_options:
+        for remote_host in self.upload_options:
             self.log.debug(remote_host)
             # Grab the configuration of this host
             remote_config = config.get_config(remote_host)
