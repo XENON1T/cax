@@ -13,7 +13,7 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = [
-    'pycurl', 'checksumdir', 'scp', 'cliff',
+    'pycurl', 'checksumdir', 'scp', 'daemonocle',
 ]
 
 test_requirements = [
@@ -50,10 +50,6 @@ setup(
     entry_points={
         'console_scripts': [
             'cax = cax.main:main'
-        ],
-        'cax.app': [
-            'check = cax.checksum:Checksum',
-            'transfer = cax.transfer:Transfer'
         ],
     },
 )

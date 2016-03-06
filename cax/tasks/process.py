@@ -1,7 +1,7 @@
-import config
-import qsub
+from .. import qsub, config
+from ..task import Task
 import sys
-import checksum
+
 from pax import __version__ as pax_version
 
 def process(name, location, host, pax_config='XENON1T_LED'):
@@ -49,44 +49,41 @@ def process(name, location, host, pax_config='XENON1T_LED'):
     collection.update(query,
                        {'$set': {'data.$' : datum}})
 
-def submit(name, location, host):
-    '''Submit XENON100 pax processing jobs to ULite
-    Author: Chris, Bart, Jelle, Nikhef
-    Last update:   2015.09.07
-    This is meant to help you do bulk processing on the XENON100 data on the LNGS ULite cluster.
-    This command will produce a shell script for you to run, the shell script does the actual submission.
-    The shell scripts which ULite has to run (with calls to pax) are placed in temporary files.
-    Call with --help to discover syntax and options.
-    '''
 
-    script_template = """#!/bin/bash
-export PATH=/data/xenon/anaconda/envs/pax/bin:$PATH
-source activate pax
-cd /user/ctunnell/cax/cax/
-python /user/ctunnell/cax/cax/process.py {name} {location} {host}
-    """
+class ProcessBatchQueue(Task):
+    "Perform a checksum on accessible data."
 
-    script = script_template.format(name=name, location=location, host=host)
-    qsub.submit_job(script, name, 'generic')
+    def submit(self, location, host):
+        '''Submit XENON100 pax processing jobs to ULite
+        Author: Chris, Bart, Jelle, Nikhef
+        Last update:   2015.09.07
+        This is meant to help you do bulk processing on the XENON100 data on the LNGS ULite cluster.
+        This command will produce a shell script for you to run, the shell script does the actual submission.
+        The shell scripts which ULite has to run (with calls to pax) are placed in temporary files.
+        Call with --help to discover syntax and options.
+        '''
+        name = self.run_doc['name']
+        script_template = """#!/bin/bash
+    export PATH=/data/xenon/anaconda/envs/pax/bin:$PATH
+    source activate pax
+    cd /user/ctunnell/cax/cax/
+    python /user/ctunnell/cax/cax/tasks/process.py {name} {location} {host}
+        """
+
+        script = script_template.format(name=name, location=location, host=host)
+        qsub.submit_job(script, name, 'generic')
 
 
-def verify():
-    return True
+    def verify(self):
+        """Verify processing worked"""
+        return True # yeah... TODO.
 
-def process_all():
-    # Grab the Run DB so we can query it
-    collection = config.mongo_collection()
-
-    # For each TPC run, check if should be uploaded
-    for doc in collection.find({'detector' : 'tpc'}):
-        if 'data' not in doc:
-            continue
-
+    def each_run(self):
         have_raw = False
         have_processed = False
 
         # Iterate over data locations to know status
-        for datum in doc['data']:
+        for datum in self.run_doc['data']:
             # Is host known?
             if 'host' not in datum:
                 continue
@@ -103,15 +100,11 @@ def process_all():
                 have_processed = True
 
         if have_raw and not have_processed:
-            print("Submitting", doc['name'])
-            
-            submit(doc['name'],
-                   have_raw['location'],
-                   have_raw['host'])
+            self.log.info("Submitting",
+                          self.run_doc['name'])
 
+            self.submit(have_raw['location'],
+                        have_raw['host'])
 
 if __name__ == "__main__":
-    if len(sys.argv) == 1:
-        process_all()
-    else:
-        process(sys.argv[1], sys.argv[2], sys.argv[3])
+    process(sys.argv[1], sys.argv[2], sys.argv[3])

@@ -2,6 +2,7 @@ import json
 import socket
 import pymongo
 import os
+import logging
 
 def get_hostname():
     return socket.gethostname().split('.')[0]
@@ -9,14 +10,14 @@ def get_hostname():
 def load():
     dirname = os.path.dirname(os.path.abspath(__file__))
     filename = os.path.join(dirname, 'cax.json')
-    print('loading', filename)
+    logging.debug('loading %s' % filename)
     return json.loads(open(filename, 'r').read())
     
 def get_config(name):
     for doc in load():
         if doc['name'] == name:
             return doc
-    raise RuntimeError()
+    raise LookupError("Unknown host %s" % name)
 
 def get_options(option_type = 'upload', method=None):
     if method is None:
@@ -40,10 +41,10 @@ def mongo_collection():
     db = c['run']
     collection = db['runs_new']
     return collection
-    
+
 def data_availability(hostname=get_hostname()):
     collection = mongo_collection()
-    
+
     results = []
     for doc in collection.find({'detector' : 'tpc'},
                                ['name', 'data']):
