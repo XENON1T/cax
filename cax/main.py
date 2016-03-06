@@ -33,7 +33,8 @@ def main():
     password()  # Check password specified
 
     daemon = daemonocle.Daemon(worker=main,
-                               pidfile='cax.pid')
+                               pidfile=os.path.join(os.path.expanduser("~"),
+                                                    'cax.pid'))
     daemon.do_action(sys.argv[1])
 
 if __name__ == '__main__':
