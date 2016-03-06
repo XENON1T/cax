@@ -1,7 +1,6 @@
 from .. import config
 from paramiko import SSHClient, util
 from scp import SCPClient
-import config
 import os
 from ..task import Task
 

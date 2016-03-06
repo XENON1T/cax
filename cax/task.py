@@ -1,4 +1,4 @@
-import config
+from cax import config
 import logging
 
 class Task():
