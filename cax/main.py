@@ -1,14 +1,11 @@
 from cax.tasks import checksum, clear, copy
 import os
-
+import sys
 import logging
 import time
 
 import daemonocle
 
-def cb_shutdown(message, code):
-    logging.info('Daemon is stopping')
-    logging.debug(message)
 
 def main():
     logging.basicConfig(filename='example.log',
@@ -29,8 +26,6 @@ def main():
 
         logging.debug('Sleeping.')
         time.sleep(10)
-        break
-
 
 
 if __name__ == '__main__':
@@ -40,8 +35,6 @@ if __name__ == '__main__':
                                'run database.  To fix this problem, Do:'
                                '\n\n\texport MONGO_PASSWORD=xxx\n\n'
                                'Then rerun this command.')
-    main()
-    #daemon = daemonocle.Daemon(worker=main,
-    #                           shutdown_callback=cb_shutdown,
-    #                           pidfile='/var/run/daemonocle_example.pid')
-    #daemon.do_action(sys.argv[1])
+    daemon = daemonocle.Daemon(worker=main,
+                               pidfile='/var/run/daemonocle_example.pid')
+    daemon.do_action(sys.argv[1])
