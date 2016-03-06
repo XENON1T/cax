@@ -31,7 +31,7 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=requirements,
-    data_files=[('cax', ['cax/*.json'])],
+    data_files=[('cax', ['cax/cax.json'])],
     license="ISCL",
     zip_safe=False,
     keywords='cax',
