@@ -9,7 +9,7 @@ def main():
     password()  # Check password specified
 
     logging.basicConfig(filename='example.log',
-                        level=logging.DEBUG,
+                        level=logging.INFO,
                         format='%(asctime)s [%(levelname)s] %(message)s')
     logging.info('Daemon is starting')
 
