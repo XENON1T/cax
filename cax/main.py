@@ -1,13 +1,11 @@
-from cax.tasks import checksum, clear, copy
-import os
-import sys
 import logging
 import time
+
 from cax.config import password
+from cax.tasks import checksum, clear, copy
 
-import daemonocle
 
-def main2():
+def main():
     password()  # Check password specified
 
     logging.basicConfig(filename='example.log',
@@ -25,17 +23,9 @@ def main2():
             logging.info("Executing %s." % task.__class__.__name__)
             task.go()
 
-
         logging.debug('Sleeping.')
         time.sleep(10)
 
-def main():
-    password()  # Check password specified
-
-    daemon = daemonocle.Daemon(worker=main,
-                               pidfile=os.path.join(os.path.expanduser("~"),
-                                                    'cax.pid'))
-    daemon.do_action(sys.argv[1])
 
 if __name__ == '__main__':
-    main2()
+    main()

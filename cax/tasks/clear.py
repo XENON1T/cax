@@ -1,6 +1,9 @@
-import pymongo
 import os
+
+import pymongo
+
 from . import checksum
+
 
 class ClearDAQBuffer(checksum.CompareChecksums):
     "Perform a checksum on accessible data."
@@ -9,7 +12,7 @@ class ClearDAQBuffer(checksum.CompareChecksums):
         client = pymongo.MongoClient(self.raw_data['location'])
         db = client.untriggered
         db.authenticate('eb',
-                         os.environ.get('MONGO_PASSWORD'))
+                        os.environ.get('MONGO_PASSWORD'))
         self.log.error('db.drop()')
 
     def each_run(self):

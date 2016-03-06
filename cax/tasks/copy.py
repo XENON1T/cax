@@ -1,8 +1,11 @@
-from .. import config
+import os
+
 from paramiko import SSHClient, util
 from scp import SCPClient
-import os
+
+from .. import config
 from ..task import Task
+
 
 def copy(f1, f2,
          server,
@@ -14,7 +17,6 @@ def copy(f1, f2,
     ssh.connect(server,
                 username=username)
 
-
     # SCPCLient takes a paramiko transport as its only argument
     scp = SCPClient(ssh.get_transport())
 
@@ -23,10 +25,9 @@ def copy(f1, f2,
 
     scp.close()
 
+
 class SCPPush(Task):
     "Perform a checksum on accessible data."
-
-
 
     def each_run(self):
         if self.upload_options is None:
@@ -38,8 +39,8 @@ class SCPPush(Task):
             # Grab the configuration of this host
             remote_config = config.get_config(remote_host)
 
-            there = False # Is data remote?
-            datum_here = None # Information about data here
+            there = False  # Is data remote?
+            datum_here = None  # Information about data here
 
             # Iterate over data locations to know status
             for datum in self.run_doc['data']:
@@ -55,8 +56,9 @@ class SCPPush(Task):
                         datum_here = datum
                 elif datum['host'] == remote_host:  # This the remote host?
                     # Is the data already there (checked or not)?
-                    if datum['status'] == 'transferred' or datum['status'] == 'verifying':
-                        there  = True
+                    if datum['status'] == 'transferred' or datum[
+                        'status'] == 'verifying':
+                        there = True
 
             if datum_here and not there:
                 self.copy_handshake(datum_here, remote_config, remote_host)
@@ -83,6 +85,6 @@ class SCPPush(Task):
 
         datum_there['status'] = 'verifying'
         self.collection.update({'_id'      : self.run_doc['_id'],
-                           'data.host': datum_there['host']},
-                          {'$set': {'data.$': datum_there}})
+                                'data.host': datum_there['host']},
+                               {'$set': {'data.$': datum_there}})
         self.log.info("Transfer complete")

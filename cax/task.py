@@ -1,5 +1,7 @@
-from cax import config
 import logging
+
+from cax import config
+
 
 class Task():
     def __init__(self):
@@ -20,7 +22,7 @@ class Task():
     def go(self):
         """Run this periodically"""
 
-        for self.run_doc in self.collection.find({'detector' : 'tpc'}):
+        for self.run_doc in self.collection.find({'detector': 'tpc'}):
             if 'data' not in self.run_doc:
                 continue
 
@@ -31,7 +33,7 @@ class Task():
     def each_run(self):
         for data_doc in self.run_doc['data']:
             self.log.debug('%s on %s' % (self.__class__.__name__,
-                                   self.run_doc['number']))
+                                         self.run_doc['number']))
             self.each_location(data_doc)
 
     def each_location(self, data_doc):

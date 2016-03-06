@@ -1,6 +1,8 @@
+import checksumdir
+
 from cax import config
 from ..task import Task
-import checksumdir
+
 
 class AddChecksum(Task):
     "Perform a checksum on accessible data."
@@ -19,14 +21,14 @@ class AddChecksum(Task):
         value = checksumdir.dirhash(data_doc['location'],
                                     'sha512')
 
-
         data_doc['checksum'] = value
         data_doc['status'] = 'transferred'
 
         self.log.info("Updating", self.run_doc['number'])
-        self.collection.update({'_id': self.run_doc['_id'],
-                                'data.host' : data_doc['host']},
-                                {'$set': {'data.$' : data_doc}})
+        self.collection.update({'_id'      : self.run_doc['_id'],
+                                'data.host': data_doc['host']},
+                               {'$set': {'data.$': data_doc}})
+
 
 class CompareChecksums(Task):
     "Perform a checksum on accessible data."
@@ -39,7 +41,6 @@ class CompareChecksums(Task):
                 assert value == values[0]
         self.log.debug("%d checksums agree" % n)
         return n
-
 
     def get_checksums(self):
         values = []

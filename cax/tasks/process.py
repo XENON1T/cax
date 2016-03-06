@@ -1,8 +1,10 @@
-from .. import qsub, config
-from ..task import Task
 import sys
 
 from pax import __version__ as pax_version
+
+from .. import qsub, config
+from ..task import Task
+
 
 def process(name, location, host, pax_config='XENON1T_LED'):
     from pax import core
@@ -10,36 +12,36 @@ def process(name, location, host, pax_config='XENON1T_LED'):
     collection = config.mongo_collection()
 
     # New data
-    datum = {'type' : 'processed',
-             'host' : host,
-             'status' : 'processing',
-             'location' : location + '.root',
-             'checksum' : None,
-             'pax_version' : pax_version}
-    query = {'detector' : 'tpc',
-             'name' : name}
+    datum = {'type'       : 'processed',
+             'host'       : host,
+             'status'     : 'processing',
+             'location'   : location + '.root',
+             'checksum'   : None,
+             'pax_version': pax_version}
+    query = {'detector': 'tpc',
+             'name'    : name}
     collection.update(query,
                       {'$push': {'data': datum}})
 
-    query['data.type']        = datum['type']
-    query['data.host']        = datum['host']
+    query['data.type'] = datum['type']
+    query['data.host'] = datum['host']
     query['data.pax_version'] = datum['pax_version']
 
     try:
         print('processing', name, location)
         p = core.Processor(config_names=pax_config,
-                           config_dict={'pax': { 'input_name':  location,
-                                                 'output_name': location}})
+                           config_dict={'pax': {'input_name' : location,
+                                                'output_name': location}})
         p.run()
     except Exception as exception:
         datum['status'] = 'error'
         collection.update(query,
-                          {'$set': {'data.$' : datum}})
+                          {'$set': {'data.$': datum}})
         raise
 
     datum['status'] = 'verifying'
     collection.update(query,
-                       {'$set': {'data.$' : datum}})
+                      {'$set': {'data.$': datum}})
 
     datum['checksum'] = checksum.filehash(datum['location'])
     if verify():
@@ -47,7 +49,7 @@ def process(name, location, host, pax_config='XENON1T_LED'):
     else:
         datum['status'] = 'failed'
     collection.update(query,
-                       {'$set': {'data.$' : datum}})
+                      {'$set': {'data.$': datum}})
 
 
 class ProcessBatchQueue(Task):
@@ -73,10 +75,9 @@ class ProcessBatchQueue(Task):
         script = script_template.format(name=name, location=location, host=host)
         qsub.submit_job(script, name, 'generic')
 
-
     def verify(self):
         """Verify processing worked"""
-        return True # yeah... TODO.
+        return True  # yeah... TODO.
 
     def each_run(self):
         have_raw = False
@@ -105,6 +106,7 @@ class ProcessBatchQueue(Task):
 
             self.submit(have_raw['location'],
                         have_raw['host'])
+
 
 if __name__ == "__main__":
     process(sys.argv[1], sys.argv[2], sys.argv[3])
