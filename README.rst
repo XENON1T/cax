@@ -18,6 +18,11 @@ Copying XENON1T data around
 * Free software: ISC license
 * Documentation: https://cax.readthedocs.org.
 
+Installation
+------------
+
+``conda install paramiko``
+
 Features
 --------
 
