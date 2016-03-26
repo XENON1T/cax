@@ -15,7 +15,7 @@ def main():
 
     tasks = [checksum.AddChecksum(),
              checksum.CompareChecksums(),
-             clear.ClearDAQBuffer(),
+             #clear.ClearDAQBuffer(),
              copy.SCPPush()]
 
     while True:

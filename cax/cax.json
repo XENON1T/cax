@@ -21,10 +21,10 @@
     "download_options": []
   },
   {
-    "name": "xecluster06",
+    "name": "xe-grid01",
     "receive": "scp",
-    "hostname": "xecluster06.lngs.infn.it",
-    "directory": "/archive_lngs100TB/common/daqtest/xenon1t/",
+    "hostname": "xe-grid01.lngs.infn.it",
+    "directory": "/xetemp/xenon1t/",
     "upload_options": [],
     "username": "tunnell",
     "download_options": []
