@@ -24,7 +24,7 @@ class AddChecksum(Task):
         data_doc['checksum'] = value
         data_doc['status'] = 'transferred'
 
-        self.log.info("Updating", self.run_doc['number'])
+        self.log.info("Updating %d" % self.run_doc['number'])
         self.collection.update({'_id'      : self.run_doc['_id'],
                                 'data.host': data_doc['host']},
                                {'$set': {'data.$': data_doc}})
