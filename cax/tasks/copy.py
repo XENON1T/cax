@@ -72,7 +72,7 @@ class SCPPush(Task):
                        'host'    : remote_host,
                        'status'  : 'transferring',
                        'location': os.path.join(remote_config['directory'],
-                                                doc['name']),
+                                                self.run_doc['name']),
                        'checksum': None}
         self.collection.update({'_id': self.run_doc['_id']},
                                {'$push': {'data': datum_there}})
