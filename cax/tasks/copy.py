@@ -1,7 +1,7 @@
 import os
 
 from paramiko import SSHClient, util
-from scp import SCPClient
+import scp
 
 from .. import config
 from ..task import Task
@@ -18,12 +18,12 @@ def copy(f1, f2,
                 username=username)
 
     # SCPCLient takes a paramiko transport as its only argument
-    scp = SCPClient(ssh.get_transport())
+    client = scp.SCPClient(ssh.get_transport())
 
-    scp.put(f1, f2,
-            recursive=True)
+    client.put(f1, f2,
+               recursive=True)
 
-    scp.close()
+    client.close()
 
 
 class SCPPush(Task):
@@ -77,13 +77,17 @@ class SCPPush(Task):
         self.collection.update({'_id': self.run_doc['_id']},
                                {'$push': {'data': datum_there}})
         self.log.info('Starting SCP')
-        copy(datum_here['location'],
-             remote_config['directory'],
-             remote_config['hostname'],
-             remote_config['username'])
+        try:
+            copy(datum_here['location'],
+                 remote_config['directory'],
+                remote_config['hostname'],
+                remote_config['username'])
+            datum_there['status'] = 'verifying'
+        except scp.SCPException as e:
+            self.log.exception(e)
+            datum_there['status'] = 'error'
         self.log.debug("SCP done, telling run database")
 
-        datum_there['status'] = 'verifying'
         self.collection.update({'_id'      : self.run_doc['_id'],
                                 'data.host': datum_there['host']},
                                {'$set': {'data.$': datum_there}})
