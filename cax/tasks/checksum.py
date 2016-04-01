@@ -24,7 +24,7 @@ class AddChecksum(Task):
         data_doc['checksum'] = value
         data_doc['status'] = 'transferred'
 
-        self.log.info("Updating %d" % self.run_doc['number'])
+        self.log.info("Adding a checksum to run %d" % self.run_doc['number'])
         self.collection.update({'_id'      : self.run_doc['_id'],
                                 'data.host': data_doc['host']},
                                {'$set': {'data.$': data_doc}})
@@ -38,7 +38,7 @@ class CompareChecksums(Task):
         n = len(checksums)
         if n:
             for key, value in checksums.items():
-                if value != checksums.values()[0]:
+                if value != list(checksums.values())[0]:
                     self.log.error("Checksums error "
                                    "run %d" % self.run_doc['number'])
         self.log.debug("%d checksums agree" % n)
