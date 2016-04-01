@@ -1,3 +1,4 @@
+import datetime
 import os
 
 from paramiko import SSHClient, util
@@ -27,7 +28,10 @@ def copy(f1, f2,
 
 
 class SCPPush(Task):
-    "Perform a checksum on accessible data."
+    """Copy data via SCP
+
+    If the data is transfered to current host and does not exist at any other
+    site (including transferring), then copy data there."""
 
     def each_run(self):
         if self.upload_options is None:
@@ -55,10 +59,7 @@ class SCPPush(Task):
                         # If so, store info on it.
                         datum_here = datum
                 elif datum['host'] == remote_host:  # This the remote host?
-                    # Is the data already there (checked or not)?
-                    if datum['status'] == 'transferred' or datum[
-                        'status'] == 'verifying':
-                        there = True
+                    there = True
 
             if datum_here and not there:
                 self.copy_handshake(datum_here, remote_config, remote_host)
@@ -73,7 +74,8 @@ class SCPPush(Task):
                        'status'  : 'transferring',
                        'location': os.path.join(remote_config['directory'],
                                                 self.run_doc['name']),
-                       'checksum': None}
+                       'checksum': None,
+                       'creation_time' : datetime.datetime.utcnow()}
         self.collection.update({'_id': self.run_doc['_id']},
                                {'$push': {'data': datum_there}})
         self.log.info('Starting SCP')

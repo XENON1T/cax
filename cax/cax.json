@@ -37,5 +37,14 @@
     "upload_options": [],
     "username": "tunnell",
     "download_options": []
+  },
+  {
+    "name": "login",
+    "receive": "scp",
+    "hostname": "login.ci-connect.uchicago.edu",
+    "directory": "/xenon/xenon1t",
+    "upload_options": [],
+    "username": "pdeperio",
+    "download_options": []
   }
 ]

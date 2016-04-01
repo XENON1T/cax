@@ -33,25 +33,26 @@ class AddChecksum(Task):
 class CompareChecksums(Task):
     "Perform a checksum on accessible data."
 
-    def count(self, values):
+    def count(self, checksums):
         """Takes list of checksums"""
-        n = len(values)
+        n = len(checksums)
         if n:
-            for value in values:
-                assert value == values[0]
+            for key, value in checksums.items():
+                if value != checksums.values()[0]:
+                    self.log.error("Checksums error "
+                                   "run %d" % self.run_doc['number'])
         self.log.debug("%d checksums agree" % n)
         return n
 
     def get_checksums(self):
-        values = []
+        values = {}
         for data_doc in self.run_doc['data']:
             # Only look at transfered data
             if data_doc['status'] == 'transferred':
                 # And require raw
                 if data_doc['type'] == 'raw':
-                    values.append(data_doc['checksum'])
+                    values[data_doc['host']] = data_doc['checksum']
         return values
 
     def each_run(self):
-        values = self.get_checksums()
-        self.count(values)
+        self.count(self.get_checksums())
