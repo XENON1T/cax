@@ -14,8 +14,8 @@ class Task():
         try:
             self.upload_options = config.upload_options()
         except LookupError as e:
-            self.log.exception(e)
-            return
+            self.upload_options = []
+            self.log.info("Unknown host: %s", config.get_hostname())
         else:
             self.log.info("Upload options: %s" % str(self.upload_options))
 

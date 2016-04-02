@@ -1,6 +1,6 @@
 import checksumdir
 
-from cax import config
+from cax import config, reporting
 from ..task import Task
 
 
@@ -39,8 +39,11 @@ class CompareChecksums(Task):
         if n:
             for key, value in checksums.items():
                 if value != list(checksums.values())[0]:
-                    self.log.error("Checksums error "
-                                   "run %d" % self.run_doc['number'])
+                    error = "Checksums error " \
+                            "run %d" % self.run_doc['number']
+                    reporting.alarm(error)
+                    self.log.error(error)
+
         self.log.debug("%d checksums agree" % n)
         return n
 

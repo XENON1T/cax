@@ -13,7 +13,7 @@ with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = [
-    'checksumdir', 'scp',
+    'checksumdir', 'scp', 'pagerduty-api'
 ]
 
 test_requirements = [
