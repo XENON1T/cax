@@ -41,8 +41,7 @@ class CompareChecksums(Task):
                 if value != list(checksums.values())[0]:
                     error = "Checksums error " \
                             "run %d" % self.run_doc['number']
-                    reporting.alarm(error)
-                    self.log.error(error)
+                    self.give_error(error)
 
         self.log.debug("%d checksums agree" % n)
         return n

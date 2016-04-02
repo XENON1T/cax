@@ -1,6 +1,6 @@
 import logging
 
-from cax import config
+from cax import config, reporting
 
 
 class Task():
@@ -46,3 +46,11 @@ class Task():
 
         # Not found
         return None
+
+    def give_error(self, message):
+        """Report error to PagerDuty and log
+
+        This calls peoples and issues a wide range of alarms, so use wisely.
+        """
+        reporting.alarm(message, self.run_doc)
+        self.log.error(message)
