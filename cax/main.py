@@ -21,7 +21,7 @@ def main(run_once = False):
     # define a Handler which writes INFO messages or higher to the sys.stderr
     console = logging.StreamHandler()
 
-    console.setLevel(logging.WARNING)
+    console.setLevel(logging.DEBUG)
 
     # set a format which is simpler for console use
     formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
@@ -34,7 +34,9 @@ def main(run_once = False):
              checksum.CompareChecksums(),
              #clear.ClearDAQBuffer(),
              clear.AlertFailedTransfer(),
-             copy.SCPPush()]
+             copy.SCPPush(),
+             copy.SCPPull(),
+             ]
 
     while True:
         for task in tasks:

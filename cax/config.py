@@ -31,7 +31,7 @@ def pagerduty_api_key():
     if pager_duty_api_key is None:
         raise EnvironmentError('Environmental variable PAGERDUTY_API_KEY not set.'
                                ' This is required for creating alarms. Do:'
-                               '\n\n\texport MONGO_PASSWORD=xxx\n\n'
+                               '\n\n\texport PAGERDUTY_API_KEY=xxx\n\n'
                                'Then rerun this command.')
     return pager_duty_api_key
 
