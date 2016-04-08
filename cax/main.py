@@ -4,8 +4,10 @@ import time
 from cax.config import mongo_password, pagerduty_api_key
 from cax.tasks import checksum, clear, copy
 
+def single():
+    main(run_once = True)
 
-def main():
+def main(run_once = False):
     # Check passwords and API keysspecified
     mongo_password()
     pagerduty_api_key()

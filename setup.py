@@ -49,7 +49,10 @@ setup(
     tests_require=test_requirements,
     entry_points={
         'console_scripts': [
-            'cax = cax.main:main'
+            'cax = cax.main:main',
+            'caxer = cax.main:main',
+            'cax-single = cax.main:single',
+
         ],
     },
 )

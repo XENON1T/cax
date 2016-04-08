@@ -94,3 +94,4 @@ class SCPPush(Task):
                                 'data.host': datum_there['host']},
                                {'$set': {'data.$': datum_there}})
         self.log.info("Transfer complete")
+

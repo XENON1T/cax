@@ -1,12 +1,26 @@
 import sys
+import datetime
+import hashlib
 
 from pax import __version__ as pax_version
 
 from .. import qsub, config
 from ..task import Task
 
+def filehash(location):
+    sha = hashlib.sha512()
+    with open(location, 'rb') as f:
+        while True:
+            block = f.read(2**10) # Magic number: one-megabyte blocks.
+            if not block: break
+            sha.update(block)
+    return sha.hexdigest()
 
-def process(name, location, host, pax_config='XENON1T_LED'):
+def verify():
+    return True
+
+def process(name, location, host,
+            pax_config='XENON1T_LED'):
     from pax import core
     # Grab the Run DB so we can query it
     collection = config.mongo_collection()
@@ -14,10 +28,11 @@ def process(name, location, host, pax_config='XENON1T_LED'):
     # New data
     datum = {'type'       : 'processed',
              'host'       : host,
-             'status'     : 'processing',
+             'status'     : 'transferring',
              'location'   : location + '.root',
              'checksum'   : None,
-             'pax_version': pax_version}
+             'pax_version': pax_version,
+             'creation_time' : datetime.datetime.utcnow()}
     query = {'detector': 'tpc',
              'name'    : name}
     collection.update(query,
@@ -43,9 +58,9 @@ def process(name, location, host, pax_config='XENON1T_LED'):
     collection.update(query,
                       {'$set': {'data.$': datum}})
 
-    datum['checksum'] = checksum.filehash(datum['location'])
+    datum['checksum'] = filehash(datum['location'])
     if verify():
-        datum['status'] = 'processed'
+        datum['status'] = 'transferred'
     else:
         datum['status'] = 'failed'
     collection.update(query,
@@ -59,13 +74,19 @@ class ProcessBatchQueue(Task):
         '''Submit XENON100 pax processing jobs to ULite
         Author: Chris, Bart, Jelle, Nikhef
         Last update:   2015.09.07
-        This is meant to help you do bulk processing on the XENON100 data on the LNGS ULite cluster.
-        This command will produce a shell script for you to run, the shell script does the actual submission.
-        The shell scripts which ULite has to run (with calls to pax) are placed in temporary files.
-        Call with --help to discover syntax and options.
         '''
         name = self.run_doc['name']
+        run_mode = External
         script_template = """#!/bin/bash
+#!/bin/bash
+#SBATCH --output=/home/tunnell/test/myout_000002.txt
+#SBATCH --error=/home/tunnell/test/myerr_000002.txt
+#SBATCH --ntasks=16
+#SBATCH --account=kicp
+#SBATCH --partition=kicp
+#SBATCH --exclusive
+source activate pax_head
+#paxer --input /project/lgrandi/xenon1t/160317_2324 --output ~/test/blah --stop_after 10 --config XENON1T
     export PATH=/data/xenon/anaconda/envs/pax/bin:$PATH
     source activate pax
     cd /user/ctunnell/cax/cax/

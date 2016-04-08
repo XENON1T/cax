@@ -1,6 +1,6 @@
 import checksumdir
 
-from cax import config, reporting
+from cax import config
 from ..task import Task
 
 

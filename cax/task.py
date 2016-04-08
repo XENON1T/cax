@@ -1,5 +1,4 @@
 import logging
-
 from cax import config, reporting
 
 
@@ -52,5 +51,8 @@ class Task():
 
         This calls peoples and issues a wide range of alarms, so use wisely.
         """
-        reporting.alarm(message, self.run_doc)
+        santized_run_doc = self.run_doc.copy()
+        del santized_run_doc['_id']
+        reporting.alarm(message,
+                        santized_run_doc)
         self.log.error(message)
