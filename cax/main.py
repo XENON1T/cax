@@ -39,8 +39,12 @@ def main(run_once = False):
             logging.info("Executing %s." % task.__class__.__name__)
             task.go()
 
-        logging.debug('Sleeping.')
-        time.sleep(10)
+        # Decide to continue or not
+        if run_once:
+            break
+        else:
+            logging.debug('Sleeping.')
+            time.sleep(10)
 
 
 if __name__ == '__main__':
