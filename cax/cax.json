@@ -46,5 +46,14 @@
     "upload_options": [],
     "username": "pdeperio",
     "download_options": []
+  },
+  {
+    "name": "tegner-login-1",
+    "receive": "scp",
+    "hostname": "tegner-login-1.pdc.kth.se",
+    "directory": "/cfs/klemming/projects/xenon/data/xenon1t",
+    "upload_options": [],
+    "username": "bobau",
+    "download_options": ["midway-login1"]
   }
 ]

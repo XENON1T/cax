@@ -58,7 +58,13 @@ def get_config(name):
 
 def get_options(option_type='upload', method=None):
     if method is None:
-        return get_config(get_hostname())['%s_options' % option_type]
+        try:
+            options = get_config(get_hostname())['%s_options' % option_type]
+        except LookupError as e:
+            logging.info("Unknown config host: %s", get_hostname())
+            return []
+
+        return options
 
     options = []
 
@@ -68,11 +74,6 @@ def get_options(option_type='upload', method=None):
             options.append(x)
 
     return options
-
-
-def upload_options(method=None):
-    return get_options('upload', method=method)
-
 
 def mongo_collection():
     c = pymongo.MongoClient(
