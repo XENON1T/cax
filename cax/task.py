@@ -1,6 +1,7 @@
 import logging
 from cax import config, reporting
-
+from bson.json_util import dumps
+from json import loads
 
 class Task():
     def __init__(self):
@@ -52,7 +53,9 @@ class Task():
         This calls peoples and issues a wide range of alarms, so use wisely.
         """
         santized_run_doc = self.run_doc.copy()
-        del santized_run_doc['_id']
+        santized_run_doc = loads(dumps(santized_run_doc))
+
         reporting.alarm(message,
                         santized_run_doc)
+
         self.log.error(message)

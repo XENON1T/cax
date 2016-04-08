@@ -76,7 +76,7 @@ class ProcessBatchQueue(Task):
         Last update:   2015.09.07
         '''
         name = self.run_doc['name']
-        run_mode = External
+        run_mode = ''
         script_template = """#!/bin/bash
 #!/bin/bash
 #SBATCH --output=/home/tunnell/test/myout_000002.txt
