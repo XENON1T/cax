@@ -137,7 +137,7 @@ class SCPBase(Task):
                                {'$set': {'data.$': datum_new}})
         self.log.info("Transfer complete")
 
-class SCPPush(Task):
+class SCPPush(SCPBase):
     """Copy data via SCP to there
 
     If the data is transfered to current host and does not exist at any other
@@ -147,7 +147,7 @@ class SCPPush(Task):
         self.do_possible_transfers(option_type = 'upload')
 
 
-class SCPPull(Task):
+class SCPPull(SCPBase):
     """Copy data via SCP to here
 
     If data exists at a reachable host but not here, pull it.
