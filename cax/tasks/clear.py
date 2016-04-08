@@ -24,7 +24,7 @@ class ClearDAQBuffer(checksum.CompareChecksums):
         if self.count(values) > 2 and self.raw_data:
             self.remove_untriggered()
 
-class ClearFailedTransfer(Task):
+class AlertFailedTransfer(Task):
     "Alert if stale transfer."
 
     def each_location(self, data_doc):
@@ -35,7 +35,7 @@ class ClearFailedTransfer(Task):
         time = data_doc['creation_time']
         difference = datetime.datetime.utcnow() - time
 
-        if data_doc["status"] != "transferred":
+        if data_doc["status"] == "transferred":
             return # Transfer went fine
 
         self.log.debug(difference)
