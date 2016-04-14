@@ -32,7 +32,7 @@ def main(run_once = False):
 
     tasks = [checksum.AddChecksum(),
              checksum.CompareChecksums(),
-             #clear.ClearDAQBuffer(),
+             clear.ClearDAQBuffer(),
              clear.AlertFailedTransfer(),
              copy.SCPPush(),
              copy.SCPPull(),
