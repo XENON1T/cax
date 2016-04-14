@@ -48,7 +48,7 @@ def main(run_once = False):
             break
         else:
             logging.debug('Sleeping.')
-            time.sleep(10)
+            time.sleep(60)
 
 
 if __name__ == '__main__':
