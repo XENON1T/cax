@@ -5,8 +5,6 @@
     "receive": null,
     "directory": "/data/xenon1t_data/",
     "upload_options": [
-      "xe-grid01",
-      "lena",
       "midway-login1"
     ],
     "download_options": []
