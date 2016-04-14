@@ -16,7 +16,7 @@
     "directory": "/data/xenon/xenon1t/",
     "upload_options": [],
     "username": "ctunnell",
-    "download_options": []
+    "download_options": ["midway-login1"]
   },
   {
     "name": "xe-grid01",
@@ -25,7 +25,7 @@
     "directory": "/xetemp/xenon1t/",
     "upload_options": [],
     "username": "tunnell",
-    "download_options": []
+    "download_options": ["midway-login1"]
   },
   {
     "name": "midway-login1",
