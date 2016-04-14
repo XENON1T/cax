@@ -17,7 +17,12 @@ class ClearDAQBuffer(checksum.CompareChecksums):
         db = client.untriggered
         db.authenticate('eb',
                         os.environ.get('MONGO_PASSWORD'))
-        self.log.error('db.drop()')
+        self.log.debug('Dropping %s' % self.raw_data['collection'])
+        db.drop_collection(self.raw_data['collection'])
+        self.log.info('Dropped %s' % self.raw_data['collection'])
+        
+        self.log.debug(self.collection.update({'_id': self.run_doc['_id']},
+                                              {'$pull': {'data' : self.raw_data}}))
 
     def each_run(self):
         values = self.get_checksums()
