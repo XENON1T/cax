@@ -35,7 +35,8 @@ class Task():
     def get_daq_buffer(self):
         for data_doc in self.run_doc['data']:
             if data_doc['type'] == 'untriggered':
-                return data_doc
+                if data_doc['host'] == config.get_hostname():
+                    return data_doc
 
         # Not found
         return None

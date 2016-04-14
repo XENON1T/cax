@@ -28,6 +28,8 @@ class ClearDAQBuffer(checksum.CompareChecksums):
         values = self.get_checksums()
         if self.count(values) > 2 and self.raw_data:
             self.remove_untriggered()
+        else:
+            self.log.debug("Did not drop: %s" % str(self.raw_data))
 
 class AlertFailedTransfer(Task):
     "Alert if stale transfer."
@@ -35,6 +37,10 @@ class AlertFailedTransfer(Task):
     def each_location(self, data_doc):
         if 'host' not in data_doc or data_doc['host'] != config.get_hostname():
             return # Skip places where we can't locally access data
+
+        if 'creation_time' not in data_doc:
+            self.log.warning("No creation time for %s" % str(data_doc))
+            return
 
         # How long has transfer been ongoing
         time = data_doc['creation_time']
