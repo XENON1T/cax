@@ -1,5 +1,6 @@
 import os
 import datetime
+import shutil
 
 import pymongo
 
@@ -31,7 +32,7 @@ class ClearDAQBuffer(checksum.CompareChecksums):
         else:
             self.log.debug("Did not drop: %s" % str(self.raw_data))
 
-class AlertFailedTransfer(Task):
+class AlertFailedTransfer(checksum.CompareChecksums):
     "Alert if stale transfer."
 
     def each_location(self, data_doc):
@@ -54,3 +55,16 @@ class AlertFailedTransfer(Task):
         if difference > datetime.timedelta(days=1):  # If stale transfer
             self.give_error("Transfer lasting more than one day")
 
+        if difference > datetime.timedelta(days=2):  # If stale transfer
+            self.give_error("Transfer lasting more than one week, retry.")
+
+            values = self.get_checksums()
+            if self.count(values) > 2:
+                self.log.info("Deleting %s" % data_doc['location'])
+                shutil.rmtree(data_doc['location'])
+                self.log.error('Deleted, notify run database.')
+
+                resp = self.collection.update({'_id': self.run_doc['_id']},
+                                              {'$pull': {'data' : data_doc}})
+                self.log.error('Removed from run database.')
+                self.log.debug(resp)
