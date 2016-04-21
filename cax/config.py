@@ -76,11 +76,9 @@ def get_options(option_type='upload', method=None):
     return options
 
 def mongo_collection():
-    c = pymongo.MongoClient(
-        'mongodb://eb:%s@copslx50.fysik.su.se:27017,zenigata.uchicago.edu:27017,xenon1t-daq.lngs.infn.it:27017/run' % os.environ.get(
-            'MONGO_PASSWORD'),
+    c = pymongo.MongoClient('mongodb://eb:%s@xenon1t-daq.lngs.infn.it:27017,copslx50.fysik.su.se:27017/run' % os.environ.get('MONGO_PASSWORD'),
         replicaSet='run',
-        read_preference=pymongo.ReadPreference.SECONDARY_PREFERRED)
+        read_preference=pymongo.ReadPreference.PRIMARY_PREFERRED)
     db = c['run']
     collection = db['runs_new']
     return collection
