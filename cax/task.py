@@ -11,7 +11,6 @@ class Task():
         self.run_doc = None
         self.raw_data = None
 
-
     def go(self):
         """Run this periodically"""
 
@@ -45,7 +44,7 @@ class Task():
     def give_error(self, message):
         """Report error to PagerDuty and log
 
-        This calls peoples and issues a wide range of alarms, so use wisely.
+        This calls people and issues a wide range of alarms, so use wisely.
         """
         santized_run_doc = self.run_doc.copy()
         santized_run_doc = loads(dumps(santized_run_doc))
