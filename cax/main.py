@@ -1,7 +1,7 @@
 import logging
 import time
 
-from cax.config import mongo_password, pagerduty_api_key
+from cax.config import mongo_password
 from cax.tasks import checksum, clear, copy
 
 def single():
@@ -10,18 +10,17 @@ def single():
 def main(run_once = False):
     # Check passwords and API keysspecified
     mongo_password()
-    pagerduty_api_key()
 
     # Setup logging
     logging.basicConfig(filename='cax.log',
-                        level=logging.DEBUG,
+                        level=logging.INFO,
                         format='%(asctime)s [%(levelname)s] %(message)s')
     logging.info('Daemon is starting')
 
     # define a Handler which writes INFO messages or higher to the sys.stderr
     console = logging.StreamHandler()
 
-    console.setLevel(logging.DEBUG)
+    console.setLevel(logging.INFO)
 
     # set a format which is simpler for console use
     formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
@@ -30,12 +29,12 @@ def main(run_once = False):
     # add the handler to the root logger
     logging.getLogger('').addHandler(console)
 
-    tasks = [checksum.AddChecksum(),
+    tasks = [copy.SCPPush(),
+             copy.SCPPull(),
+             checksum.AddChecksum(),
              checksum.CompareChecksums(),
              clear.ClearDAQBuffer(),
              clear.AlertFailedTransfer(),
-             copy.SCPPush(),
-             copy.SCPPull(),
              ]
 
     while True:

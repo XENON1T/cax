@@ -4,8 +4,8 @@ import hashlib
 
 from pax import __version__ as pax_version
 
-from .. import qsub, config
-from ..task import Task
+from cax import qsub, config
+from cax.task import Task
 
 def filehash(location):
     sha = hashlib.sha512()

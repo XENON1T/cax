@@ -22,19 +22,6 @@ def mongo_password():
                                'Then rerun this command.')
     return mongo_password
 
-def pagerduty_api_key():
-    """Fetch passsword for MongoDB
-
-    This is stored in an environmental variable MONGO_PASSWORD.
-    """
-    pager_duty_api_key = os.environ.get('PAGERDUTY_API_KEY')
-    if pager_duty_api_key is None:
-        raise EnvironmentError('Environmental variable PAGERDUTY_API_KEY not set.'
-                               ' This is required for creating alarms. Do:'
-                               '\n\n\texport PAGERDUTY_API_KEY=xxx\n\n'
-                               'Then rerun this command.')
-    return pager_duty_api_key
-
 
 def get_hostname():
     """Get hostname of the machine we're running on.

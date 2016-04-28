@@ -1,5 +1,5 @@
 import logging
-from cax import config, reporting
+from cax import config
 from bson.json_util import dumps
 from json import loads
 
@@ -49,8 +49,5 @@ class Task():
         """
         santized_run_doc = self.run_doc.copy()
         santized_run_doc = loads(dumps(santized_run_doc))
-
-        reporting.alarm(message,
-                        santized_run_doc)
 
         self.log.error(message)
