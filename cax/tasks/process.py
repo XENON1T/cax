@@ -34,6 +34,13 @@ def process(name, location, host):
              'creation_time' : datetime.datetime.utcnow()}
     query = {'detector': 'tpc',
              'name'    : name}
+
+    if collection.find_one({'detector': 'tpc',
+                            'name' : name,
+                            "data": { "$elemMatch": { "host": "midway-login1",
+                                                       "type": "processed"}}}) is not None:
+        return
+
     collection.update(query,
                       {'$push': {'data': datum}})
 
