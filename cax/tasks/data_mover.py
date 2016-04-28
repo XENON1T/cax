@@ -5,8 +5,8 @@ import logging
 from paramiko import SSHClient, util
 import scp
 
-from .. import config
-from ..task import Task
+from cax import config
+from cax.task import Task
 
 
 def copy(datum_original, datum_destination):

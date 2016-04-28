@@ -19,8 +19,7 @@ def filehash(location):
 def verify():
     return True
 
-def process(name, location, host,
-            pax_config='XENON1T_LED'):
+def process(name, location, host):
     from pax import core
     # Grab the Run DB so we can query it
     collection = config.mongo_collection()
@@ -41,6 +40,13 @@ def process(name, location, host,
     query['data.type'] = datum['type']
     query['data.host'] = datum['host']
     query['data.pax_version'] = datum['pax_version']
+
+    doc = collection.find_one(query)
+
+    if doc['reader']['self_trigger']:
+        pax_config='XENON1T'
+    else:
+        pax_config='XENON1T_LED'
 
     try:
         print('processing', name, location)
@@ -78,23 +84,18 @@ class ProcessBatchQueue(Task):
         name = self.run_doc['name']
         run_mode = ''
         script_template = """#!/bin/bash
-#!/bin/bash
-#SBATCH --output=/home/tunnell/test/myout_000002.txt
-#SBATCH --error=/home/tunnell/test/myerr_000002.txt
-#SBATCH --ntasks=16
-#SBATCH --account=kicp
-#SBATCH --partition=kicp
-#SBATCH --exclusive
+#SBATCH --output=/home/tunnell/test/myout_{name}.txt
+#SBATCH --error=/home/tunnell/test/myerr_{name}.txt
+#SBATCH --ntasks=1
+#SBATCH --account=pi-lgrandi
+export PATH=/data/xenon/anaconda/envs/pax/bin:$PATH
 source activate pax_head
-#paxer --input /project/lgrandi/xenon1t/160317_2324 --output ~/test/blah --stop_after 10 --config XENON1T
-    export PATH=/data/xenon/anaconda/envs/pax/bin:$PATH
-    source activate pax
-    cd /user/ctunnell/cax/cax/
-    python /user/ctunnell/cax/cax/tasks/process.py {name} {location} {host}
+cd /home/tunnell/test
+python /home/tunnell/cax/cax/tasks/process.py {name} {location} {host}
         """
 
         script = script_template.format(name=name, location=location, host=host)
-        qsub.submit_job(script, name, 'generic')
+        qsub.submit_job(script, name)
 
     def verify(self):
         """Verify processing worked"""
@@ -122,11 +123,14 @@ source activate pax_head
                 have_processed = True
 
         if have_raw and not have_processed:
-            self.log.info("Submitting",
-                          self.run_doc['name'])
+            if self.run_doc['reader']['ini']['write_mode'] == 2:
+                self.log.info("Submitting %s",
+                              self.run_doc['name'])
 
-            self.submit(have_raw['location'],
-                        have_raw['host'])
+                self.submit(have_raw['location'],
+                            have_raw['host'])
+
+                raise ValueError()
 
 
 if __name__ == "__main__":

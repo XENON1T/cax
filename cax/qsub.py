@@ -66,7 +66,7 @@ def check_queue(queue):
         raise KeyError('Unknown queue name: {queue}'.format(queue=queue))
 
 
-def submit_job(script, name, queue, extra=''):
+def submit_job(script, name, extra=''):
     """Submit a job to Stoomboot
 
     :param script: contents of the script to run.
@@ -79,14 +79,12 @@ def submit_job(script, name, queue, extra=''):
     script_path, script_name = create_script(script, name)
 
     # Effect of the arguments for qsub:
-    # -q: the name of the queue to which the job is submitted
     # -V: all of the environment variables of the process are exported to
     #     the context of the batch job (e.g. PATH)
-    # -z: do not print the job_identifier of the created job
     # -j oe: merge standard error into the standard output
     # -N: a recognizable name for the job
-    qsub = ('qsub -q {queue} -V -z -j oe -N {name} {extra} {script}'
-            .format(queue=queue, name=script_name, script=script_path,
+    qsub = ('qsub -V -j oe -N {name} {extra} {script}'
+            .format(name=script_name, script=script_path,
                     extra=extra))
 
     result = subprocess.check_output(qsub, stderr=subprocess.STDOUT,
