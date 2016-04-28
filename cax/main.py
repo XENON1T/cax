@@ -34,6 +34,7 @@ def main(run_once = False):
              checksum.CompareChecksums(),
              clear.ClearDAQBuffer(),
              clear.AlertFailedTransfer(),
+             clear.ClearDuplicateEntries(),
              copy.SCPPush(),
              copy.SCPPull(),
              ]

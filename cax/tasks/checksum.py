@@ -5,7 +5,7 @@ from ..task import Task
 
 
 class AddChecksum(Task):
-    "Perform a checksum on accessible data."
+    """Adds a checksum for each raw data copy on this host that doesn't yet have one"""
 
     def each_location(self, data_doc):
         # Only raw data waiting to be verified
@@ -25,13 +25,17 @@ class AddChecksum(Task):
         data_doc['status'] = 'transferred'
 
         self.log.info("Adding a checksum to run %d" % self.run_doc['number'])
-        self.collection.update({'_id'      : self.run_doc['_id'],
+        self.collection.update({'_id': self.run_doc['_id'],
                                 'data.host': data_doc['host']},
                                {'$set': {'data.$': data_doc}})
 
 
 class CompareChecksums(Task):
-    "Perform a checksum on accessible data."
+    """Checks that the checksums for all raw data copies of each run are the same;
+    gives an error if they are not.
+
+    This Task is subclassed by other tasks that need to verify checksums first.
+    """
 
     def count(self, checksums):
         """Takes list of checksums"""

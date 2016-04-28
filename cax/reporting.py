@@ -7,7 +7,9 @@ from pagerduty_api import Alert
 
 ALERT = Alert(service_key=config.pagerduty_api_key())
 
-def alarm(description, other_data = {}):
+def alarm(description, other_data=None):
+    if other_data is None:
+        other_data = {}
 
     ALERT.trigger(description,
                   client='cax',
