@@ -124,13 +124,15 @@ python /home/tunnell/cax/cax/tasks/process.py {name} {location} {host}
 
         if have_raw and not have_processed:
             if self.run_doc['reader']['ini']['write_mode'] == 2:
-                self.log.info("Submitting %s",
-                              self.run_doc['name'])
+                if config.get_hostname() == "midway-login1":
+                
+                    self.log.info("Submitting %s",
+                                  self.run_doc['name'])
+                    
+                    self.submit(have_raw['location'],
+                                have_raw['host'])
 
-                self.submit(have_raw['location'],
-                            have_raw['host'])
-
-                raise ValueError()
+                
 
 
 if __name__ == "__main__":
