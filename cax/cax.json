@@ -4,14 +4,12 @@
     "hostname": "eb0",
     "receive": null,
     "directory": "/data/xenon1t_data/",
-    "upload_options": [
-      "midway-login1"
-    ],
+    "upload_options": [],
     "download_options": []
   },
   {
     "name": "lena",
-    "receive": "scp",
+    "receive": null,
     "hostname": "login.nikhef.nl",
     "directory": "/data/xenon/xenon1t/",
     "upload_options": [],
@@ -20,16 +18,16 @@
   },
   {
     "name": "xe-grid01",
-    "receive": "scp",
+    "receive": null,
     "hostname": "xe-grid01.lngs.infn.it",
     "directory": "/xetemp/xenon1t/",
-    "upload_options": [],
+    "upload_options": ["osg-connect-srm"],
     "username": "tunnell",
-    "download_options": ["midway-login1"]
+    "download_options": []
   },
   {
     "name": "midway-login1",
-    "receive": "scp",
+    "receive": null,
     "hostname": "midway-login1.rcc.uchicago.edu",
     "directory": "/project/lgrandi/xenon1t",
     "upload_options": [],
@@ -48,11 +46,29 @@
   },
   {
     "name": "tegner-login-1",
-    "receive": "scp",
+    "receive": null,
     "hostname": "tegner-login-1.pdc.kth.se",
     "directory": "/cfs/klemming/projects/xenon/xenon1t/data",
     "upload_options": [],
     "username": "bobau",
     "download_options": ["midway-login1"]
+  },
+  {
+    "name": "osg-connect-srm",
+    "receive": "gfal-copy",
+    "hostname": "srm://ceph-se.osgconnect.net:8443/srm/v2/server?SFN=",
+    "directory": "/cephfs/srm/xenon/xenon1t",
+    "upload_options": [],
+    "username": null,
+    "download_options": []
+  },
+  {
+    "name": "midway-srm",
+    "receive": "gfal-copy",
+    "hostname": "srm://srm1.rcc.uchicago.edu:8443/srm/v2/server?SFN=",
+    "directory": "/project/lgrandi/xenon1t",
+    "upload_options": [],
+    "username": null,
+    "download_options": []  
   }
 ]

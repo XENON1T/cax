@@ -54,8 +54,8 @@ def main():
     logging.getLogger('').addHandler(console)
 
     tasks = [process.ProcessBatchQueue(),
-             data_mover.SCPPush(),
-             data_mover.SCPPull(),
+             data_mover.CopyPush(),
+             data_mover.CopyPull(),
              checksum.AddChecksum(),
              checksum.CompareChecksums(),
              clear.ClearDAQBuffer(),
