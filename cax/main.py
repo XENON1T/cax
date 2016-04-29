@@ -2,7 +2,7 @@ import logging
 import time
 
 from cax.config import mongo_password
-from cax.tasks import checksum, clear, data_mover, process
+from cax.tasks import checksum, clear, data_mover#, process
 
 def single():
     main(run_once = True)
@@ -29,13 +29,13 @@ def main(run_once = False):
     # add the handler to the root logger
     logging.getLogger('').addHandler(console)
 
-    tasks = [process.ProcessBatchQueue(),
-             data_mover.SCPPush(),
-             data_mover.SCPPull(),
-             checksum.AddChecksum(),
-             checksum.CompareChecksums(),
-             clear.ClearDAQBuffer(),
-             clear.AlertFailedTransfer(),
+    tasks = [#process.ProcessBatchQueue(),
+             data_mover.CopyPush(),
+             #data_mover.CopyPull(),
+             #checksum.AddChecksum(),
+             #checksum.CompareChecksums(),
+             #clear.ClearDAQBuffer(),
+             #clear.AlertFailedTransfer(),
              ]
 
     while True:
