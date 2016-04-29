@@ -40,10 +40,10 @@
     "name": "login",
     "receive": "scp",
     "hostname": "login.ci-connect.uchicago.edu",
-    "directory": "/xenon/xenon1t",
+    "directory": "/xenon/xenon1t_test",
     "upload_options": [],
     "username": "pdeperio",
-    "download_options": []
+    "download_options": ["midway-login1"]
   },
   {
     "name": "tegner-login-1",
