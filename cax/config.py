@@ -62,6 +62,17 @@ def get_options(option_type='upload', method=None):
 
     return options
 
+
+def get_pax_options(option_type='versions'):
+    try:
+        options = get_config(get_hostname())['pax_%s' % option_type] 
+    except LookupError as e:
+        logging.info("Unknown config host: %s", get_hostname())
+        return []
+
+    return options
+
+
 def mongo_collection():
     c = pymongo.MongoClient('mongodb://eb:%s@xenon1t-daq.lngs.infn.it:27017,copslx50.fysik.su.se:27017/run' % os.environ.get('MONGO_PASSWORD'),
         replicaSet='run',

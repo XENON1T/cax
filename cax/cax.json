@@ -34,7 +34,9 @@
     "directory": "/project/lgrandi/xenon1t",
     "upload_options": [],
     "username": "tunnell",
-    "download_options": []
+    "download_options": [],
+    "pax_versions": ["head", "v4.9.1"],
+    "pax_locations": ["/project/lgrandi/xenon1t/root/pax_head", "/project/lgrandi/xenon1t/root/pax_v4.9.1"]
   },
   {
     "name": "login",

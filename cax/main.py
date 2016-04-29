@@ -30,12 +30,12 @@ def main(run_once = False):
     logging.getLogger('').addHandler(console)
 
     tasks = [process.ProcessBatchQueue(),
-             data_mover.SCPPush(),
-             data_mover.SCPPull(),
-             checksum.AddChecksum(),
-             checksum.CompareChecksums(),
-             clear.ClearDAQBuffer(),
-             clear.AlertFailedTransfer(),
+             #data_mover.SCPPush(),
+             #data_mover.SCPPull(),
+             #checksum.AddChecksum(),
+             #checksum.CompareChecksums(),
+             #clear.ClearDAQBuffer(),
+             #clear.AlertFailedTransfer(),
              ]
 
     while True:

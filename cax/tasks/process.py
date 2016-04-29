@@ -2,8 +2,6 @@ import sys
 import datetime
 import hashlib
 
-from pax import __version__ as pax_version
-
 from cax import qsub, config
 from cax.task import Task
 
@@ -19,16 +17,18 @@ def filehash(location):
 def verify():
     return True
 
-def process(name, location, host):
+def process(name, in_location, host, pax_version, out_location):
+
     from pax import core
+
     # Grab the Run DB so we can query it
     collection = config.mongo_collection()
 
     # New data
     datum = {'type'       : 'processed',
              'host'       : host,
-             'status'     : 'transferring',
-             'location'   : location + '.root',
+             'status'     : 'processing',
+             'location'   : out_location + '.root',
              'checksum'   : None,
              'pax_version': pax_version,
              'creation_time' : datetime.datetime.utcnow()}
@@ -41,8 +41,8 @@ def process(name, location, host):
                                                        "type": "processed"}}}) is not None:
         return
 
-    collection.update(query,
-                      {'$push': {'data': datum}})
+    #collection.update(query,
+    #                  {'$push': {'data': datum}})
 
     query['data.type'] = datum['type']
     query['data.host'] = datum['host']
@@ -56,64 +56,79 @@ def process(name, location, host):
         pax_config='XENON1T_LED'
 
     try:
-        print('processing', name, location)
-        p = core.Processor(config_names=pax_config,
-                           config_dict={'pax': {'input_name' : location,
-                                                'output_name': location}})
-        p.run()
+        print('processing', name, in_location)
+        #p = core.Processor(config_names=pax_config,
+        #                   config_dict={'pax': {'input_name' : in_location,
+        #                                        'output_name': out_location}})
+        #p.run()
+
     except Exception as exception:
         datum['status'] = 'error'
-        collection.update(query,
-                          {'$set': {'data.$': datum}})
+        #collection.update(query,
+        #                  {'$set': {'data.$': datum}})
         raise
 
     datum['status'] = 'verifying'
-    collection.update(query,
-                      {'$set': {'data.$': datum}})
+    #collection.update(query,
+    #                  {'$set': {'data.$': datum}})
 
     datum['checksum'] = filehash(datum['location'])
     if verify():
         datum['status'] = 'transferred'
     else:
         datum['status'] = 'failed'
-    collection.update(query,
-                      {'$set': {'data.$': datum}})
+    #collection.update(query,
+    #                  {'$set': {'data.$': datum}})
 
 
 class ProcessBatchQueue(Task):
-    "Perform a checksum on accessible data."
+    "Create and submit job submission script."
 
-    def submit(self, location, host):
-        '''Submit XENON100 pax processing jobs to ULite
-        Author: Chris, Bart, Jelle, Nikhef
-        Last update:   2015.09.07
+    def submit(self, in_location, host, pax_version, out_location):
+        '''Midway Submission Script
+        Last update:   2016.04.29
         '''
         name = self.run_doc['name']
         run_mode = ''
         script_template = """#!/bin/bash
-#SBATCH --output=/home/tunnell/test/myout_{name}.txt
-#SBATCH --error=/home/tunnell/test/myerr_{name}.txt
+#SBATCH --output=/project/lgrandi/xenon1t/processing/logs/{name}_%J.log
+#SBATCH --error=/project/lgrandi/xenon1t/processing/logs/{name}_%J.log
 #SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --qos=xenon1t
+#SBATCH --partition=xenon1t
 #SBATCH --account=pi-lgrandi
-export PATH=/data/xenon/anaconda/envs/pax/bin:$PATH
-source activate pax_head
-cd /home/tunnell/test
-python /home/tunnell/cax/cax/tasks/process.py {name} {location} {host}
+
+export PATH=/project/lgrandi/anaconda3/bin:$PATH
+source activate pax_{pax_version}
+cd /project/lgrandi/xenon1t/processing
+python /home/pdeperio/160429-cax_processing/cax/cax/tasks/process.py {name} {in_location} {host} {pax_version} {out_location}
         """
 
-        script = script_template.format(name=name, location=location, host=host)
-        qsub.submit_job(script, name)
+        script = script_template.format(name=name, in_location=in_location, host=host, pax_version=pax_version, out_location=out_location)
+        print ("fake qsub ", script)
+        #qsub.submit_job(script, name)
 
     def verify(self):
         """Verify processing worked"""
         return True  # yeah... TODO.
 
     def each_run(self):
+
+        # (Hard-code) Auto-processing only at Midway for now
+        if not config.get_hostname() == "midway-login1":
+            return
+
+        # Get desired pax versions and corresponding output directories
+        versions = config.get_pax_options('versions')
+        out_locations = config.get_pax_options('locations')
+
+        have_processed = [False for i in range(len(versions))]
         have_raw = False
-        have_processed = False
 
         # Iterate over data locations to know status
         for datum in self.run_doc['data']:
+
             # Is host known?
             if 'host' not in datum:
                 continue
@@ -122,25 +137,31 @@ python /home/tunnell/cax/cax/tasks/process.py {name} {location} {host}
             if datum['host'] != config.get_hostname():
                 continue
 
-            if datum['type'] == 'raw':
-                if datum['status'] == 'transferred':
-                    have_raw = datum
+            # Raw data must exist
+            if datum['type'] == 'raw' and datum['status'] == 'transferred':
+                have_raw = datum
 
+            # Check if processed data already exists in DB
             if datum['type'] == 'processed':
-                have_processed = True
+                for ivers in range(len(versions)):
+                    if versions[ivers] == datum['pax_version']:
+                        have_processed[ivers] = True
 
-        if have_raw and not have_processed:
-            if self.run_doc['reader']['ini']['write_mode'] == 2:
-                if config.get_hostname() == "midway-login1":
+        # Process all specified versions
+        for ivers in range(len(versions)):
+
+            pax_version=versions[ivers]
+            out_location=out_locations[ivers]
+
+            if have_raw and not have_processed[ivers]:
+            
+                if self.run_doc['reader']['ini']['write_mode'] == 2:
                 
-                    self.log.info("Submitting %s",
-                                  self.run_doc['name'])
+                    self.log.info("Submitting %s with pax_%s, output to %s",
+                                  self.run_doc['name'], pax_version, out_location)
                     
                     self.submit(have_raw['location'],
-                                have_raw['host'])
-
-                
-
+                                have_raw['host'], pax_version, out_location)
 
 if __name__ == "__main__":
-    process(sys.argv[1], sys.argv[2], sys.argv[3])
+    process(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
