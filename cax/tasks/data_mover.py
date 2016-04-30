@@ -14,7 +14,7 @@ class CopyBase(Task):
 
     def copy(self, datum_original, datum_destination, method, option_type):
 
-         if option_type == 'upload':
+        if option_type == 'upload':
             config_destination = config.get_config(datum_destination['host'])
             server = config_destination['hostname']
             username = config_destination['username']
@@ -35,53 +35,79 @@ class CopyBase(Task):
             print (method+" not implemented")
             raise NotImplementedError()
 
+
+
     """Copy data via GFAL function
+    WARNING: Only SRM<->Local implemented (not yet SRM<->SRM)
     """
     def copyGFAL(self, datum_original, datum_destination, server, option_type):
 
-        if upload:
-            logging.info("put: %s to %s" % (datum_original['location'],
+        dataset = datum_original['location'].split('/').pop()
+
+        # gfal-copy arguments:
+        #   -f: overwrite 
+        #   -r: recursive
+        #   -n: number of streams (8 for now, but should be tuned)
+        command = "time gfal-copy -f -r -n8 "
+
+        status = -1
+
+        if option_type == 'upload':
+            logging.info(option_type+": %s to %s" % (datum_original['location'],
                                             server+datum_destination['location']))
 
-            status = subprocess.call("gfal-ls -l "+server+datum_destination['location'], shell=True)
+            status = subprocess.call(
+            #print( # For debugging
+                                     command+  
+                                     "file://"+datum_original['location']+" "+      # Local Source
+                                     server+datum_destination['location']+" "+      # Destination SRM
+                                     "lfn:/grid/xenon.biggrid.nl/xenon1t/"+dataset, # Registration in Logical File Catalog (LFC)
+                                     shell=True
+            )
 
-            print ("gfal status = ", status)
-
+        else: # download
+            logging.info(option_type+": %s to %s" % (server+datum_original['location'],
+                                                     datum_destination['location']))
  
-        else:
-            logging.info("get: %s to %s" % (server+datum_original['location'],
-                                            datum_destination['location']))
+            status = subprocess.call(
+            #print( # For debugging
+                                     command+ 
+                                     server+datum_original['location']+" "+
+                                     "file://"+datum_destination['location'],
+                                     shell=True
+            )
+
+        print ("gfal-copy status = ", status)
 
 
     """Copy data via SCP function
     """
-    def copySCP(self, datum_original, datum_destination, server, username, option_type)):
+    def copySCP(self, datum_original, datum_destination, server, username, option_type):
 
         util.log_to_file('ssh.log')
         ssh = SSHClient()
         ssh.load_system_host_keys()
 
         logging.info("connection to %s" % server)
-        #ssh.connect(server,
-        #            username=username)
+        ssh.connect(server,
+                    username=username)
 
         # SCPCLient takes a paramiko transport as its only argument
-        #client = scp.SCPClient(ssh.get_transport())
+        client = scp.SCPClient(ssh.get_transport())
 
         logging.info(option_type+": %s to %s" % (datum_original['location'],
                                                  datum_destination['location']))
         
         if option_type == 'upload':
-            #client.put(datum_original['location'],
-            #           datum_destination['location'],
-            #           recursive=True)
+            client.put(datum_original['location'],
+                       datum_destination['location'],
+                       recursive=True)
         else:
-            #client.get(datum_original['location'],
-            #           datum_destination['location'],
-            #           recursive=True)
+            client.get(datum_original['location'],
+                       datum_destination['location'],
+                       recursive=True)
 
-        #client.close()
-
+        client.close()
 
     def do_possible_transfers(self, option_type = 'upload'):
         """Determine candidate transfers
@@ -183,8 +209,6 @@ class CopyBase(Task):
         #                       {'$set': {'data.$': datum_new}})
 
         self.log.info(option_type+" complete")
-
-
 
 class CopyPush(CopyBase):
     """Copy data via SCP to there

@@ -2,7 +2,7 @@ import logging
 import time
 
 from cax.config import mongo_password
-from cax.tasks import checksum, clear, data_mover, process
+from cax.tasks import checksum, clear, data_mover#, process
 
 def single():
     main(run_once = True)
@@ -30,7 +30,6 @@ def main(run_once = False):
     logging.getLogger('').addHandler(console)
 
     tasks = [#process.ProcessBatchQueue(),
-             #data_mover.GRIDPush(),
              data_mover.CopyPush(),
              #data_mover.CopyPull(),
              #checksum.AddChecksum(),

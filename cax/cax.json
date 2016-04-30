@@ -23,7 +23,7 @@
     "method": "scp",
     "hostname": "xe-grid01.lngs.infn.it",
     "directory": "/xetemp/xenon1t/",
-    "upload_options": [],
+    "upload_options": ["osg-connect-srm"],
     "username": "tunnell",
     "download_options": ["midway-login1"]
   },
@@ -32,7 +32,7 @@
     "method": "scp",
     "hostname": "midway-login1.rcc.uchicago.edu",
     "directory": "/project/lgrandi/xenon1t/data",
-    "upload_options": ["osg-connect-srm"],
+    "upload_options": [],
     "username": "pdeperio",
     "download_options": []
   },
@@ -55,52 +55,45 @@
     "download_options": ["midway-login1"]
   },
   {
+    "name": "lfc",
+    "method": "gfal-copy",
+    "hostname": "lfn:",
+    "directory": "/grid/xenon.biggrid.nl/xenon1t",
+    "username": null
+  },
+  {
     "name": "osg-connect-srm",
     "method": "gfal-copy",
     "hostname": "srm://ceph-se.osgconnect.net:8443/srm/v2/server?SFN=",
     "directory": "/cephfs/srm/xenon/xenon1t",
-    "upload_options": [],
-    "username": null,
-    "download_options": []
+    "username": null
   },
   {
     "name": "midway-srm",
     "method": "gfal-copy",
     "hostname": "srm://srm1.rcc.uchicago.edu:8443/srm/v2/server?SFN=",
     "directory": "/project/lgrandi/xenon1t",
-    "upload_options": [],
-    "username": null,
-    "download_options": []  
+    "username": null
   },
   {
     "name": "cnaf-srm",
     "method": "gfal-copy",
     "hostname": "srm://storm-fe-archive.cr.cnaf.infn.it:8444/srm/managerv2?SFN=",
     "directory": "/xenon/xenon1t",
-    "upload_options": [],
-    "username": null,
-    "download_options": []
+    "username": null
   },
   {
     "name": "nikhef-srm",
     "method": "gfal-copy",
     "hostname": "srm://tbn18.nikhef.nl:8446/srm/managerv2?SFN=",
     "directory": "/dpm/nikhef.nl/home/xenon.biggrid.nl/xenon1t",
-    "upload_options": [],
-    "username": null,
-    "download_options": []
+    "username": null
   },
   {
     "name": "wipp-srm",
     "method": "gfal-copy",
     "hostname": "srm://wipp-se.weizmann.ac.il",
     "directory": "/xenon/xenon1t",
-    "upload_options": [],
-    "username": null,
-    "download_options": []
+    "username": null
   }
-
-
-
-
 ]
