@@ -38,7 +38,7 @@ def process(name, location, host):
     if collection.find_one({'detector': 'tpc',
                             'name' : name,
                             "data": { "$elemMatch": { "host": "midway-login1",
-                                                       "type": "processed"}}}) is not None:
+                                                      "type": "processed"}}}) is not None:
         return
 
     collection.update(query,
@@ -59,7 +59,8 @@ def process(name, location, host):
         print('processing', name, location)
         p = core.Processor(config_names=pax_config,
                            config_dict={'pax': {'input_name' : location,
-                                                'output_name': location}})
+                                                'output_name': location,
+                                                'n_cpus': 4}})
         p.run()
     except Exception as exception:
         datum['status'] = 'error'
@@ -91,14 +92,17 @@ class ProcessBatchQueue(Task):
         name = self.run_doc['name']
         run_mode = ''
         script_template = """#!/bin/bash
-#SBATCH --output=/home/tunnell/test/myout_{name}.txt
-#SBATCH --error=/home/tunnell/test/myerr_{name}.txt
+#SBATCH --output=/project/lgrandi/xenon1t/processing/logs/{name}_%J.log
+#SBATCH --error=/project/lgrandi/xenon1t/processing/logs/{name}_%J.log
 #SBATCH --ntasks=1
+#SBATCH --cpus-per-task=4
 #SBATCH --account=pi-lgrandi
-export PATH=/data/xenon/anaconda/envs/pax/bin:$PATH
+
+echo "nprocs = `nproc`"
+export PATH=/project/lgrandi/anaconda3/bin:$PATH
 source activate pax_head
-cd /home/tunnell/test
-python /home/tunnell/cax/cax/tasks/process.py {name} {location} {host}
+cd /project/lgrandi/xenon1t/processing
+python /project/lgrandi/deployHQ/cax/cax/tasks/process.py {name} {location} {host}
         """
 
         script = script_template.format(name=name, location=location, host=host)
