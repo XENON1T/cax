@@ -77,7 +77,7 @@ def get_transfer_options(transfer_kind='upload', transfer_method=None):
 
     if transfer_method is not None:
         transfer_options = [to for to in transfer_options
-                            if get_config(to['host'])['receive'] == 'method']
+                            if get_config(to['host'])['method'] == 'method']
 
     return transfer_options
 
