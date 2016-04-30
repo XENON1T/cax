@@ -7,7 +7,6 @@ import os.path
 from cax.config import mongo_password, set_json, get_task_list
 from cax.tasks import checksum, clear, data_mover, process
 
-
 def single():
     raise RuntimeError("cax-single has been removed: use cax --once instead")
 
