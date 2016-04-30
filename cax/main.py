@@ -29,13 +29,14 @@ def main(run_once = False):
     # add the handler to the root logger
     logging.getLogger('').addHandler(console)
 
-    tasks = [process.ProcessBatchQueue(),
-             data_mover.SCPPush(),
-             data_mover.SCPPull(),
-             checksum.AddChecksum(),
-             checksum.CompareChecksums(),
-             clear.ClearDAQBuffer(),
-             clear.AlertFailedTransfer(),
+    tasks = [#process.ProcessBatchQueue(),
+             #data_mover.GRIDPush(),
+             data_mover.CopyPush(),
+             #data_mover.CopyPull(),
+             #checksum.AddChecksum(),
+             #checksum.CompareChecksums(),
+             #clear.ClearDAQBuffer(),
+             #clear.AlertFailedTransfer(),
              ]
 
     while True:
