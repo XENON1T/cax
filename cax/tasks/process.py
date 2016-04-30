@@ -102,6 +102,7 @@ echo "nprocs = `nproc`"
 export PATH=/project/lgrandi/anaconda3/bin:$PATH
 source activate pax_head
 cd /project/lgrandi/xenon1t/processing
+echo python /project/lgrandi/deployHQ/cax/cax/tasks/process.py {name} {location} {host}
 python /project/lgrandi/deployHQ/cax/cax/tasks/process.py {name} {location} {host}
         """
 
