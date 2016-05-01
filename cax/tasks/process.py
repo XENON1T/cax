@@ -115,7 +115,7 @@ python /project/lgrandi/deployHQ/cax/cax/tasks/process.py {name} {location} {hos
 
         script = script_template.format(name=name, location=location, host=host)
         self.log.info(script)
-        #qsub.submit_job(script, name)
+        qsub.submit_job(script, name)
 
     def verify(self):
         """Verify processing worked"""
