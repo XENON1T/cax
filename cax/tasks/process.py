@@ -38,7 +38,15 @@ def process(name, location, host):
     if collection.find_one({'detector': 'tpc',
                             'name' : name,
                             "data": { "$elemMatch": { "host": "midway-login1",
-                                                      "type": "processed"}}}) is not None:
+                                                      "type": "processed",
+                                                      "status": "transferred"}}}) is not None:
+        return
+
+    elif collection.find_one({'detector': 'tpc',
+                            'name' : name,
+                            "data": { "$elemMatch": { "host": "midway-login1",
+                                                      "type": "processed",
+                                                      "status": "transferring"}}}) is not None:
         return
 
     collection.update(query,
@@ -98,7 +106,6 @@ class ProcessBatchQueue(Task):
 #SBATCH --cpus-per-task=1
 #SBATCH --account=pi-lgrandi
 
-#echo "nprocs = `nproc`"
 export PATH=/project/lgrandi/anaconda3/bin:$PATH
 source activate pax_head
 cd /project/lgrandi/xenon1t/processing
@@ -107,7 +114,8 @@ python /project/lgrandi/deployHQ/cax/cax/tasks/process.py {name} {location} {hos
         """
 
         script = script_template.format(name=name, location=location, host=host)
-        qsub.submit_job(script, name)
+        self.log.info(script)
+        #qsub.submit_job(script, name)
 
     def verify(self):
         """Verify processing worked"""
@@ -132,19 +140,24 @@ python /project/lgrandi/deployHQ/cax/cax/tasks/process.py {name} {location} {hos
                     have_raw = datum
 
             if datum['type'] == 'processed':
-                have_processed = True
+                if datum['status'] != 'error':
+                    have_processed = True
 
         if have_raw and not have_processed:
             if self.run_doc['reader']['ini']['write_mode'] == 2:
                 if config.get_hostname() == "midway-login1":
-                
-                    self.log.info("Submitting %s",
-                                  self.run_doc['name'])
-                    
-                    self.submit(have_raw['location'],
-                                have_raw['host'])
 
+                    # Get number of events in data set
+                    events = self.run_doc.get('trigger', {}).get('events_built', 0) 
                 
+                    # Only submit jobs for datasets with events
+                    if events > 0:
+                        self.log.info("Submitting %s", self.run_doc['name'])
+                    
+                        self.submit(have_raw['location'], have_raw['host'])
+
+                    else:
+                        self.log.info("Skipping %s with 0 events", self.run_doc['name'])
 
 
 if __name__ == "__main__":
