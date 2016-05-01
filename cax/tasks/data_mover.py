@@ -21,9 +21,8 @@ def copy(datum_original, datum_destination):
         server = config_destination['hostname']
         username = config_destination['username']
 
-
     elif datum_destination['host'] == config.get_hostname():
-        upload = False # ie., download
+        upload = False    # ie., download
 
         config_original = config.get_config(datum_original['host'])
         server = config_original['hostname']
@@ -53,11 +52,12 @@ def copy(datum_original, datum_destination):
 
     client.close()
 
+
 class SCPBase(Task):
     """Copy data via SCP base class
     """
 
-    def do_possible_transfers(self, option_type = 'upload'):
+    def do_possible_transfers(self, option_type='upload'):
         """Determine candidate transfers
         """
 
@@ -72,10 +72,8 @@ class SCPBase(Task):
         for remote_host in options:
             self.log.debug(remote_host)
 
-            there = False  # Is data remote?
-
-            datum_here = None  # Information about data here
-            datum_there = None # Information about data there
+            datum_here = None    # Information about data here
+            datum_there = None   # Information about data there
 
             # Iterate over data locations to know status
             for datum in self.run_doc['data']:
@@ -83,7 +81,7 @@ class SCPBase(Task):
                 if 'host' not in datum:
                     continue
 
-                transferred =  (datum['status'] == 'transferred')
+                transferred = (datum['status'] == 'transferred')
 
                 # If the location refers to here
                 if datum['host'] == config.get_hostname():
@@ -112,13 +110,14 @@ class SCPBase(Task):
                                                       destination))
 
         self.log.debug("Notifying run database")
-        datum_new = {'type'    : datum['type'],
-                       'host'    : destination,
-                       'status'  : 'transferring',
-                       'location': os.path.join(destination_config['directory'],
-                                                self.run_doc['name']),
-                       'checksum': None,
-                       'creation_time' : datetime.datetime.utcnow()}
+        datum_new = {'type': datum['type'],
+                     'host': destination,
+                     'status': 'transferring',
+                     'location': os.path.join(destination_config['directory'],
+                                              self.run_doc['name'] +
+                                              ('.root' if datum['type'] == 'processed' else '')),
+                     'checksum': None,
+                     'creation_time': datetime.datetime.utcnow()}
         self.collection.update({'_id': self.run_doc['_id']},
                                {'$push': {'data': datum_new}})
         self.log.info('Starting SCP')
@@ -132,10 +131,11 @@ class SCPBase(Task):
             datum_new['status'] = 'error'
         self.log.debug("SCP done, telling run database")
 
-        self.collection.update({'_id'      : self.run_doc['_id'],
+        self.collection.update({'_id': self.run_doc['_id'],
                                 'data.host': datum_new['host']},
                                {'$set': {'data.$': datum_new}})
         self.log.info("Transfer complete")
+
 
 class SCPPush(SCPBase):
     """Copy data via SCP to there
@@ -144,7 +144,7 @@ class SCPPush(SCPBase):
     site (including transferring), then copy data there."""
 
     def each_run(self):
-        self.do_possible_transfers(option_type = 'upload')
+        self.do_possible_transfers(option_type='upload')
 
 
 class SCPPull(SCPBase):
@@ -154,4 +154,4 @@ class SCPPull(SCPBase):
     """
 
     def each_run(self):
-        self.do_possible_transfers(option_type = 'download')
+        self.do_possible_transfers(option_type='download')
