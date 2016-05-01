@@ -2,7 +2,6 @@ import logging
 from cax import config
 from bson.json_util import dumps
 from json import loads
-from tqdm import tqdm
 
 
 class Task():
@@ -16,7 +15,7 @@ class Task():
     def go(self):
         """Run this periodically"""
 
-        for self.run_doc in tqdm(list(self.collection.find({'detector': 'tpc'}))):
+        for self.run_doc in self.collection.find({'detector': 'tpc'}):
             if 'data' not in self.run_doc:
                 continue
 
