@@ -6,24 +6,33 @@ import pymongo
 
 from . import checksum
 from cax import config
-from ..task import Task
 
 
 class ClearDAQBuffer(checksum.CompareChecksums):
-    "Perform a checksum on accessible data."
+    """Perform a checksum on accessible data."""
 
     def remove_untriggered(self):
         client = pymongo.MongoClient(self.raw_data['location'])
-
         db = client.untriggered
-        db.authenticate('eb',
-                        os.environ.get('MONGO_PASSWORD'))
+        try:
+            db.authenticate('eb',
+                            os.environ.get('MONGO_PASSWORD'))
+        except pymongo.errors.ServerSelectionTimeoutError as e:
+            self.log.error("Mongo error: %s" % str(e))
+            return None
+
         self.log.debug('Dropping %s' % self.raw_data['collection'])
-        db.drop_collection(self.raw_data['collection'])
+        try:
+            db.drop_collection(self.raw_data['collection'])
+        except pymongo.errors.OperationFailure:
+            # This usually means some background operation is still running
+            self.log.error("Mongo error: %s" % str(e))
+            return None
+
         self.log.info('Dropped %s' % self.raw_data['collection'])
         
         self.log.debug(self.collection.update({'_id': self.run_doc['_id']},
-                                              {'$pull': {'data' : self.raw_data}}))
+                                              {'$pull': {'data': self.raw_data}}))
 
     def each_run(self):
         values = self.get_checksums()
@@ -32,8 +41,9 @@ class ClearDAQBuffer(checksum.CompareChecksums):
         else:
             self.log.debug("Did not drop: %s" % str(self.raw_data))
 
+
 class AlertFailedTransfer(checksum.CompareChecksums):
-    "Alert if stale transfer."
+    """Alert if stale transfer."""
 
     def each_location(self, data_doc):
         if 'host' not in data_doc or data_doc['host'] != config.get_hostname():

@@ -64,11 +64,16 @@ def get_transfer_options(transfer_kind='upload', transfer_method=None):
 
 
 def mongo_collection():
-    uri = 'mongodb://eb:%s@xenon1t-daq.lngs.infn.it:27017,copslx50.fysik.su.se:27017/run'
-    uri = uri % os.environ.get('MONGO_PASSWORD')
-    c = pymongo.MongoClient(uri,
-                            replicaSet='run',
-                            read_preference=pymongo.ReadPreference.PRIMARY_PREFERRED)
+    # For the event builder to communicate with the gateway, we need to use the DAQ network address
+    # Otherwise, use the internet to find the runs database
+    if get_hostname().startswith('eb'):
+        c = pymongo.MongoClient('mongodb://eb:%s@gw:27017/run' % os.environ.get('MONGO_PASSWORD'))
+    else:
+        uri = 'mongodb://eb:%s@xenon1t-daq.lngs.infn.it:27017,copslx50.fysik.su.se:27017/run'
+        uri = uri % os.environ.get('MONGO_PASSWORD')
+        c = pymongo.MongoClient(uri,
+                                replicaSet='run',
+                                read_preference=pymongo.ReadPreference.PRIMARY_PREFERRED)
     db = c['run']
     collection = db['runs_new']
     return collection

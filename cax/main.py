@@ -56,7 +56,7 @@ def main():
         if run_once:
             break
         else:
-            logging.debug('Sleeping.')
+            logging.info('Sleeping.')
             time.sleep(60)
 
 
