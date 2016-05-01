@@ -62,7 +62,7 @@ class SCPBase(Task):
         """
 
         # Get the 'upload' or 'download' options.
-        options = config.get_options(option_type)
+        options = config.get_transfer_options(option_type)
 
         # If no options, can't do anything
         if options is None:

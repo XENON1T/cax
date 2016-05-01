@@ -1,13 +1,22 @@
+import argparse
 import logging
 import time
 
 from cax.config import mongo_password
 from cax.tasks import checksum, clear, data_mover, process
 
-def single():
-    main(run_once = True)
 
-def main(run_once = False):
+def single():
+    raise RuntimeError("cax-single has been removed: use cax --once instead")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Copying All kinds of XENON1T data.")
+    parser.add_argument('--once', action='store_true',
+                        help="Run all tasks just one, then exits")
+    args = parser.parse_args()
+    run_once = args.once
+
     # Check passwords and API keysspecified
     mongo_password()
 

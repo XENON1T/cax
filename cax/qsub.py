@@ -23,11 +23,11 @@ from distutils.spawn import find_executable
 
 def which(program):
     """Check if a command line program is available
-    
+
     An Exception is raised if the program is not available.
 
     :param program: name or program to check for, e.g. 'wget'.
-    
+
     """
     path = find_executable(program)
     if not path:
@@ -71,7 +71,6 @@ def submit_job(script, name, extra=''):
 
     :param script: contents of the script to run.
     :param name: name for the job.
-    :param queue: name of the queue to run the job on.
     :param extra: optional extra arguments for the qsub command.
 
     """

@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-PROJECT = 'cliffdemo'
-
-VERSION = '0.1.0'
-
 from setuptools import setup, find_packages
+
+PROJECT = 'cax'
+VERSION = '0.1.0'
 
 with open('README.rst') as readme_file:
     readme = readme_file.read()
@@ -51,7 +50,7 @@ setup(
         'console_scripts': [
             'cax = cax.main:main',
             'caxer = cax.main:main',
-            'cax-single = cax.main:single',
+            'cax-single = cax.main:single',     # Will be removed soon
 
         ],
     },

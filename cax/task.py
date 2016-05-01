@@ -11,7 +11,6 @@ class Task():
         self.run_doc = None
         self.raw_data = None
 
-
     def go(self):
         """Run this periodically"""
 
