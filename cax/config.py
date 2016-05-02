@@ -43,7 +43,7 @@ def get_config(hostname):
     dirname = os.path.dirname(os.path.abspath(__file__))
     filename = os.path.join(dirname, cax_configure)
     print (cax_configure, filename)
-    exit()
+    
     config = json.loads(open(filename, 'r').read())
 
     for doc in config:

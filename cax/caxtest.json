@@ -1,0 +1,21 @@
+[
+  {
+    "name": "eb0",
+    "hostname": "eb0",
+    "receive": null,
+    "directory": "/data/xenon1t_data/",
+    "upload_options": [
+      "midway-login1"
+    ],
+    "download_options": []
+  },
+  {
+    "name": "tegner-login-1",
+    "receive": "scp",
+    "hostname": "tegner-login-1.pdc.kth.se",
+    "directory": "/cfs/klemming/projects/xenon/xenon1t/data",
+    "upload_options": [],
+    "username": "bobau",
+    "download_options": ["midway-login1"]
+  }
+]
