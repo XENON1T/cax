@@ -112,14 +112,14 @@ export PATH=/project/lgrandi/anaconda3/bin:$PATH
 source activate pax_head
 
 export PROCESSING_DIR=/project/lgrandi/xenon1t/processing
-export OUTPUT_DIR=${PROCESSING_DIR}/{name}
-mkdir -p ${OUTPUT_DIR}
-cd ${OUTPUT_DIR}
+export OUTPUT_DIR=${{PROCESSING_DIR}}/{name}
+mkdir -p ${{OUTPUT_DIR}}
+cd ${{OUTPUT_DIR}}
 
 echo time python /project/lgrandi/deployHQ/cax/cax/tasks/process.py {name} {location} {host}
 time python /project/lgrandi/deployHQ/cax/cax/tasks/process.py {name} {location} {host}
 
-mv ${PROCESSING_DIR}/logs/{name}_*.log ${OUTPUT_DIR}/.
+mv ${{PROCESSING_DIR}}/logs/{name}_*.log ${{OUTPUT_DIR}}/.
 
         """
 
