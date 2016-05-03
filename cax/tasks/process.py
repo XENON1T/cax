@@ -70,7 +70,7 @@ def process(name, location, host):
         p = core.Processor(config_names=pax_config,
                            config_dict={'pax': {'input_name' : location,
                                                 'output_name': location,
-                                                'n_cpus': 1}})
+                                                'n_cpus': 4}})
         p.run()
     except Exception as exception:
         datum['status'] = 'error'
@@ -105,14 +105,22 @@ class ProcessBatchQueue(Task):
 #SBATCH --output=/project/lgrandi/xenon1t/processing/logs/{name}_%J.log
 #SBATCH --error=/project/lgrandi/xenon1t/processing/logs/{name}_%J.log
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=1
+#SBATCH --cpus-per-task=4
 #SBATCH --account=pi-lgrandi
 
 export PATH=/project/lgrandi/anaconda3/bin:$PATH
 source activate pax_head
-cd /project/lgrandi/xenon1t/processing
+
+export PROCESSING_DIR=/project/lgrandi/xenon1t/processing
+export OUTPUT_DIR=${PROCESSING_DIR}/{name}
+mkdir -p ${OUTPUT_DIR}
+cd ${OUTPUT_DIR}
+
 echo time python /project/lgrandi/deployHQ/cax/cax/tasks/process.py {name} {location} {host}
 time python /project/lgrandi/deployHQ/cax/cax/tasks/process.py {name} {location} {host}
+
+mv ${PROCESSING_DIR}/logs/{name}_*.log ${OUTPUT_DIR}/.
+
         """
 
         script = script_template.format(name=name, location=location, host=host)
