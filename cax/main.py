@@ -19,6 +19,7 @@ def main():
     parser.add_argument('--config', action='store', dest='val',
                         help="Load a specific *json file into cax")
 
+    
     args = parser.parse_args()
     run_once = args.once
 
@@ -35,6 +36,8 @@ def main():
       print('Json configuration file: ', caxjson_config )
       print('-----------------------------------------------------')
     set_json( caxjson_config )
+
+    
 
     # Check passwords and API keysspecified
     mongo_password()
@@ -58,13 +61,13 @@ def main():
     logging.getLogger('').addHandler(console)
 
     tasks = [
-             #process.ProcessBatchQueue(),
+             process.ProcessBatchQueue()
              data_mover.SCPPush(),
              data_mover.SCPPull(),
              checksum.AddChecksum(),
              checksum.CompareChecksums(),
-             clear.ClearDAQBuffer(),
              clear.AlertFailedTransfer(),
+             clear.ClearDAQBuffer()
              ]
 
     while True:

@@ -34,6 +34,7 @@ def get_hostname():
 def set_json( confg ):
     """Set the cax.json file at your own
     """
+    global cax_configure
     cax_configure = confg
 
 def get_config(hostname):
@@ -42,8 +43,6 @@ def get_config(hostname):
     """
     dirname = os.path.dirname(os.path.abspath(__file__))
     filename = os.path.join(dirname, cax_configure)
-    print (cax_configure, filename)
-    
     config = json.loads(open(filename, 'r').read())
 
     for doc in config:
@@ -80,7 +79,7 @@ def mongo_collection():
         uri = 'mongodb://eb:%s@xenon1t-daq.lngs.infn.it:27017,copslx50.fysik.su.se:27017/run'
         uri = uri % os.environ.get('MONGO_PASSWORD')
         c = pymongo.MongoClient(uri,
-                                replicaSet='run',
+                                replicaSet='runs',
                                 read_preference=pymongo.ReadPreference.PRIMARY_PREFERRED)
     db = c['run']
     collection = db['runs_new']
