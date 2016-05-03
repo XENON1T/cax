@@ -19,8 +19,8 @@ def filehash(location):
 def verify():
     return True
 
-def process(name, location, host, processAt):
-    print( processAt )
+def process(name, location, host):
+    
     from pax import core
     # Grab the Run DB so we can query it
     collection = config.mongo_collection()
@@ -163,4 +163,4 @@ python /project/lgrandi/deployHQ/cax/cax/tasks/process.py {name} {location} {hos
 
 
 if __name__ == "__main__":
-    process(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4] )
+    process(sys.argv[1], sys.argv[2], sys.argv[3] )
