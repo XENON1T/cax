@@ -40,6 +40,7 @@ def process(name, location, host):
                             "data": { "$elemMatch": { "host": "midway-login1",
                                                       "type": "processed",
                                                       "status": "transferred"}}}) is not None:
+        print("Abort", name, "already processed")
         return
 
     elif collection.find_one({'detector': 'tpc',
@@ -47,6 +48,7 @@ def process(name, location, host):
                             "data": { "$elemMatch": { "host": "midway-login1",
                                                       "type": "processed",
                                                       "status": "transferring"}}}) is not None:
+        print("Abort", name, "already currently processing")
         return
 
     collection.update(query,
