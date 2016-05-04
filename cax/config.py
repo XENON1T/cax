@@ -41,8 +41,7 @@ def get_config(hostname):
     """Returns the cax configuration for a particular hostname
     NB this currently reloads the cax.json file every time it is called!!
     """
-    dirname = os.path.dirname(os.path.abspath(__file__))
-    filename = os.path.join(dirname, cax_configure)
+    filename = os.path.abspath( cax_configure )
     config = json.loads(open(filename, 'r').read())
 
     for doc in config:

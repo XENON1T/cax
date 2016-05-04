@@ -37,7 +37,7 @@ def main():
       print('-----------------------------------------------------')
     set_json( caxjson_config )
 
-    
+    #exit()
 
     # Check passwords and API keysspecified
     mongo_password()
@@ -61,7 +61,7 @@ def main():
     logging.getLogger('').addHandler(console)
 
     tasks = [
-             process.ProcessBatchQueue()
+             process.ProcessBatchQueue(),
              data_mover.SCPPush(),
              data_mover.SCPPull(),
              checksum.AddChecksum(),
