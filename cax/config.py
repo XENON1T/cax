@@ -54,13 +54,12 @@ def get_options(option_type='upload', method=None):
         return options
 
 
-    # What is this for? Commented out (-PdP 160428)
-    #options = []
+    options = []
 
-    #for x in get_options(option_type,
-    #                     None):
-    #    if get_config(x)['method'] == method:
-    #        options.append(x)
+    for x in get_options(option_type,
+                         None):
+        if get_config(x)['method'] == method:
+            options.append(x)
 
     return options
 
