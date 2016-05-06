@@ -23,22 +23,6 @@ def main():
     args = parser.parse_args()
     run_once = args.once
 
-    #Define a specific cax.json configuration file for cax:
-    caxjson_config = args.val
-    if caxjson_config == None or os.path.isfile( caxjson_config ) == False :
-      caxjson_config = 'cax.json'
-      print('-----------------------------------------------------')
-      print('There is no specific *json specified for running cax.')
-      print('Use the standard one: cax.json')
-      print('-----------------------------------------------------')
-    else:
-      print('-----------------------------------------------------')
-      print('Json configuration file: ', caxjson_config )
-      print('-----------------------------------------------------')
-    set_json( caxjson_config )
-
-    #exit()
-
     # Check passwords and API keysspecified
     mongo_password()
 
@@ -47,6 +31,17 @@ def main():
                         level=logging.INFO,
                         format='%(asctime)s [%(levelname)s] %(message)s')
     logging.info('Daemon is starting')
+    
+    
+    #Define a specific cax.json configuration file for cax:
+    caxjson_config = args.val
+    if caxjson_config == None or os.path.isfile( caxjson_config ) == False :
+      caxjson_config = 'cax.json'
+      logging.info('There is no specific *json specified for running cax.')
+      logging.info('Use the standard one: cax.json')
+    else:
+      logging.info( 'Json configuration file: {csjson}'.format(csjson=caxjson_config) )
+    set_json( caxjson_config )
 
     # define a Handler which writes INFO messages or higher to the sys.stderr
     console = logging.StreamHandler()
