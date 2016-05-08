@@ -7,10 +7,15 @@ from cax import qsub, config
 from cax.task import Task
 
 # Obtain pax repository hash
-def get_pax_hash(pax_version):
+def get_pax_hash(pax_version, processat):
 
-    # Location of GitHub source code on Midway
-    PAX_DEPLOY_DIR="/project/lgrandi/deployHQ/pax"
+    PAX_DEPLOY_DIR = ''
+    if processat == 'midway-login-1':
+        # Location of GitHub source code on Midway
+        PAX_DEPLOY_DIR="/project/lgrandi/deployHQ/pax"
+    if processat == 'tegner-login-1':
+        # Location of GitHub source code on Midway
+        PAX_DEPLOY_DIR="/afs/pdc.kth.se/projects/xenon/software/pax"
 
     # Get hash of this pax version
     if pax_version == 'head':
@@ -37,7 +42,7 @@ def verify():
     return True
 
 def process(name, in_location, host, pax_version, pax_hash, out_location):
-
+    print('process')
     from pax import core
 
     # Grab the Run DB so we can query it
@@ -130,6 +135,11 @@ def process(name, in_location, host, pax_version, pax_hash, out_location):
 class ProcessBatchQueue(Task):
     "Create and submit job submission script."
 
+    #def __init__(self, pp):
+        #self.ReprocessAt = pp
+        #print( 'test:', self.ReprocessAt )
+        
+
     def submit(self, in_location, host, pax_version, pax_hash, out_location):
         '''Midway Submission Script
         Last update:   2016.04.29
@@ -152,26 +162,53 @@ python /home/pdeperio/160429-cax_processing/cax/cax/tasks/process.py {name} {in_
         """
 
         script = script_template.format(name=name, in_location=in_location, host=host, pax_version=pax_version, pax_hash=pax_hash, out_location=out_location)
-        #print ("fake qsub ", script)
-        qsub.submit_job(script, name)
+        print ("fake qsub ", script)
+        #qsub.submit_job(script, name)
+
+    def submitStockholm(self, in_location, host, pax_version, pax_hash, out_location):
+        '''Stockholm Submission Script
+        '''
+        name = self.run_doc['name']
+        run_mode = ''
+        script_template = """#!/bin/bash
+#SBATCH --job-name=Xe1tReprocessing
+#SBATCH --partition=main
+#SBATCH --output=/cfs/klemming/projects/xenon/common/xenon1t/slurm_reprocessing_logs/{name}_%J.log
+#SBATCH --error=/cfs/klemming/projects/xenon/common/xenon1t/slurm_reprocessing_logs/{name}_%J.log
+#SBATCH -A xenon
+#SBATCH --nodes=1
+#SBATCH --cpus-per-task=32
+#SBATCH -t 72:00:00
+#SBATCH --mem=24000
+#SBATCH --mail-user=Boris.Bauermeister@fysik.su.se
+#SBATCH --mail-type=ALL
+source /afs/pdc.kth.se/home/b/bobau/load_4.8.4.sh
+source activate pax_head
+cd /cfs/klemming/projects/xenon/xenon1t/root/pax_head
+echo python /afs/pdc.kth.se/projects/xenon/software/cax/cax/tasks/process.py {name} {in_location} {host} {pax_version} {pax_hash} {out_location}
+python /afs/pdc.kth.se/projects/xenon/software/cax/cax/tasks/process.py {name} {in_location} {host} {pax_version} {pax_hash} {out_location}
+        """
+        script = script_template.format(name=name, in_location=in_location, host=host, pax_version=pax_version, pax_hash=pax_hash, out_location=out_location)
+        print ("fake qsub ", script)
+        #qsub.submit_job(script, name)
 
     def verify(self):
         """Verify processing worked"""
         return True  # yeah... TODO.
 
     def each_run(self):
-
+                
         # (Hard-code) Auto-processing only at Midway for now
-        if not config.get_hostname() == "midway-login1":
-            return
-
+        #if not config.get_hostname() == :
+            #return
+        
         # Get desired pax versions and corresponding output directories
         versions = config.get_pax_options('versions')
         out_locations = config.get_pax_options('locations')
-
+        
         have_processed = [False for i in range(len(versions))]
         have_raw = False
-
+        
         # Iterate over data locations to know status
         for datum in self.run_doc['data']:
 
@@ -190,14 +227,15 @@ python /home/pdeperio/160429-cax_processing/cax/cax/tasks/process.py {name} {in_
             # Check if processed data already exists in DB
             if datum['type'] == 'processed':
                 for ivers in range(len(versions)):
-                    if versions[ivers] == datum['pax_version'] and get_pax_hash(versions[ivers]) == datum['pax_hash']:
+                    if versions[ivers] == datum['pax_version'] and get_pax_hash(versions[ivers], processat) == datum['pax_hash']:
                         have_processed[ivers] = True
 
         # Process all specified versions
+        processat = config.get_hostname()
         for ivers in range(len(versions)):
-
+            
             pax_version=versions[ivers]
-            pax_hash = get_pax_hash(pax_version)
+            pax_hash = get_pax_hash(pax_version, processat)
             out_location=out_locations[ivers]
 
             if have_raw and not have_processed[ivers]:
@@ -206,9 +244,13 @@ python /home/pdeperio/160429-cax_processing/cax/cax/tasks/process.py {name} {in_
                 
                     self.log.info("Submitting %s with pax_%s (%s), output to %s",
                                   self.run_doc['name'], pax_version, pax_hash, out_location)
-                    
-                    self.submit(have_raw['location'],
+                    if processat == 'midway-login1':
+                        self.submit(have_raw['location'],
+                                have_raw['host'], pax_version, pax_hash, out_location)
+                    if processat == 'tegner-login-1':
+                        self.submitStockholm(have_raw['location'],
                                 have_raw['host'], pax_version, pax_hash, out_location)
 
+        
 if __name__ == "__main__":
     process(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6])

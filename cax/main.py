@@ -1,5 +1,6 @@
 import logging
 import time
+import argparse
 
 from cax.config import mongo_password
 from cax.tasks import checksum, clear, data_mover, process
@@ -9,6 +10,14 @@ def single():
 
 def main(run_once = False):
     # Check passwords and API keysspecified
+    
+    parser = argparse.ArgumentParser(description="Copying All kinds of XENON1T data.")
+    parser.add_argument('--ProcessAt', action='store', dest='process',
+                        help="Specify at which analysis facility the repressing should be done")
+    
+    args = parser.parse_args()
+    processat = args.process
+    
     mongo_password()
 
     # Setup logging

@@ -14,16 +14,19 @@ class Task():
 
     def go(self):
         """Run this periodically"""
-
+        
         for self.run_doc in self.collection.find({'detector': 'tpc'}):
+            
             if 'data' not in self.run_doc:
                 continue
 
             self.raw_data = self.get_daq_buffer()
-
+            
             self.each_run()
+            
 
     def each_run(self):
+        print('test')
         for data_doc in self.run_doc['data']:
             self.log.debug('%s on %s' % (self.__class__.__name__,
                                          self.run_doc['number']))

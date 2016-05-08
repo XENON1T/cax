@@ -75,7 +75,7 @@ def get_pax_options(option_type='versions'):
 
 def mongo_collection():
     c = pymongo.MongoClient('mongodb://eb:%s@xenon1t-daq.lngs.infn.it:27017,copslx50.fysik.su.se:27017/run' % os.environ.get('MONGO_PASSWORD'),
-        replicaSet='run',
+        replicaSet='runs',
         read_preference=pymongo.ReadPreference.PRIMARY_PREFERRED)
     db = c['run']
     collection = db['runs_new']

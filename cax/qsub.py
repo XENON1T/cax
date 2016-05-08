@@ -66,16 +66,21 @@ def check_queue(queue):
         raise KeyError('Unknown queue name: {queue}'.format(queue=queue))
 
 
-def submit_job(script, name, extra=''):
+def submit_job(script, name, processat, extra=''):
     """Submit a job to Stoomboot
 
     :param script: contents of the script to run.
     :param name: name for the job.
-    :param queue: name of the queue to run the job on.
     :param extra: optional extra arguments for the qsub command.
 
     """
-    which('qsub')
+    sexec = ''
+    if processat == 'tegner-login-1':
+      sexec = 'sbatch'
+    if processat == 'midway-login-1':
+      sexec = 'qsub'
+    
+    which( sexec )
     script_path, script_name = create_script(script, name)
 
     # Effect of the arguments for qsub:
@@ -83,13 +88,11 @@ def submit_job(script, name, extra=''):
     #     the context of the batch job (e.g. PATH)
     # -j oe: merge standard error into the standard output
     # -N: a recognizable name for the job
-    qsub = ('qsub -V -j oe -N {name} {extra} {script}'
-            .format(name=script_name, script=script_path,
-                    extra=extra))
-
-    result = subprocess.check_output(qsub, stderr=subprocess.STDOUT,
-                                     shell=True)
-    print(result)
+    qsub = ('{execute} {script}'.format(execute=sexec, script=script_path, extra=extra) )
+    print( qsub )
+    #result = subprocess.check_output(qsub, stderr=subprocess.STDOUT,
+                                     #shell=True)
+    #print(result)
 
     delete_script(script_path)
 
