@@ -49,9 +49,11 @@
     "name": "tegner-login-1",
     "receive": "scp",
     "hostname": "tegner-login-1.pdc.kth.se",
-    "directory": "/cfs/klemming/projects/xenon/data/xenon1t",
+    "directory": "/cfs/klemming/projects/xenon/xenon1t/root",
     "upload_options": [],
     "username": "bobau",
-    "download_options": ["midway-login1"]
+    "download_options": [],
+    "pax_versions": ["head", "v4.9.1"],
+    "pax_locations": ["/cfs/klemming/projects/xenon/xenon1t/root/pax_head", "/cfs/klemming/projects/xenon/xenon1t/root/pax_v4.9.1"]
   }
 ]

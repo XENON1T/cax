@@ -78,6 +78,14 @@ def mongo_collection():
     collection = db['runs_new']
     return collection
 
+def get_pax_options(option_type='versions'):
+    try:
+        options = get_config(get_hostname())['pax_%s' % option_type] 
+    except LookupError as e:
+        logging.info("Unknown config host: %s", get_hostname())
+        return []
+
+    return options
 
 def data_availability(hostname=get_hostname()):
     collection = mongo_collection()
