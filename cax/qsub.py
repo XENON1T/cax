@@ -74,13 +74,7 @@ def submit_job(script, name, extra=''):
     :param extra: optional extra arguments for the qsub command.
 
     """
-    sexec = ''
-    if processat == 'tegner-login-1':
-      sexec = 'sbatch'
-    if processat == 'midway-login-1':
-      sexec = 'qsub'
-    
-    which( sexec )
+    which('qsub')
     script_path, script_name = create_script(script, name)
 
     # Effect of the arguments for qsub:
@@ -88,11 +82,13 @@ def submit_job(script, name, extra=''):
     #     the context of the batch job (e.g. PATH)
     # -j oe: merge standard error into the standard output
     # -N: a recognizable name for the job
-    qsub = ('{execute} {script}'.format(execute=sexec, script=script_path, extra=extra) )
-    print( qsub )
-    #result = subprocess.check_output(qsub, stderr=subprocess.STDOUT,
-                                     #shell=True)
-    #print(result)
+    qsub = ('qsub -V -j oe -N {name} {extra} {script}'
+            .format(name=script_name, script=script_path,
+                    extra=extra))
+
+    result = subprocess.check_output(qsub, stderr=subprocess.STDOUT,
+                                     shell=True)
+    print(result)
 
     delete_script(script_path)
 
