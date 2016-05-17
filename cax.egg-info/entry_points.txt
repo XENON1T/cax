@@ -1,0 +1,5 @@
+[console_scripts]
+cax = cax.main:main
+cax-single = cax.main:single
+caxer = cax.main:main
+

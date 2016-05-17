@@ -1,8 +1,10 @@
 import argparse
 import logging
 import time
+import os.path
 
 from cax.config import mongo_password
+from cax.config import set_json
 from cax.tasks import checksum, clear, data_mover, process
 
 
@@ -14,6 +16,10 @@ def main():
     parser = argparse.ArgumentParser(description="Copying All kinds of XENON1T data.")
     parser.add_argument('--once', action='store_true',
                         help="Run all tasks just one, then exits")
+    parser.add_argument('--config', action='store', dest='val',
+                        help="Load a specific *json file into cax")
+
+    
     args = parser.parse_args()
     run_once = args.once
 
@@ -25,6 +31,17 @@ def main():
                         level=logging.INFO,
                         format='%(asctime)s [%(levelname)s] %(message)s')
     logging.info('Daemon is starting')
+    
+    
+    #Define a specific cax.json configuration file for cax:
+    caxjson_config = args.val
+    if caxjson_config == None or os.path.isfile( caxjson_config ) == False :
+      caxjson_config = 'cax.json'
+      logging.info('There is no specific *json specified for running cax.')
+      logging.info('Use the standard one: cax.json')
+    else:
+      logging.info( 'Json configuration file: {csjson}'.format(csjson=caxjson_config) )
+    set_json( caxjson_config )
 
     # define a Handler which writes INFO messages or higher to the sys.stderr
     console = logging.StreamHandler()
@@ -38,13 +55,14 @@ def main():
     # add the handler to the root logger
     logging.getLogger('').addHandler(console)
 
-    tasks = [process.ProcessBatchQueue(),
+    tasks = [
+             process.ProcessBatchQueue(),
              data_mover.SCPPush(),
              data_mover.SCPPull(),
              checksum.AddChecksum(),
              checksum.CompareChecksums(),
-             clear.ClearDAQBuffer(),
              clear.AlertFailedTransfer(),
+             clear.ClearDAQBuffer()
              ]
 
     while True:

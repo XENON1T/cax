@@ -49,7 +49,7 @@
     "name": "tegner-login-1",
     "receive": "scp",
     "hostname": "tegner-login-1.pdc.kth.se",
-    "directory": "/cfs/klemming/projects/xenon/data/xenon1t",
+    "directory": "/cfs/klemming/projects/xenon/xenon1t/data",
     "upload_options": [],
     "username": "bobau",
     "download_options": ["midway-login1"]

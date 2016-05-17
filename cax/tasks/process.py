@@ -20,6 +20,7 @@ def verify():
     return True
 
 def process(name, location, host):
+    
     from pax import core
     # Grab the Run DB so we can query it
     collection = config.mongo_collection()
@@ -93,7 +94,8 @@ def process(name, location, host):
 
 class ProcessBatchQueue(Task):
     "Perform a checksum on accessible data."
-
+    
+    
     def submit(self, location, host):
         '''Submit XENON100 pax processing jobs to ULite
         Author: Chris, Bart, Jelle, Nikhef
@@ -172,4 +174,4 @@ mv ${{PROCESSING_DIR}}/logs/{name}_*.log ${{OUTPUT_DIR}}/.
 
 
 if __name__ == "__main__":
-    process(sys.argv[1], sys.argv[2], sys.argv[3])
+    process(sys.argv[1], sys.argv[2], sys.argv[3] )

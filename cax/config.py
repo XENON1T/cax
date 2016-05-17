@@ -8,6 +8,8 @@ import socket
 
 import pymongo
 
+#global variable which stores the specified *json file
+cax_configure = ''
 
 def mongo_password():
     """Fetch passsword for MongoDB
@@ -29,13 +31,17 @@ def get_hostname():
     """
     return socket.gethostname().split('.')[0]
 
+def set_json( confg ):
+    """Set the cax.json file at your own
+    """
+    global cax_configure
+    cax_configure = confg
 
 def get_config(hostname):
     """Returns the cax configuration for a particular hostname
     NB this currently reloads the cax.json file every time it is called!!
     """
-    dirname = os.path.dirname(os.path.abspath(__file__))
-    filename = os.path.join(dirname, 'cax.json')
+    filename = os.path.abspath( cax_configure )
     config = json.loads(open(filename, 'r').read())
 
     for doc in config:
