@@ -73,7 +73,7 @@ class RetryStalledTransfer(checksum.CompareChecksums):
 
         if difference > datetime.timedelta(days=2):  # If stale transfer
             self.give_error("Transfer lasting more than two days, retry.")
-            if self.check(warn=False) > 0:
+            if self.check(warn=False) > 1:
                 self.log.info("Deleting %s" % data_doc['location'])
 
                 if os.path.isdir(data_doc['location']):
@@ -105,7 +105,7 @@ class RetryBadChecksumTransfer(checksum.CompareChecksums):
 
         if self.get_main_checksum(data_doc['type']) != data_doc['checksum']:
             self.give_error("Bad checksum")
-            if self.check(warn=False) > 0:
+            if self.check(warn=False) > 1:
                 self.log.info("Deleting %s" % data_doc['location'])
 
                 if os.path.isdir(data_doc['location']):
