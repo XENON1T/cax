@@ -19,7 +19,7 @@ def filehash(location):
 def verify():
     return True
 
-def process(name, location, host):
+def process(name, location, host, ncpus=1):
     from pax import core
     # Grab the Run DB so we can query it
     collection = config.mongo_collection()
@@ -70,7 +70,7 @@ def process(name, location, host):
         p = core.Processor(config_names=pax_config,
                            config_dict={'pax': {'input_name' : location,
                                                 'output_name': location,
-                                                'n_cpus': 4}})
+                                                'n_cpus': ncpus}})
         p.run()
     except Exception as exception:
         datum['status'] = 'error'
@@ -94,7 +94,7 @@ def process(name, location, host):
 class ProcessBatchQueue(Task):
     "Perform a checksum on accessible data."
 
-    def submit(self, location, host):
+    def submit(self, location, host, ncpus):
         '''Submit XENON100 pax processing jobs to ULite
         Author: Chris, Bart, Jelle, Nikhef
         Last update:   2015.09.07
@@ -102,10 +102,11 @@ class ProcessBatchQueue(Task):
         name = self.run_doc['name']
         run_mode = ''
         script_template = """#!/bin/bash
+#SBATCH --job-name={name}
 #SBATCH --output=/project/lgrandi/xenon1t/processing/logs/{name}_%J.log
 #SBATCH --error=/project/lgrandi/xenon1t/processing/logs/{name}_%J.log
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task={ncpus}
 #SBATCH --account=pi-lgrandi
 #SBATCH --qos=xenon1t
 #SBATCH --partition=xenon1t
@@ -118,13 +119,13 @@ export OUTPUT_DIR=${{PROCESSING_DIR}}/{name}
 mkdir -p ${{OUTPUT_DIR}}
 cd ${{OUTPUT_DIR}}
 
-echo time python /project/lgrandi/deployHQ/cax/cax/tasks/process.py {name} {location} {host}
-time python /project/lgrandi/deployHQ/cax/cax/tasks/process.py {name} {location} {host}
+echo time python /project/lgrandi/deployHQ/cax/cax/tasks/process.py {name} {location} {host} {ncpus}
+time python /project/lgrandi/deployHQ/cax/cax/tasks/process.py {name} {location} {host} {ncpus}
 
 mv ${{PROCESSING_DIR}}/logs/{name}_*.log ${{OUTPUT_DIR}}/.
         """
 
-        script = script_template.format(name=name, location=location, host=host)
+        script = script_template.format(name=name, location=location, host=host, ncpus=ncpus)
         self.log.info(script)
         qsub.submit_job(script, name)
 
@@ -165,11 +166,17 @@ mv ${{PROCESSING_DIR}}/logs/{name}_*.log ${{OUTPUT_DIR}}/.
                     if events > 0:
                         self.log.info("Submitting %s", self.run_doc['name'])
                     
-                        self.submit(have_raw['location'], have_raw['host'])
+                        ncpus = 6 # based on Figure 2 here https://xecluster.lngs.infn.it/dokuwiki/doku.php?id=xenon:xenon1t:shockley:performance#automatic_processing
+
+                        # Reduce to 1 CPU for small number of events (sometimes pax stalls with too many CPU)
+                        if events < 500:
+                            ncpus = 1
+
+                        self.submit(have_raw['location'], have_raw['host'], ncpus)
 
                     else:
                         self.log.info("Skipping %s with 0 events", self.run_doc['name'])
 
 
 if __name__ == "__main__":
-    process(sys.argv[1], sys.argv[2], sys.argv[3])
+    process(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4])
