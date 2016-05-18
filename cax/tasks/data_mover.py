@@ -57,6 +57,12 @@ class SCPBase(Task):
     """Copy data via SCP base class
     """
 
+    def each_run(self):
+        for data_type in ['raw', 'processed']:
+            self.log.debug("Push %s" % data_type)
+            self.do_possible_transfers(option_type=self.option_type,
+                                       data_type=data_type)
+
     def do_possible_transfers(self, option_type='upload'):
         """Determine candidate transfers
         """
@@ -142,16 +148,11 @@ class SCPPush(SCPBase):
 
     If the data is transfered to current host and does not exist at any other
     site (including transferring), then copy data there."""
-
-    def each_run(self):
-        self.do_possible_transfers(option_type='upload')
-
+    option_type = 'upload'
 
 class SCPPull(SCPBase):
     """Copy data via SCP to here
 
     If data exists at a reachable host but not here, pull it.
     """
-
-    def each_run(self):
-        self.do_possible_transfers(option_type='download')
+    option_type = 'download'
