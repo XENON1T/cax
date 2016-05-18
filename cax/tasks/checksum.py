@@ -58,8 +58,7 @@ class CompareChecksums(Task):
     def check(self,
               data_type='raw',
               warn=True):
-        fail = False
-
+        """Returns number of good locations"""
         n = 0
 
         master = self.get_main_checksum(data_type)
@@ -81,12 +80,9 @@ class CompareChecksums(Task):
                     error = "Local checksum error " \
                             "run %d" % self.run_doc['number']
                     if warn: self.give_error(error)
-                    fail = True
             else:
                 n += 1
 
-        if fail:
-            return 0
         return n
 
     def each_run(self):
