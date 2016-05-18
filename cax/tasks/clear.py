@@ -73,7 +73,7 @@ class AlertFailedTransfer(checksum.CompareChecksums):
 
         if difference > datetime.timedelta(days=2):  # If stale transfer
             self.give_error("Transfer lasting more than two days, retry.")
-            if self.check(warn=False) > 2:
+            if self.check(warn=False) > 0:
                 self.log.info("Deleting %s" % data_doc['location'])
                 shutil.rmtree(data_doc['location'])
                 self.log.error('Deleted, notify run database.')
