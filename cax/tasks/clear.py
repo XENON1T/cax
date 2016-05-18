@@ -75,8 +75,14 @@ class AlertFailedTransfer(checksum.CompareChecksums):
             self.give_error("Transfer lasting more than two days, retry.")
             if self.check(warn=False) > 0:
                 self.log.info("Deleting %s" % data_doc['location'])
-                shutil.rmtree(data_doc['location'])
-                self.log.error('Deleted, notify run database.')
+
+                if os.path.isdir(data_doc['location']):
+                    shutil.rmtree(data_doc['location'])
+                    self.log.error('Deleted, notify run database.')
+                elif os.path.isfile(data_doc['location']):
+                    os.remove(data_doc['location'])
+                else:
+                    self.log.error('did not exist, notify run database.')
 
                 resp = self.collection.update({'_id': self.run_doc['_id']},
                                                {'$pull': {'data' : data_doc}})
