@@ -45,6 +45,7 @@ class ClearDAQBuffer(checksum.CompareChecksums):
 class AlertFailedTransfer(checksum.CompareChecksums):
     """Alert if stale transfer."""
 
+    # Do not overload this routine.
     each_run = task.Tasks.each_run
 
     def each_location(self, data_doc):
@@ -67,16 +68,16 @@ class AlertFailedTransfer(checksum.CompareChecksums):
         if difference > datetime.timedelta(days=1):  # If stale transfer
             self.give_error("Transfer lasting more than one day")
 
-        if difference > datetime.timedelta(days=2):  # If stale transfer
-            self.give_error("Transfer lasting more than one week, retry.")
-
-            values = self.get_checksums()
-            if self.count(values) > 2:
-                self.log.info("Deleting %s" % data_doc['location'])
-                shutil.rmtree(data_doc['location'])
-                self.log.error('Deleted, notify run database.')
-
-                resp = self.collection.update({'_id': self.run_doc['_id']},
-                                              {'$pull': {'data' : data_doc}})
-                self.log.error('Removed from run database.')
-                self.log.debug(resp)
+        # if difference > datetime.timedelta(days=2):  # If stale transfer
+        #     self.give_error("Transfer lasting more than one week, retry.")
+        #
+        #     values = self.get_checksums()
+        #     if self.count(values) > 2:
+        #         self.log.info("Deleting %s" % data_doc['location'])
+        #         shutil.rmtree(data_doc['location'])
+        #         self.log.error('Deleted, notify run database.')
+        #
+        #         resp = self.collection.update({'_id': self.run_doc['_id']},
+        #                                       {'$pull': {'data' : data_doc}})
+        #         self.log.error('Removed from run database.')
+        #         self.log.debug(resp)
