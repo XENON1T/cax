@@ -5,7 +5,8 @@ import shutil
 import pymongo
 
 from cax.tasks import checksum
-from cax import config, task
+from cax import config
+from cax.task import Task
 
 
 class ClearDAQBuffer(checksum.CompareChecksums):
@@ -46,7 +47,7 @@ class AlertFailedTransfer(checksum.CompareChecksums):
     """Alert if stale transfer."""
 
     # Do not overload this routine.
-    each_run = task.Tasks.each_run
+    each_run = Task.each_run
 
     def each_location(self, data_doc):
         if 'host' not in data_doc or data_doc['host'] != config.get_hostname():
