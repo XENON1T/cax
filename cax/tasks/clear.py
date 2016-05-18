@@ -42,7 +42,7 @@ class ClearDAQBuffer(checksum.CompareChecksums):
             self.log.debug("Did not drop: %s" % str(self.raw_data))
 
 
-class AlertFailedTransfer(checksum.CompareChecksums):
+class RetryStalledTransfer(checksum.CompareChecksums):
     """Alert if stale transfer."""
 
     # Do not overload this routine.
@@ -73,6 +73,38 @@ class AlertFailedTransfer(checksum.CompareChecksums):
 
         if difference > datetime.timedelta(days=2):  # If stale transfer
             self.give_error("Transfer lasting more than two days, retry.")
+            if self.check(warn=False) > 0:
+                self.log.info("Deleting %s" % data_doc['location'])
+
+                if os.path.isdir(data_doc['location']):
+                    shutil.rmtree(data_doc['location'])
+                    self.log.error('Deleted, notify run database.')
+                elif os.path.isfile(data_doc['location']):
+                    os.remove(data_doc['location'])
+                else:
+                    self.log.error('did not exist, notify run database.')
+
+                resp = self.collection.update({'_id': self.run_doc['_id']},
+                                               {'$pull': {'data' : data_doc}})
+                self.log.error('Removed from run database.')
+                self.log.debug(resp)
+
+class RetryBadChecksumTransfer(checksum.CompareChecksums):
+    """Alert if stale transfer."""
+
+    # Do not overload this routine.
+    each_run = Task.each_run
+
+    def each_location(self, data_doc):
+        if 'host' not in data_doc or data_doc['host'] != config.get_hostname():
+            return # Skip places where we can't locally access data
+
+        if data_doc["status"] != "transferred":
+            return # Transfer went fine
+
+
+        if self.get_main_checksum(data_doc['type']) != data_doc['checksum']:
+            self.give_error("Bad checksum")
             if self.check(warn=False) > 0:
                 self.log.info("Deleting %s" % data_doc['location'])
 
