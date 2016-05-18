@@ -41,28 +41,58 @@ class AddChecksum(Task):
 class CompareChecksums(Task):
     "Perform a checksum on accessible data."
 
-    def count(self, checksums):
-        """Takes list of checksums"""
-        n = len(checksums)
-        if n:
-            for key, value in checksums.items():
-                if value != list(checksums.values())[0]:
-                    error = "Checksums error " \
-                            "run %d" % self.run_doc['number']
-                    self.give_error(error)
-
-        self.log.debug("%d checksums agree" % n)
-        return n
-
-    def get_checksums(self):
-        values = {}
+    def get_main_checksum(self, data_type='raw'):
         for data_doc in self.run_doc['data']:
             # Only look at transfered data
             if data_doc['status'] == 'transferred':
-                # And require raw
-                if data_doc['type'] == 'raw':
-                    values[data_doc['host']] = data_doc['checksum']
-        return values
+                if data_doc['type'] == data_type:
+                    if data_doc['type'] == 'raw':
+                        if data_doc['host'] == 'eb0':
+                            return data_doc['checksum']
+                    if data_doc['type'] == 'processed':
+                        if data_doc['host'] == 'midway-login1':
+                            return data_doc['checksum']
+        return None
+
+
+    def check(self,
+              data_type='raw',
+              warn=True):
+        fail = False
+
+        n = 0
+
+        master = self.get_main_checksum(data_type)
+
+        for data_doc in self.run_doc['data']:
+            if 'host' not in data_doc:
+                continue
+
+            # Only look at transfered data
+            if data_doc['status'] != 'transferred':
+                continue
+
+            # And require raw
+            if data_doc['type'] != data_type:
+                continue
+
+            if data_doc['checksum'] != master:
+                if data_doc['host'] == config.get_hostname():
+                    error = "Local checksum error " \
+                            "run %d" % self.run_doc['number']
+                    if warn: self.give_error(error)
+                    fail = True
+            else:
+                n += 1
+
+        if fail:
+            return 0
+        return n
 
     def each_run(self):
-        self.count(self.get_checksums())
+        self.log.info("Checking raw checksums")
+        self.check('raw')
+
+        self.log.info("Checking processed checksums")
+        self.check('processed')
+
