@@ -63,7 +63,9 @@ class SCPBase(Task):
             self.do_possible_transfers(option_type=self.option_type,
                                        data_type=data_type)
 
-    def do_possible_transfers(self, option_type='upload'):
+    def do_possible_transfers(self,
+                              option_type='upload',
+                              data_type='raw'):
         """Determine candidate transfers
         """
 
@@ -84,7 +86,7 @@ class SCPBase(Task):
             # Iterate over data locations to know status
             for datum in self.run_doc['data']:
                 # Is host known?
-                if 'host' not in datum:
+                if 'host' not in datum or datum['type'] != data_type:
                     continue
 
                 transferred = (datum['status'] == 'transferred')
