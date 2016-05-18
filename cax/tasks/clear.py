@@ -65,7 +65,7 @@ class AlertFailedTransfer(checksum.CompareChecksums):
 
         self.log.debug(difference)
 
-        if difference > datetime.timedelta(minute=1):  # If stale transfer
+        if difference > datetime.timedelta(day=1):  # If stale transfer
             self.give_error("Transfer %s from run %d (%s) lasting more than "
                             "one day" % (data_doc['type'],
                                          self.run_doc['number'],

@@ -90,9 +90,11 @@ class CompareChecksums(Task):
         return n
 
     def each_run(self):
-        self.log.info("Checking raw checksums")
+        self.log.info("Checking raw checksums "
+                      "run %d" % self.run_doc['number'])
         self.log.info(self.check('raw'))
 
-        self.log.info("Checking processed checksums")
+        self.log.info("Checking processed checksums "
+                      "run %d" % self.run_doc['number'])
         self.log.info(self.check('processed'))
 
