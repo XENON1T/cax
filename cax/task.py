@@ -15,7 +15,15 @@ class Task():
     def go(self):
         """Run this periodically"""
 
-        for self.run_doc in self.collection.find({'detector': 'tpc'}):
+        # Collect all run documents.  This has to be turned into a list
+        # to avoid timeouts if a task takes too long.
+        docs = list(self.collection.find({'detector': 'tpc',
+                                          'number' : {"$gt": 500}}))
+
+        for doc in docs:
+            # Make sure up to date
+            self.run_doc = self.collection.find_one({'_id' : doc['_id']})
+
             if 'data' not in self.run_doc:
                 continue
 

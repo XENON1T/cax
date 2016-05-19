@@ -44,7 +44,8 @@ def main():
              checksum.AddChecksum(),
              checksum.CompareChecksums(),
              clear.ClearDAQBuffer(),
-             clear.AlertFailedTransfer(),
+             clear.RetryStalledTransfer(),
+             clear.RetryBadChecksumTransfer(),
              ]
 
     while True:
