@@ -17,7 +17,8 @@ class Task():
 
         # Collect all run documents.  This has to be turned into a list
         # to avoid timeouts if a task takes too long.
-        docs = list(self.collection.find({'detector': 'tpc'}))
+        docs = list(self.collection.find({'detector': 'tpc',
+                                          'number' : 51}))
 
         for doc in docs:
             # Make sure up to date
