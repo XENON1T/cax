@@ -145,8 +145,8 @@ class SCPBase(Task):
         self.log.debug("SCP done, telling run database")
 
         self.collection.update({'_id': self.run_doc['_id'],
-                                'data.host': datum_new['host'],
-                                'data.type': datum_new['type']},
+                                'data': {'$elemMatch': { 'host': datum_new['host'],
+                                                         'type': datum_new['type']}}},
                                {'$set': {'data.$': datum_new}})
         self.log.info("Transfer complete")
 
