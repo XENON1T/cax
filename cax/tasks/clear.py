@@ -48,6 +48,12 @@ class RetryStalledTransfer(checksum.CompareChecksums):
     # Do not overload this routine.
     each_run = Task.each_run
 
+    def has_untriggered(self):
+        for data_doc in self.run_doc['data']:
+            if data_doc['type'] == 'untriggered':
+                return True
+        return False
+
     def each_location(self, data_doc):
         if 'host' not in data_doc or data_doc['host'] != config.get_hostname():
             return # Skip places where we can't locally access data
@@ -73,7 +79,7 @@ class RetryStalledTransfer(checksum.CompareChecksums):
 
         if difference > datetime.timedelta(days=2):  # If stale transfer
             self.give_error("Transfer lasting more than two days, retry.")
-            if self.check(warn=False) > 1:
+            if self.check(warn=False) > 1 or self.has_untriggered():
                 self.log.info("Deleting %s" % data_doc['location'])
 
                 if os.path.isdir(data_doc['location']):
