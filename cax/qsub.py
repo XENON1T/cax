@@ -1,10 +1,6 @@
-""" Access the Nikhef Stoomboot cluster.
+""" Access the cluster.
 
-    .. note::
-        This module is only for use at Nikhef. The Stoomboot cluster is only
-        accessible for Nikhef users.
-
-    Easy to use functions to make use of the Nikhef Stoomboot facilities.
+    Easy to use functions to make use of the cluster facilities.
     This checks the available slots on the requested queue, creates the
     scripts to submit, submits the jobs, and cleans up afterwards.
 
@@ -66,41 +62,35 @@ def check_queue(queue):
         raise KeyError('Unknown queue name: {queue}'.format(queue=queue))
 
 
-def submit_job(script, name, processat, extra=''):
-    """Submit a job to Stoomboot
+def submit_job(script, name, extra=''):
+    """Submit a job
 
     :param script: contents of the script to run.
     :param name: name for the job.
-    :param extra: optional extra arguments for the qsub command.
+    :param extra: optional extra arguments for the sbatch command.
 
     """
-    sexec = ''
-    if processat == 'tegner-login-1':
-      sexec = 'sbatch'
-    if processat == 'midway-login-1':
-      sexec = 'qsub'
     
-    which( sexec )
+    which('sbatch')
     script_path, script_name = create_script(script, name)
 
-    # Effect of the arguments for qsub:
-    # -V: all of the environment variables of the process are exported to
-    #     the context of the batch job (e.g. PATH)
-    # -j oe: merge standard error into the standard output
-    # -N: a recognizable name for the job
-    qsub = ('{execute} {script}'.format(execute=sexec, script=script_path, extra=extra) )
-    print( qsub )
-    #result = subprocess.check_output(qsub, stderr=subprocess.STDOUT,
-                                     #shell=True)
-    #print(result)
+    # Effect of the arguments for sbatch:
+    # http://slurm.schedmd.com/sbatch.html
+    sbatch = ('sbatch -J {name} {extra} {script}'
+            .format(name=script_name, script=script_path,
+                    extra=extra))
+
+    result = subprocess.check_output(sbatch, stderr=subprocess.STDOUT,
+                                     shell=True)
+    print(result)
 
     delete_script(script_path)
 
 
 def create_script(script, name):
-    """Create script as temp file to be run on Stoomboot"""
+    """Create script as temp file to be run on cluster"""
 
-    script_name = 'his_{name}.sh'.format(name=name)
+    script_name = '{name}.sh'.format(name=name)
     script_path = os.path.join('/tmp', script_name)
 
     with open(script_path, 'w') as script_file:
@@ -111,7 +101,7 @@ def create_script(script, name):
 
 
 def delete_script(script_path):
-    """Delete script after submitting to Stoomboot
+    """Delete script after submitting to cluster
 
     :param script_path: path to the script to be removed
 

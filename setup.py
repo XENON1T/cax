@@ -52,7 +52,7 @@ setup(
             'cax = cax.main:main',
             'caxer = cax.main:main',
             'cax-single = cax.main:single',
-
+            'cax-process = cax.tasks.process:main'
         ],
     },
 )

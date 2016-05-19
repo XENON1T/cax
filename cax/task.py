@@ -14,6 +14,9 @@ class Task():
 
     def go(self):
         """Run this periodically"""
+
+        # Get user-specified list of datasets
+        datasets = config.get_dataset_list()
         
         for self.run_doc in self.collection.find({'detector': 'tpc'}):
             
@@ -21,7 +24,12 @@ class Task():
                 continue
 
             self.raw_data = self.get_daq_buffer()
-            
+ 
+            # Operate on only user-specified datasets
+            if datasets:
+                if self.run_doc['name'] not in datasets:
+                    continue
+          
             self.each_run()
             
 

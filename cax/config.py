@@ -8,6 +8,9 @@ import socket
 
 import pymongo
 
+# global variable to store the specified .json config file
+cax_configure = ''
+
 def mongo_password():
     """Fetch passsword for MongoDB
 
@@ -28,11 +31,25 @@ def get_hostname():
     """
     return socket.gethostname().split('.')[0]
 
+def set_json( confg ):
+    """Set the cax.json file at your own
+    """
+    global cax_configure
+    cax_configure = confg
 
 def load():
-    dirname = os.path.dirname(os.path.abspath(__file__))
-    filename = os.path.join(dirname, 'cax.json')
-    logging.debug('loading %s' % filename)
+
+    # User-specified config file
+    if cax_configure:
+        filename = os.path.abspath( cax_configure )
+
+    # Default config file
+    else:
+        dirname = os.path.dirname(os.path.abspath(__file__))
+        filename = os.path.join(dirname, 'cax.json')
+
+    logging.debug('Loading config file %s' % filename)
+
     return json.loads(open(filename, 'r').read())
 
 
@@ -72,6 +89,23 @@ def get_pax_options(option_type='versions'):
 
     return options
 
+def get_dataset_list():
+    try:
+        options = get_config(get_hostname())['dataset_list']
+    except LookupError as e:
+        logging.debug("dataset_list not specified, operating on entire DB")
+        return []
+
+    return options
+
+def get_task_list():
+    try:
+        options = get_config(get_hostname())['task_list']
+    except LookupError as e:
+        logging.debug("task_list not specified, running all tasks")
+        return []
+
+    return options
 
 def mongo_collection():
     c = pymongo.MongoClient('mongodb://eb:%s@xenon1t-daq.lngs.infn.it:27017,copslx50.fysik.su.se:27017/run' % os.environ.get('MONGO_PASSWORD'),
