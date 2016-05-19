@@ -289,7 +289,7 @@ mv ${{PROCESSING_DIR}}/logs/{name}_*.log ${{OUTPUT_DIR}}/.
 
 # Arguments from process function: (name, in_location, host, pax_version, pax_hash, out_location, ncpus): 
 if __name__ == "__main__":
-    process(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7])
+    main() 
 
 def main():
     process(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7])
