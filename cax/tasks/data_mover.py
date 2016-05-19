@@ -32,7 +32,8 @@ def copy(datum_original, datum_destination):
 
     logging.info("connection to %s" % server)
     ssh.connect(server,
-                username=username)
+                username=username,
+                compress=True)
 
     # SCPCLient takes a paramiko transport as its only argument
     client = scp.SCPClient(ssh.get_transport())
