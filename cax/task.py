@@ -19,7 +19,10 @@ class Task():
         # to avoid timeouts if a task takes too long.
         docs = list(self.collection.find({'detector': 'tpc'}))
 
-        for self.run_doc in docs:
+        for doc in docs:
+            # Make sure up to date
+            self.run_doc = self.collection.find_one({'_id' : doc['_id']})
+
             if 'data' not in self.run_doc:
                 continue
 
