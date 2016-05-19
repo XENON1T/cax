@@ -34,7 +34,8 @@ class AddChecksum(Task):
                       "%d %s" % (self.run_doc['number'],
                                  data_doc['type']))
         self.collection.update({'_id': self.run_doc['_id'],
-                                'data.host': data_doc['host']},
+                                'data.host': data_doc['host'],
+                                'data.type': data_doc['type']},
                                {'$set': {'data.$': data_doc}})
 
 

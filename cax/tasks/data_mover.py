@@ -60,7 +60,7 @@ class SCPBase(Task):
 
     def each_run(self):
         for data_type in ['raw', 'processed']:
-            self.log.debug("Push %s" % data_type)
+            self.log.debug("%s" % data_type)
             self.do_possible_transfers(option_type=self.option_type,
                                        data_type=data_type)
 
@@ -145,7 +145,8 @@ class SCPBase(Task):
         self.log.debug("SCP done, telling run database")
 
         self.collection.update({'_id': self.run_doc['_id'],
-                                'data.host': datum_new['host']},
+                                'data.host': datum_new['host'],
+                                'data.type': datum['type']},
                                {'$set': {'data.$': datum_new}})
         self.log.info("Transfer complete")
 
