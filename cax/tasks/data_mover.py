@@ -127,6 +127,10 @@ class SCPBase(Task):
                                               ('.root' if datum['type'] == 'processed' else '')),
                      'checksum': None,
                      'creation_time': datetime.datetime.utcnow()}
+
+        if datum['type'] == 'processed':
+            datum_new['pax_version'] = datum['pax_version']
+
         self.collection.update({'_id': self.run_doc['_id']},
                                {'$push': {'data': datum_new}})
         self.log.info('Starting SCP')

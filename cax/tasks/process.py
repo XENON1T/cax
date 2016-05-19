@@ -175,7 +175,7 @@ mv ${{PROCESSING_DIR}}/logs/{name}_*.log ${{OUTPUT_DIR}}/.
                         self.submit(have_raw['location'], have_raw['host'], ncpus)
 
                     else:
-                        self.log.info("Skipping %s with 0 events", self.run_doc['name'])
+                        self.log.debug("Skipping %s with 0 events", self.run_doc['name'])
 
 
 if __name__ == "__main__":
