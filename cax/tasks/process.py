@@ -86,8 +86,7 @@ def process(name, in_location, host, pax_version, pax_hash, out_location, ncpus=
                                                         "type": "processed",
                                                         "status": "error",
                                                         "pax_hash": pax_hash}}}) is not None:
-        print ("Skip ", host, name, pax_hash, ", previous processing error. Check logs.")
-        return
+        print ("Retry ", host, name, pax_hash, ", due to previous processing error. Check logs.")
 
     collection.update(query,
                       {'$push': {'data': datum}})
@@ -200,7 +199,7 @@ source activate pax_{pax_version}
 echo cax-process {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
 cax-process {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
 
-mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{OUTPUT_DIR}}/.
+mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
 """
 
         script = script_template.format(name=name, in_location=in_location, host=host, pax_version=pax_version, pax_hash=pax_hash, out_location=out_location, ncpus=ncpus)
@@ -287,5 +286,5 @@ mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{OUTPUT_DIR}}/.
 
 # Arguments from process function: (name, in_location, host, pax_version, pax_hash, out_location, ncpus):
 def main():
-    process(*sys.argv)
+    process(*sys.argv[1:])
 
