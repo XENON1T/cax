@@ -198,7 +198,7 @@ cd ${{PROCESSING_DIR}}
 source activate pax_{pax_version}
 
 echo cax-process {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
-python cax-process {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
+cax-process {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
 
 mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{OUTPUT_DIR}}/.
 """
@@ -285,11 +285,7 @@ mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{OUTPUT_DIR}}/.
 
                     self.submit(have_raw['location'], thishost, pax_version, pax_hash, out_location, ncpus)
 
-
-# Arguments from process function: (name, in_location, host, pax_version, pax_hash, out_location, ncpus): 
-if __name__ == "__main__":
-    main() 
-
+# Arguments from process function: (name, in_location, host, pax_version, pax_hash, out_location, ncpus):
 def main():
-    process(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7])
+    process(*sys.argv)
 
