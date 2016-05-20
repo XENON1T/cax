@@ -43,7 +43,6 @@ class Task():
             
 
     def each_run(self):
-        print('test')
         for data_doc in self.run_doc['data']:
             self.log.debug('%s on %s' % (self.__class__.__name__,
                                          self.run_doc['number']))
