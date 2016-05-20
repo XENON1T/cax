@@ -42,7 +42,7 @@ def verify():
     return True
 
 def process(name, in_location, host, pax_version, pax_hash, out_location, ncpus=1):
-    print('process')
+    print('cax-process')
     from pax import core
 
     # Grab the Run DB so we can query it
@@ -205,8 +205,7 @@ mv ${{PROCESSING_DIR}}/logs/{name}_*.log ${{OUTPUT_DIR}}/.
 
         script = script_template.format(name=name, in_location=in_location, host=host, pax_version=pax_version, pax_hash=pax_hash, out_location=out_location, ncpus=ncpus)
         self.log.info(script)
-        #qsub.submit_job(script, name)
-
+        qsub.submit_job(script, name)
 
     def verify(self):
         """Verify processing worked"""
