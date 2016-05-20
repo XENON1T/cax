@@ -200,7 +200,7 @@ source activate pax_{pax_version}
 echo cax-process {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
 python cax-process {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
 
-mv ${{PROCESSING_DIR}}/logs/{name}_*.log ${{OUTPUT_DIR}}/.
+mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{OUTPUT_DIR}}/.
 """
 
         script = script_template.format(name=name, in_location=in_location, host=host, pax_version=pax_version, pax_hash=pax_hash, out_location=out_location, ncpus=ncpus)
