@@ -53,7 +53,7 @@ def process(name, in_location, host, pax_version, pax_hash, out_location, ncpus=
     # New data
     datum = {'type'       : 'processed',
              'host'       : host,
-             'status'     : 'processing',
+             'status'     : 'transferring',
              'location'   : output_fullname + '.root',
              'checksum'   : None,
              'pax_version': pax_version,
@@ -75,7 +75,7 @@ def process(name, in_location, host, pax_version, pax_hash, out_location, ncpus=
                               'name' : name,
                               "data": { "$elemMatch": { "host": host,
                                                         "type": "processed",
-                                                        "status": "processing",
+                                                        "status": "transferring",
                                                         "pax_hash": pax_hash}}}) is not None:
         print ("Skip ", host, name, pax_hash, ", currently processing")
         return
@@ -145,7 +145,7 @@ class ProcessBatchQueue(Task):
 #SBATCH --job-name={name}_{pax_version}
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task={ncpus}
-#SBATCH --mem-per-cpu=1000
+#SBATCH --mem-per-cpu=2000
 #SBATCH --mail-type=ALL
 """
         # Midway-specific script options
