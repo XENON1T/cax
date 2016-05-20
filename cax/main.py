@@ -16,14 +16,12 @@ def main():
     parser = argparse.ArgumentParser(description="Copying All kinds of XENON1T data.")
     parser.add_argument('--once', action='store_true',
                         help="Run all tasks just one, then exits")
-    args = parser.parse_args()
-    run_once = args.once
-
-    parser = argparse.ArgumentParser(description="Copying All kinds of XENON1T data.")
     parser.add_argument('--config', action='store', dest='config_file',
                         help="Load a custom .json config file into cax")    
 
     args = parser.parse_args()
+
+    run_once = args.once
 
     # Check passwords and API keysspecified
     mongo_password()
