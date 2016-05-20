@@ -125,7 +125,7 @@ class ProcessBatchQueue(Task):
 #SBATCH --job-name={name}_{pax_version}
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task={ncpus}
-#SBATCH --mem-per-cpu=1000
+#SBATCH --mem-per-cpu=2000
 #SBATCH --mail-type=ALL
 """
         # Midway-specific script options
