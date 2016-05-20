@@ -9,7 +9,7 @@ import socket
 import pymongo
 
 # global variable to store the specified .json config file
-cax_configure = ''
+CAX_CONFIGURE = ''
 
 def mongo_password():
     """Fetch passsword for MongoDB
@@ -34,14 +34,14 @@ def get_hostname():
 def set_json( confg ):
     """Set the cax.json file at your own
     """
-    global cax_configure
-    cax_configure = confg
+    global CAX_CONFIGURE
+    CAX_CONFIGURE = confg
 
 def load():
 
     # User-specified config file
-    if cax_configure:
-        filename = os.path.abspath( cax_configure )
+    if CAX_CONFIGURE:
+        filename = os.path.abspath( CAX_CONFIGURE )
 
     # Default config file
     else:
