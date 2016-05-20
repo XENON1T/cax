@@ -15,10 +15,14 @@ class Task():
     def go(self):
         """Run this periodically"""
 
+        # Get user-specified list of datasets
+        datasets = config.get_dataset_list()
+
         # Collect all run documents.  This has to be turned into a list
         # to avoid timeouts if a task takes too long.
-        docs = list(self.collection.find({'detector': 'tpc',
-                                          'number' : {"$gt": 489}}))
+        for self.run_doc in self.collection.find({'detector': 'tpc'}):
+            docs = list(self.collection.find({'detector': 'tpc',
+                                              'number' : {"$gt": 489}}))
 
         for doc in docs:
             # Make sure up to date
@@ -28,8 +32,14 @@ class Task():
                 continue
 
             self.raw_data = self.get_daq_buffer()
-
+ 
+            # Operate on only user-specified datasets
+            if datasets:
+                if self.run_doc['name'] not in datasets:
+                    continue
+          
             self.each_run()
+            
 
     def each_run(self):
         for data_doc in self.run_doc['data']:

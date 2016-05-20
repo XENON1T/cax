@@ -34,7 +34,9 @@
     "directory": "/project/lgrandi/xenon1t",
     "upload_options": [],
     "username": "tunnell",
-    "download_options": []
+    "download_options": [],
+    "pax_versions": ["v4.10.0"],
+    "pax_locations": ["/project/lgrandi/xenon1t/root/pax_v4.10.0"]
   },
   {
     "name": "login",
@@ -49,7 +51,7 @@
     "name": "tegner-login-1",
     "receive": "scp",
     "hostname": "tegner-login-1.pdc.kth.se",
-    "directory": "/cfs/klemming/projects/xenon/data/xenon1t",
+    "directory": "/cfs/klemming/projects/xenon/xenon1t/data",
     "upload_options": [],
     "username": "bobau",
     "download_options": ["midway-login1"]

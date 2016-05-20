@@ -51,7 +51,7 @@ setup(
             'cax = cax.main:main',
             'caxer = cax.main:main',
             'cax-single = cax.main:single',     # Will be removed soon
-
+            'cax-process = cax.tasks.process:main'
         ],
     },
 )
