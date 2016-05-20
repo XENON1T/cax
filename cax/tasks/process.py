@@ -1,13 +1,17 @@
 import sys
 import datetime
 import hashlib
+import json
+import checksumdir
 import subprocess
+import hashlib
+from pymongo import ReturnDocument
 
 from cax import qsub, config
 from cax.task import Task
 
-# Obtain pax repository hash
 def get_pax_hash(pax_version, host):
+    """Obtain pax repository hash"""
 
     PAX_DEPLOY_DIR = ''
     if host == 'midway-login1':
@@ -28,21 +32,14 @@ def get_pax_hash(pax_version, host):
 
     return pax_hash
 
-
-def filehash(location):
-    sha = hashlib.sha512()
-    with open(location, 'rb') as f:
-        while True:
-            block = f.read(2**10) # Magic number: one-megabyte blocks.
-            if not block: break
-            sha.update(block)
-    return sha.hexdigest()
-
 def verify():
     return True
 
-def process(name, in_location, host, pax_version, pax_hash, out_location, ncpus=1):
-    print('cax-process')
+def process(name, in_location, host, pax_version, pax_hash, out_location,
+            ncpus=1):
+    print('Welcome to cax-process')
+
+    # Import pax so can process the data
     from pax import core
 
     # Grab the Run DB so we can query it
@@ -50,59 +47,43 @@ def process(name, in_location, host, pax_version, pax_hash, out_location, ncpus=
 
     output_fullname = out_location + '/' + name
 
-    # New data
-    datum = {'type'       : 'processed',
-             'host'       : host,
-             'status'     : 'processing',
+    # New data location
+    datum = {'host'       : host,
+             'type'       : 'processed',
+             'pax_hash'   : pax_hash,
+             'pax_version': pax_version,
+             'status'     : 'transferring',
              'location'   : output_fullname + '.root',
              'checksum'   : None,
-             'pax_version': pax_version,
-             'pax_hash'   : pax_hash,
              'creation_time' : datetime.datetime.utcnow()}
+
+    # This query is used to find if this run has already processed this data
+    # in the same way.  If so, quit.
     query = {'detector': 'tpc',
-             'name'    : name}
+             'name' : name,
 
-    # Skip if processed file with this pax_hash already exists
-    if collection.find_one({'detector': 'tpc',
-                            'name' : name,
-                            "data": { "$elemMatch": { "host": host,
-                                                      "type": "processed",
-                                                      "status": "transferred",
-                                                      "pax_hash": pax_hash}}}) is not None:
+             # This 'data' gets deleted later and only used for checking
+             'data': { '$elemMatch': { 'host': host,
+                                       'type': 'processed',
+                                       'pax_hash': pax_hash,
+                                       'pax_version': pax_version}}}
+    doc = collection.find_one(query)  # Query DB
+    if doc is not None:
+        print("Already processed.  Clear first.  %s" % json.dumps(doc))
         return
 
-    elif collection.find_one({'detector': 'tpc',
-                              'name' : name,
-                              "data": { "$elemMatch": { "host": host,
-                                                        "type": "processed",
-                                                        "status": "processing",
-                                                        "pax_hash": pax_hash}}}) is not None:
-        print ("Skip ", host, name, pax_hash, ", currently processing")
-        return
+    # Not processed this way already, so notify run DB we will
+    doc = collection.find_one_and_update({'detector': 'tpc', 'name' : name},
+                                         {'$push': {'data': datum}},
+                                         return_document=ReturnDocument.AFTER)
 
-    elif collection.find_one({'detector': 'tpc',
-                              'name' : name,
-                              "data": { "$elemMatch": { "host": host,
-                                                        "type": "processed",
-                                                        "status": "error",
-                                                        "pax_hash": pax_hash}}}) is not None:
-        print ("Retry ", host, name, pax_hash, ", due to previous processing error. Check logs.")
-
-    collection.update(query,
-                      {'$push': {'data': datum}})
-
-    query['data.type'] = datum['type']
-    query['data.host'] = datum['host']
-    query['data.pax_version'] = datum['pax_version']
-    query['data.pax_hash'] = datum['pax_hash']
-
-    doc = collection.find_one(query)
-
+    # Determine based on run DB what settings to use for processing.
     if doc['reader']['self_trigger']:
         pax_config='XENON1T'
     else:
         pax_config='XENON1T_LED'
 
+    # Try to process data.
     try:
         print('processing', name, in_location, pax_config)
         p = core.Processor(config_names=pax_config,
@@ -112,22 +93,21 @@ def process(name, in_location, host, pax_version, pax_hash, out_location, ncpus=
         p.run()
 
     except Exception as exception:
+        # Data processing failed.
         datum['status'] = 'error'
-        collection.update(query,
-                          {'$set': {'data.$': datum}})
+        collection.update(query, {'$set': {'data.$': datum}})
         raise
 
     datum['status'] = 'verifying'
-    collection.update(query,
-                      {'$set': {'data.$': datum}})
+    collection.update(query, {'$set': {'data.$': datum}})
 
-    datum['checksum'] = filehash(datum['location'])
+    datum['checksum'] = checksumdir._filehash(datum['location'],
+                                              hashlib.sha512)
     if verify():
         datum['status'] = 'transferred'
     else:
         datum['status'] = 'failed'
-    collection.update(query,
-                      {'$set': {'data.$': datum}})
+    collection.update(query, {'$set': {'data.$': datum}})
 
 
 class ProcessBatchQueue(Task):
