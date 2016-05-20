@@ -43,7 +43,7 @@ def submit_job(script, name, extra=''):
     # Effect of the arguments for sbatch:
     # http://slurm.schedmd.com/sbatch.html
     sbatch = ('sbatch -J {name} {extra} {script}'
-            .format(name=script_name, script=script_path,
+            .format(name=name, script=script_path,
                     extra=extra))
 
     result = subprocess.check_output(sbatch,
