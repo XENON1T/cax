@@ -18,11 +18,7 @@ class Task():
         # Get user-specified list of datasets
         datasets = config.get_dataset_list()
 
-        # Collect all run documents.  This has to be turned into a list
-        # to avoid timeouts if a task takes too long.
-        for self.run_doc in self.collection.find({'detector': 'tpc'}):
-            docs = list(self.collection.find({'detector': 'tpc',
-                                              'number' : {"$gt": 489}}))
+        docs = self.collection.find({'detector': 'tpc'})
 
         for doc in docs:
             # Make sure up to date
