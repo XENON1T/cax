@@ -86,8 +86,7 @@ def process(name, in_location, host, pax_version, pax_hash, out_location, ncpus=
                                                         "type": "processed",
                                                         "status": "error",
                                                         "pax_hash": pax_hash}}}) is not None:
-        print ("Skip ", host, name, pax_hash, ", previous processing error. Check logs.")
-        return
+        print ("Retry ", host, name, pax_hash, ", due to previous processing error. Check logs.")
 
     collection.update(query,
                       {'$push': {'data': datum}})
