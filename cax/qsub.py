@@ -19,11 +19,11 @@ from distutils.spawn import find_executable
 
 def which(program):
     """Check if a command line program is available
-    
+
     An Exception is raised if the program is not available.
 
     :param program: name or program to check for, e.g. 'wget'.
-    
+
     """
     path = find_executable(program)
     if not path:

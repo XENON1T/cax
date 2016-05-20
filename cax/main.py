@@ -1,3 +1,4 @@
+import argparse
 import logging
 import time
 import argparse
@@ -6,18 +7,25 @@ import os.path
 from cax.config import mongo_password, set_json, get_task_list
 from cax.tasks import checksum, clear, data_mover, process
 
-def single():
-    main(run_once = True)
 
-def main(run_once = False):
-    # Check passwords and API keysspecified
-    
+def single():
+    raise RuntimeError("cax-single has been removed: use cax --once instead")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Copying All kinds of XENON1T data.")
+    parser.add_argument('--once', action='store_true',
+                        help="Run all tasks just one, then exits")
+    args = parser.parse_args()
+    run_once = args.once
+
     parser = argparse.ArgumentParser(description="Copying All kinds of XENON1T data.")
     parser.add_argument('--config', action='store', dest='config_file',
                         help="Load a custom .json config file into cax")    
 
     args = parser.parse_args()
-    
+
+    # Check passwords and API keysspecified
     mongo_password()
 
     # Get specified cax.json configuration file for cax:
@@ -53,7 +61,8 @@ def main(run_once = False):
              checksum.AddChecksum(),
              checksum.CompareChecksums(),
              clear.ClearDAQBuffer(),
-             clear.AlertFailedTransfer(),
+             clear.RetryStalledTransfer(),
+             clear.RetryBadChecksumTransfer(),
              ]
 
     user_tasks = get_task_list()
@@ -72,7 +81,7 @@ def main(run_once = False):
         if run_once:
             break
         else:
-            logging.debug('Sleeping.')
+            logging.info('Sleeping.')
             time.sleep(60)
 
 

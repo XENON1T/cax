@@ -3,6 +3,7 @@ from cax import config
 from bson.json_util import dumps
 from json import loads
 
+
 class Task():
     def __init__(self):
         # Grab the Run DB so we can query it
@@ -10,7 +11,6 @@ class Task():
         self.log = logging.getLogger(self.__class__.__name__)
         self.run_doc = None
         self.raw_data = None
-
 
     def go(self):
         """Run this periodically"""
@@ -20,6 +20,15 @@ class Task():
         
         for self.run_doc in self.collection.find({'detector': 'tpc'}):
             
+        # Collect all run documents.  This has to be turned into a list
+        # to avoid timeouts if a task takes too long.
+        docs = list(self.collection.find({'detector': 'tpc',
+                                          'number' : {"$gt": 489}}))
+
+        for doc in docs:
+            # Make sure up to date
+            self.run_doc = self.collection.find_one({'_id' : doc['_id']})
+
             if 'data' not in self.run_doc:
                 continue
 
