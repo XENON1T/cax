@@ -13,7 +13,7 @@ class ClearDAQBuffer(checksum.CompareChecksums):
     """Perform a checksum on accessible data."""
 
     def remove_untriggered(self):
-        client = pymongo.MongoClient(self.raw_data['location'])
+        client = pymongo.MongoClient(self.untriggered_data['location'])
         db = client.untriggered
         try:
             db.authenticate('eb',
@@ -22,24 +22,24 @@ class ClearDAQBuffer(checksum.CompareChecksums):
             self.log.error("Mongo error: %s" % str(e))
             return None
 
-        self.log.debug('Dropping %s' % self.raw_data['collection'])
+        self.log.debug('Dropping %s' % self.untriggered_data['collection'])
         try:
-            db.drop_collection(self.raw_data['collection'])
+            db.drop_collection(self.untriggered_data['collection'])
         except pymongo.errors.OperationFailure:
             # This usually means some background operation is still running
             self.log.error("Mongo error: %s" % str(e))
             return None
 
-        self.log.info('Dropped %s' % self.raw_data['collection'])
+        self.log.info('Dropped %s' % self.untriggered_data['collection'])
         
         self.log.debug(self.collection.update({'_id': self.run_doc['_id']},
-                                              {'$pull': {'data': self.raw_data}}))
+                                              {'$pull': {'data': self.untriggered_data}}))
 
     def each_run(self):
-        if self.check(warn=False) > 2 and self.raw_data:
+        if self.check(warn=False) > 2 and self.untriggered_data:
             self.remove_untriggered()
         else:
-            self.log.debug("Did not drop: %s" % str(self.raw_data))
+            self.log.debug("Did not drop: %s" % str(self.untriggered_data))
 
 
 class RetryStalledTransfer(checksum.CompareChecksums):
