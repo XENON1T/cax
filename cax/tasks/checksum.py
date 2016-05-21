@@ -54,8 +54,8 @@ class CompareChecksums(Task):
                    data_doc['pax_version'] == pax_version:
                         return data_doc['checksum']
 
-        self.log.info("Missing checksum within %d" % self.run_doc['number'])
-        return None
+        #self.log.info("Missing checksum within %d" % self.run_doc['number'])
+        return "not_set"
 
 
     def check(self,
