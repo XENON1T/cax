@@ -183,7 +183,7 @@ mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
 
         script = script_template.format(name=name, in_location=in_location, host=host, pax_version=pax_version, pax_hash=pax_hash, out_location=out_location, ncpus=ncpus)
         self.log.info(script)
-        qsub.submit_job(script, name)
+        qsub.submit_job(script, name+"_"+pax_version)
 
     def verify(self):
         """Verify processing worked"""
@@ -240,7 +240,7 @@ mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
             return
 
         # Specify number of cores for pax multiprocess
-        ncpus = 6 # based on Figure 2 here https://xecluster.lngs.infn.it/dokuwiki/doku.php?id=xenon:xenon1t:shockley:performance#automatic_processing
+        ncpus = 4 # based on Figure 2 here https://xecluster.lngs.infn.it/dokuwiki/doku.php?id=xenon:xenon1t:shockley:performance#automatic_processing
         # Should be tuned on Stockholm too
 
         # Reduce to 1 CPU for small number of events (sometimes pax stalls with too many CPU)
@@ -254,14 +254,21 @@ mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
             pax_hash = get_pax_hash(pax_version, thishost)
             out_location=out_locations[ivers]
 
-            if not have_processed[ivers]:
-            
-                if self.run_doc['reader']['ini']['write_mode'] == 2:
-                
-                    self.log.info("Submitting %s with pax_%s (%s), output to %s",
-                                  self.run_doc['name'], pax_version, pax_hash, out_location)
+            if have_processed[ivers]:
+                self.log.debug("Skipping %s already processed with %s", self.run_doc['name'], pax_version)
+                continue
 
-                    self.submit(have_raw['location'], thishost, pax_version, pax_hash, out_location, ncpus)
+            queue_list = qsub.get_queue(thishost)
+            if self.run_doc['name'] in queue_list: # Should check pax_version here too 
+                self.log.debug("Skipping %s currently in queue", self.run_doc['name']) 
+                continue
+
+            if self.run_doc['reader']['ini']['write_mode'] == 2:
+                
+                self.log.info("Submitting %s with pax_%s (%s), output to %s",
+                              self.run_doc['name'], pax_version, pax_hash, out_location)
+
+                self.submit(have_raw['location'], thishost, pax_version, pax_hash, out_location, ncpus)
 
 # Arguments from process function: (name, in_location, host, pax_version, pax_hash, out_location, ncpus):
 def main():
