@@ -15,11 +15,17 @@ class AddChecksum(Task):
             self.log.debug('Location does not qualify')
             return
 
-        # Require data be here
-        if 'host' not in data_doc or data_doc['host'] != config.get_hostname():
+        # Data must be hosted somewhere
+        if 'host' not in data_doc:
+            return
+
+        print (data_doc['host'], config.get_hostname())
+
+        # Data must be here locally
+        if data_doc['host'] != config.get_hostname():
 
             # Special case of midway-srm accessible via POSIX on midway-login1
-            if data_doc['host']  == "midway-srm" and config.get_hostname() != "midway-login1":
+            if not (data_doc['host']  == "midway-srm" and config.get_hostname() == "midway-login1"):
                 self.log.debug('Location not here')
                 return
 
@@ -82,7 +88,7 @@ class CompareChecksums(Task):
 
                 # Special case of midway-srm accessible via POSIX on midway-login1
                 if data_doc['host'] == config.get_hostname() \
-                   or (data_doc['host'] == "midway-srm" and config.get_hostname() == "midway-login1":
+                   or (data_doc['host'] == "midway-srm" and config.get_hostname() == "midway-login1"):
                     error = "Local checksum error " \
                             "run %d" % self.run_doc['number']
                     if warn: self.give_error(error)
