@@ -14,7 +14,7 @@
     "method": "scp",
     "directory": "/archive/xenon1t/rawdata/runs",
     "upload_options": ["midway-srm"],
-    "download_options": [],
+    "download_options": []
   },
   {
     "name": "lena",
