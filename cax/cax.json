@@ -4,6 +4,15 @@
     "hostname": "eb0",
     "method": null,
     "directory": "/data/xenon1t_data/",
+    "upload_options": ["xe1t-datamanager"],
+    "download_options": []
+  },
+  {
+    "name": "xe1t-datamanager",
+    "hostname": "xe1t-datamanager.lngs.infn.it",
+    "username": "xe1tdatamanager",
+    "method": "scp",
+    "directory": "/archive/xenon1t/rawdata/runs",
     "upload_options": [],
     "download_options": []
   },
@@ -21,7 +30,7 @@
     "method": "scp",
     "hostname": "xe-grid01.lngs.infn.it",
     "directory": "/xetemp/xenon1t/",
-    "upload_options": ["osg-connect-srm"],
+    "upload_options": [],
     "username": "tunnell",
     "download_options": []
   },
@@ -42,7 +51,7 @@
     "directory": "/xenon/xenon1t_test",
     "upload_options": [],
     "username": "pdeperio",
-    "download_options": ["midway-login1"]
+    "download_options": []
   },
   {
     "name": "tegner-login-1",

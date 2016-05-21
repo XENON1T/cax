@@ -36,16 +36,16 @@ class CopyBase(Task):
             raise NotImplementedError()
 
     def copyGFAL(self, datum_original, datum_destination, server, option_type):
-    """Copy data via GFAL function
-    WARNING: Only SRM<->Local implemented (not yet SRM<->SRM)
-    """
+        """Copy data via GFAL function
+        WARNING: Only SRM<->Local implemented (not yet SRM<->SRM)
+        """
         dataset = datum_original['location'].split('/').pop()
 
         # gfal-copy arguments:
         #   -f: overwrite 
         #   -r: recursive
-        #   -n: number of streams (8 for now, but should be tuned)
-        command = "time gfal-copy -f -r -n8 "
+        #   -n: number of streams (6 for now, but should be tuned)
+        command = "time gfal-copy -f -r -n6 "
 
         status = -1
 
@@ -78,15 +78,14 @@ class CopyBase(Task):
 
 
     def copySCP(self, datum_original, datum_destination, server, username, option_type):
-    """Copy data via SCP function
-    """
+        """Copy data via SCP function
+        """
         util.log_to_file('ssh.log')
         ssh = SSHClient()
         ssh.load_system_host_keys()
 
         logging.info("connection to %s" % server)
-        ssh.connect(server,
-                    username=username)
+        ssh.connect(server, username=username)
 
         # SCPCLient takes a paramiko transport as its only argument
         client = scp.SCPClient(ssh.get_transport())
@@ -99,49 +98,6 @@ class CopyBase(Task):
                        datum_destination['location'],
                        recursive=True)
         else:
-            client.get(datum_original['location'],
-                       datum_destination['location'],
-                       recursive=True)
-
-        client.close()
-
-        util.log_to_file('ssh.log')
-        ssh = SSHClient()
-        ssh.load_system_host_keys()
-
-        if datum_original['host'] == config.get_hostname():
-            upload = True
-
-            config_destination = config.get_config(datum_destination['host'])
-            server = config_destination['hostname']
-            username = config_destination['username']
-
-        elif datum_destination['host'] == config.get_hostname():
-            upload = False # ie., download
-
-            config_original = config.get_config(datum_original['host'])
-            server = config_original['hostname']
-            username = config_original['username']
-
-        else:
-            raise ValueError()
-
-        logging.info("connection to %s" % server)
-        ssh.connect(server,
-                    username=username)
-
-        # SCPCLient takes a paramiko transport as its only argument
-        client = scp.SCPClient(ssh.get_transport())
-
-        if upload:
-            logging.info("put: %s to %s" % (datum_original['location'],
-                                            datum_destination['location']))
-            client.put(datum_original['location'],
-                       datum_destination['location'],
-                       recursive=True)
-        else:
-            logging.info("get: %s to %s" % (datum_original['location'],
-                                            datum_destination['location']))
             client.get(datum_original['location'],
                        datum_destination['location'],
                        recursive=True)
