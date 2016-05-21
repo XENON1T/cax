@@ -4,6 +4,7 @@ import os
 import checksumdir
 import subprocess
 import hashlib
+from collections import defaultdict
 from pymongo import ReturnDocument
 
 from cax import qsub, config
@@ -205,7 +206,7 @@ mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
         # Get desired pax versions and corresponding output directories
         versions = config.get_pax_options('versions')
 
-        have_processed = {}
+        have_processed = defaultdict(bool)
         have_raw = False
         
         # Iterate over data locations to know status
