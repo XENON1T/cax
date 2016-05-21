@@ -65,7 +65,6 @@ def process(name, in_location, host, pax_version, pax_hash, out_location,
              # This 'data' gets deleted later and only used for checking
              'data': { '$elemMatch': { 'host': host,
                                        'type': 'processed',
-                                       'pax_hash': pax_hash,
                                        'pax_version': pax_version}}}
     doc = collection.find_one(query)  # Query DB
     if doc is not None:
@@ -227,8 +226,7 @@ mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
             # Check if processed data already exists in DB
             if datum['type'] == 'processed':
                 for version in versions:
-                    if version == datum['pax_version'] and get_pax_hash(version,
-                                                                        thishost) == datum['pax_hash']:
+                    if version == datum['pax_version']:
                         have_processed[version] = True
 
         # Skip if no raw data
