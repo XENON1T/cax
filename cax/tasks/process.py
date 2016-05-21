@@ -263,7 +263,8 @@ mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
 
 
             if have_processed[version]:
-                self.log.debug("Skipping %s already processed with %s", self.run_doc['name'], pax_version)
+                self.log.debug("Skipping %s already processed with %s", self.run_doc['name'],
+                               pax_version)
                 continue
 
             queue_list = qsub.get_queue(thishost)
@@ -274,11 +275,14 @@ mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
             if self.run_doc['reader']['ini']['write_mode'] == 2:
                 
                 self.log.info("Submitting %s with pax_%s (%s), output to %s",
-                              self.run_doc['name'], pax_version, pax_hash, out_location)
+                              self.run_doc['name'], pax_version, pax_hash,
+                              out_location)
 
-                self.submit(have_raw['location'], thishost, pax_version, pax_hash, out_location, ncpus)
+                self.submit(have_raw['location'], thishost, pax_version,
+                            pax_hash, out_location, ncpus)
 
-# Arguments from process function: (name, in_location, host, pax_version, pax_hash, out_location, ncpus):
+# Arguments from process function: (name, in_location, host, pax_version,
+#                                   pax_hash, out_location, ncpus):
 def main():
     process(*sys.argv[1:])
 
