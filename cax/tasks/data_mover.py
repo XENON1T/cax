@@ -126,10 +126,13 @@ class SCPBase(Task):
                                               self.run_doc['name'] +
                                               ('.root' if datum['type'] == 'processed' else '')),
                      'checksum': None,
-                     'creation_time': datetime.datetime.utcnow()}
+                     'creation_time': datetime.datetime.utcnow(),
+                     }
 
         if datum['type'] == 'processed':
             datum_new['pax_version'] = datum['pax_version']
+            datum_new['pax_hash'] = datum['pax_hash']
+            datum_new['creation_place'] = datum['creation_place']
 
         self.collection.update({'_id': self.run_doc['_id']},
                                {'$push': {'data': datum_new}})

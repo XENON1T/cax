@@ -8,6 +8,8 @@ import socket
 
 import pymongo
 
+# global variable to store the specified .json config file
+CAX_CONFIGURE = ''
 
 def mongo_password():
     """Fetch passsword for MongoDB
@@ -29,16 +31,33 @@ def get_hostname():
     """
     return socket.gethostname().split('.')[0]
 
+def set_json( confg ):
+    """Set the cax.json file at your own
+    """
+    global CAX_CONFIGURE
+    CAX_CONFIGURE = confg
+
+def load():
+
+    # User-specified config file
+    if CAX_CONFIGURE:
+        filename = os.path.abspath( CAX_CONFIGURE )
+
+    # Default config file
+    else:
+        dirname = os.path.dirname(os.path.abspath(__file__))
+        filename = os.path.join(dirname, 'cax.json')
+
+    logging.debug('Loading config file %s' % filename)
+
+    return json.loads(open(filename, 'r').read())
 
 def get_config(hostname):
     """Returns the cax configuration for a particular hostname
     NB this currently reloads the cax.json file every time it is called!!
     """
-    dirname = os.path.dirname(os.path.abspath(__file__))
-    filename = os.path.join(dirname, 'cax.json')
-    config = json.loads(open(filename, 'r').read())
 
-    for doc in config:
+    for doc in load():
         if doc['name'] == hostname:
             return doc
     raise LookupError("Unknown host %s" % hostname)
@@ -62,6 +81,32 @@ def get_transfer_options(transfer_kind='upload', transfer_method=None):
 
     return transfer_options
 
+def get_pax_options(option_type='versions'):
+    try:
+        options = get_config(get_hostname())['pax_%s' % option_type] 
+    except LookupError as e:
+        logging.info("Unknown config host: %s", get_hostname())
+        return []
+
+    return options
+
+def get_dataset_list():
+    try:
+        options = get_config(get_hostname())['dataset_list']
+    except LookupError as e:
+        logging.debug("dataset_list not specified, operating on entire DB")
+        return []
+
+    return options
+
+def get_task_list():
+    try:
+        options = get_config(get_hostname())['task_list']
+    except LookupError as e:
+        logging.debug("task_list not specified, running all tasks")
+        return []
+
+    return options
 
 def mongo_collection():
     # For the event builder to communicate with the gateway, we need to use the DAQ network address
