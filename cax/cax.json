@@ -13,8 +13,8 @@
     "username": "xe1tdatamanager",
     "method": "scp",
     "directory": "/archive/xenon1t/rawdata/runs",
-    "upload_options": [],
-    "download_options": []
+    "upload_options": ["midway-srm"],
+    "download_options": [],
   },
   {
     "name": "lena",
@@ -42,7 +42,8 @@
     "upload_options": [],
     "username": "tunnell",
     "download_options": [],
-    "pax_versions": ["v4.10.0"]
+    "pax_versions": ["v4.10.0"],
+    "pax_directories": ["/project/lgrandi/xenon1t/processed/pax_v4.10.0"]
   },
   {
     "name": "login",
@@ -66,7 +67,7 @@
     "name": "lfc",
     "method": "gfal-copy",
     "hostname": "lfn:",
-    "directory": "/grid/xenon.biggrid.nl/xenon1t",
+    "directory": "/grid/xenon.biggrid.nl/xenon1t/raw",
     "username": null
   },
   {
@@ -80,7 +81,7 @@
     "name": "midway-srm",
     "method": "gfal-copy",
     "hostname": "srm://srm1.rcc.uchicago.edu:8443/srm/v2/server?SFN=",
-    "directory": "/project/lgrandi/xenon1t",
+    "directory": "/project/lgrandi/xenon1t/raw",
     "username": null
   },
   {

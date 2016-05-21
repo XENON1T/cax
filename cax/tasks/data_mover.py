@@ -45,7 +45,7 @@ class CopyBase(Task):
         #   -f: overwrite 
         #   -r: recursive
         #   -n: number of streams (6 for now, but should be tuned)
-        command = "time gfal-copy -f -r -n6 "
+        command = "time gfal-copy -f -r -p -n6 "
 
         status = -1
 
@@ -53,12 +53,16 @@ class CopyBase(Task):
             logging.info(option_type+": %s to %s" % (datum_original['location'],
                                             server+datum_destination['location']))
 
+            # Simultaneous LFC registration
+            lfc_config = config.get_config("lfc")
+            lfc_address = lfc_config['hostname']+lfc_config['directory']
+
             status = subprocess.call(
             #print( # For debugging
                                      command+  
-                                     "file://"+datum_original['location']+" "+      # Local Source
-                                     server+datum_destination['location']+" "+      # Destination SRM
-                                     "lfn:/grid/xenon.biggrid.nl/xenon1t/"+dataset, # Registration in Logical File Catalog (LFC)
+                                     "file://"+datum_original['location']+" "+  # Local Source
+                                     server+datum_destination['location']+" "+  # Destination SRM
+                                     lfc_address+"/"+dataset,                   # Registration in Logical File Catalog (LFC)
                                      shell=True
             )
 
@@ -74,7 +78,9 @@ class CopyBase(Task):
                                      shell=True
             )
 
-        print ("gfal-copy status = ", status)
+        
+        if status != 0:
+            self.log.error("Error: gfal-copy status = %d" % status)
 
 
     def copySCP(self, datum_original, datum_destination, server, username, option_type):
@@ -205,9 +211,13 @@ class CopyBase(Task):
             self.copy(datum, datum_new, method, option_type)
             datum_new['status'] = 'verifying'
 
-        # WARNING: This needs to be extended to catch gfal-copy errors
         except scp.SCPException as e:
             self.log.exception(e)
+            datum_new['status'] = 'error'
+
+        # WARNING: This needs to be extended to catch gfal-copy errors
+        except:
+            self.log.exception("Unexpected copy error")
             datum_new['status'] = 'error'
 
         self.log.debug(method+" done, telling run database")
