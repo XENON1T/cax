@@ -70,7 +70,8 @@ def process(name, in_location, host, pax_version, pax_hash, out_location,
                                        'pax_version': pax_version}}}
     doc = collection.find_one(query)  # Query DB
     if doc is not None:
-        print("Already processed.  Clear first.  %s" % json.dumps(doc))
+        print("Already processed %s.  Clear first.  %s" % (name,
+                                                           pax_version))
         return
 
     # Not processed this way already, so notify run DB we will
@@ -182,7 +183,11 @@ time cax-process {name} {in_location} {host} {pax_version} {pax_hash} {out_locat
 mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
 """
 
-        script = script_template.format(name=name, in_location=in_location, host=host, pax_version=pax_version, pax_hash=pax_hash, out_location=out_location, ncpus=ncpus)
+        script = script_template.format(name=name, in_location=in_location,
+                                        host=host, pax_version=pax_version,
+                                        pax_hash=pax_hash,
+                                        out_location=out_location,
+                                        ncpus=ncpus)
         self.log.info(script)
         qsub.submit_job(script, name+"_"+pax_version)
 
