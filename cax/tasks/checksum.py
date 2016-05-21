@@ -42,41 +42,37 @@ class AddChecksum(Task):
 class CompareChecksums(Task):
     "Perform a checksum on accessible data."
 
-    def get_main_checksum(self, data_type='raw'):
+    def get_main_checksum(self, type='raw', pax_version = '', **kwargs):
         for data_doc in self.run_doc['data']:
             # Only look at transfered data
-            if data_doc['status'] == 'transferred':
-                if data_doc['type'] == data_type:
-                    if data_doc['type'] == 'raw':
-                        if data_doc['host'] == 'eb0':
-                            return data_doc['checksum']
-                    if data_doc['type'] == 'processed':
-                        if data_doc['host'] == 'midway-login1':
-                            return data_doc['checksum']
+            if data_doc['status'] == 'transferred' and data_doc['type'] == type:
+                if data_doc['type'] == 'raw' and data_doc['host'] == 'eb0':
+                    return data_doc['checksum']
+
+                if data_doc['type'] == 'processed' and \
+                   data_doc['host'] == 'midway-login1' and \
+                   data_doc['pax_version'] == pax_version:
+                        return data_doc['checksum']
+
+        self.log.info("Missing checksum within %d" % self.run_doc['number'])
         return None
 
 
     def check(self,
-              data_type='raw',
               warn=True):
         """Returns number of good locations"""
         n = 0
 
-        master = self.get_main_checksum(data_type)
-
         for data_doc in self.run_doc['data']:
-            if 'host' not in data_doc:
+            # Only look at transfered data that is not untriggered
+            if 'host' not in data_doc or \
+                            data_doc['status'] != 'transferred' or \
+                            data_doc['type'] == 'untriggered' or \
+                            'checksum' not in data_doc:
                 continue
 
-            # Only look at transfered data
-            if data_doc['status'] != 'transferred':
-                continue
-
-            # And require raw
-            if data_doc['type'] != data_type:
-                continue
-
-            if data_doc['checksum'] != master:
+            # Grab main checksum.
+            if data_doc['checksum'] != self.get_main_checksum(**data_doc):
                 if data_doc['host'] == config.get_hostname():
                     error = "Local checksum error " \
                             "run %d" % self.run_doc['number']
@@ -87,11 +83,7 @@ class CompareChecksums(Task):
         return n
 
     def each_run(self):
-        self.log.debug("Checking raw checksums "
+        self.log.debug("Checking checksums "
                       "run %d" % self.run_doc['number'])
-        self.check('raw')
-
-        self.log.debug("Checking processed checksums "
-                      "run %d" % self.run_doc['number'])
-        self.check('processed')
+        self.check()
 
