@@ -257,7 +257,7 @@ mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
         for version in versions:
             pax_version = version
             pax_hash = get_pax_hash(pax_version, thishost)
-            out_location = os.path.join(config.get_pax_options('directory'),
+            out_location = os.path.join(config.get_config(thishost)['directory'],
                                         'processed',
                                         'pax_%s' % version)
 

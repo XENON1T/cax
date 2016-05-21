@@ -81,8 +81,6 @@ def get_transfer_options(transfer_kind='upload', transfer_method=None):
 
     return transfer_options
 
-
-
 def get_pax_options(option_type='versions'):
     try:
         options = get_config(get_hostname())['pax_%s' % option_type] 
