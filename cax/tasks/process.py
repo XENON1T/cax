@@ -20,6 +20,8 @@ def get_pax_hash(pax_version, host):
     elif host == 'tegner-login-1':
         # Location of GitHub source code on Stockholm
         PAX_DEPLOY_DIR="/afs/pdc.kth.se/projects/xenon/software/pax"
+    elif host == 'xe1t-datamanager':
+        PAX_DEPLOY_DIR="/home/xe1tdatamanager/deployHQ/pax"
 
     # Get hash of this pax version
     if pax_version == 'head':
@@ -203,8 +205,9 @@ mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
             self.log.debug("Host %s processing not implemented", thishost)
             return
                 
-        # Get desired pax versions and corresponding output directories
+        # Get dict of desired pax versions and corresponding output directories
         versions = config.get_pax_options('versions')
+        out_locations = config.get_pax_options('directories')
 
         have_processed = defaultdict(bool)
         have_raw = False
@@ -255,31 +258,27 @@ mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
             ncpus = 1
 
         # Process all specified versions
-        for version in versions:
-            pax_version = version
-            pax_hash = get_pax_hash(pax_version, thishost)
-            out_location = os.path.join(config.get_config(thishost)['directory'],
-                                        'processed',
-                                        'pax_%s' % version)
+        for version, out_location in zip(versions, out_locations):
 
+            pax_hash = get_pax_hash(version, thishost)
 
             if have_processed[version]:
                 self.log.debug("Skipping %s already processed with %s", self.run_doc['name'],
-                               pax_version)
+                               version)
                 continue
 
             queue_list = qsub.get_queue(thishost)
-            if self.run_doc['name'] in queue_list: # Should check pax_version here too 
+            if self.run_doc['name'] in queue_list: # Should check version here too 
                 self.log.debug("Skipping %s currently in queue", self.run_doc['name']) 
                 continue
 
             if self.run_doc['reader']['ini']['write_mode'] == 2:
                 
                 self.log.info("Submitting %s with pax_%s (%s), output to %s",
-                              self.run_doc['name'], pax_version, pax_hash,
+                              self.run_doc['name'], version, pax_hash,
                               out_location)
 
-                self.submit(have_raw['location'], thishost, pax_version,
+                self.submit(have_raw['location'], thishost, version,
                             pax_hash, out_location, ncpus)
 
 # Arguments from process function: (name, in_location, host, pax_version,
