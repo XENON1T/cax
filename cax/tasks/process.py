@@ -1,7 +1,6 @@
 import sys
 import datetime
-import hashlib
-import json
+import os
 import checksumdir
 import subprocess
 import hashlib
@@ -206,9 +205,8 @@ mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
                 
         # Get desired pax versions and corresponding output directories
         versions = config.get_pax_options('versions')
-        out_locations = config.get_pax_options('locations')
-        
-        have_processed = [False for i in range(len(versions))]
+
+        have_processed = {}
         have_raw = False
         
         # Iterate over data locations to know status
@@ -228,21 +226,25 @@ mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
 
             # Check if processed data already exists in DB
             if datum['type'] == 'processed':
-                for ivers in range(len(versions)):
-                    if versions[ivers] == datum['pax_version'] and get_pax_hash(versions[ivers], thishost) == datum['pax_hash']:
-                        have_processed[ivers] = True
+                for version in versions:
+                    if version == datum['pax_version'] and get_pax_hash(version,
+                                                                        thishost) == datum['pax_hash']:
+                        have_processed[version] = True
 
         # Skip if no raw data
         if not have_raw:
-            self.log.debug("Skipping %s with no raw data", self.run_doc['name'])
+            self.log.debug("Skipping %s with no raw data",
+                           self.run_doc['name'])
             return
 
         # Get number of events in data set
-        events = self.run_doc.get('trigger', {}).get('events_built', 0) 
+        events = self.run_doc.get('trigger',
+                                  {}).get('events_built', 0)
                 
         # Skip if 0 events in dataset
         if events <= 0:
-            self.log.debug("Skipping %s with 0 events", self.run_doc['name'])
+            self.log.debug("Skipping %s with 0 events",
+                           self.run_doc['name'])
             return
 
         # Specify number of cores for pax multiprocess
@@ -254,13 +256,15 @@ mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
             ncpus = 1
 
         # Process all specified versions
-        for ivers in range(len(versions)):
-
-            pax_version=versions[ivers]
+        for version in versions:
+            pax_version = version
             pax_hash = get_pax_hash(pax_version, thishost)
-            out_location=out_locations[ivers]
+            out_location = os.path.join(config.get_pax_options('directory'),
+                                        'processed',
+                                        'pax_%s' % version)
 
-            if have_processed[ivers]:
+
+            if have_processed[version]:
                 self.log.debug("Skipping %s already processed with %s", self.run_doc['name'], pax_version)
                 continue
 

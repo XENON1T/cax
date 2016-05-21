@@ -35,8 +35,7 @@
     "upload_options": [],
     "username": "tunnell",
     "download_options": [],
-    "pax_versions": ["v4.10.0"],
-    "pax_locations": ["/project/lgrandi/xenon1t/root/pax_v4.10.0"]
+    "pax_versions": ["v4.10.0"]
   },
   {
     "name": "login",
