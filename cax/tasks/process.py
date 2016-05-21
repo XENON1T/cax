@@ -72,7 +72,7 @@ def process(name, in_location, host, pax_version, pax_hash, out_location,
     if doc is not None:
         print("Already processed %s.  Clear first.  %s" % (name,
                                                            pax_version))
-        return
+        return 1
 
     # Not processed this way already, so notify run DB we will
     doc = collection.find_one_and_update({'detector': 'tpc', 'name' : name},
@@ -229,7 +229,7 @@ mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
             # Check if processed data already exists in DB
             if datum['type'] == 'processed':
                 for ivers in range(len(versions)):
-                    if versions[ivers] == datum['pax_version'] and get_pax_hash(versions[ivers], thishost) == datum['pax_hash'] and datum['status'] != 'error':
+                    if versions[ivers] == datum['pax_version'] and get_pax_hash(versions[ivers], thishost) == datum['pax_hash']:
                         have_processed[ivers] = True
 
         # Skip if no raw data
