@@ -42,8 +42,7 @@ class AddChecksum(Task):
 class CompareChecksums(Task):
     "Perform a checksum on accessible data."
 
-    def get_main_checksum(self, type='raw', pax_hash='', pax_version = '',
-                          **kwargs):
+    def get_main_checksum(self, type='raw', pax_version = '', **kwargs):
         for data_doc in self.run_doc['data']:
             # Only look at transfered data
             if data_doc['status'] == 'transferred' and data_doc['type'] == type:
@@ -60,7 +59,6 @@ class CompareChecksums(Task):
 
 
     def check(self,
-              data_type='raw',
               warn=True):
         """Returns number of good locations"""
         n = 0
