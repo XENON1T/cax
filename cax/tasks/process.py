@@ -55,7 +55,8 @@ def process(name, in_location, host, pax_version, pax_hash, out_location,
              'status'     : 'transferring',
              'location'   : output_fullname + '.root',
              'checksum'   : None,
-             'creation_time' : datetime.datetime.utcnow()}
+             'creation_time' : datetime.datetime.utcnow(),
+             'creation_place' : host}
 
     # This query is used to find if this run has already processed this data
     # in the same way.  If so, quit.
