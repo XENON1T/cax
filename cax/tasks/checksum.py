@@ -66,20 +66,15 @@ class CompareChecksums(Task):
         n = 0
 
         for data_doc in self.run_doc['data']:
-            if 'host' not in data_doc:
+            # Only look at transfered data that is not untriggered
+            if 'host' not in data_doc or \
+                            data_doc['status'] != 'transferred' or \
+                            data_doc['type'] == 'untriggered' or \
+                            'checksum' not in data_doc:
                 continue
-
-            # Only look at transfered data
-            if data_doc['status'] != 'transferred':
-                continue
-
-            if data_doc['type'] == 'untriggered':
-                continue
-
-            local_checksum = data_doc.get('checksum', 0)
 
             # Grab main checksum.
-            if local_checksum != self.get_main_checksum(**data_doc):
+            if data_doc['checksum'] != self.get_main_checksum(**data_doc):
                 if data_doc['host'] == config.get_hostname():
                     error = "Local checksum error " \
                             "run %d" % self.run_doc['number']
