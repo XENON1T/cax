@@ -19,8 +19,6 @@ class AddChecksum(Task):
         if 'host' not in data_doc:
             return
 
-        print (data_doc['host'], config.get_hostname())
-
         # Data must be here locally
         if data_doc['host'] != config.get_hostname():
 
