@@ -57,31 +57,25 @@ class CopyBase(Task):
             lfc_config = config.get_config("lfc")
             lfc_address = lfc_config['hostname']+lfc_config['directory']
 
-            status = subprocess.call(
-            #print( # For debugging
-                                     command+  
-                                     "file://"+datum_original['location']+" "+  # Local Source
-                                     server+datum_destination['location']+" "+  # Destination SRM
-                                     lfc_address+"/"+dataset,                   # Registration in Logical File Catalog (LFC)
-                                     shell=True
-            )
+            full_command = command+ \
+                           "file://"+datum_original['location']+" "+ \
+                           server+datum_destination['location']+" "+ \
+                           lfc_address+"/"+dataset                  
 
         else: # download
             logging.info(option_type+": %s to %s" % (server+datum_original['location'],
                                                      datum_destination['location']))
  
-            status = subprocess.call(
-            #print( # For debugging
-                                     command+ 
-                                     server+datum_original['location']+" "+
-                                     "file://"+datum_destination['location'],
-                                     shell=True
-            )
+            full_command = command+ \
+                           server+datum_original['location']+" "+ \
+                           "file://"+datum_destination['location']
 
+        self.log.info(full_command)
+        status = subprocess.call(full_command, shell=True)
         
         if status != 0:
             self.log.error("Error: gfal-copy status = %d" % status)
-
+            raise 
 
     def copySCP(self, datum_original, datum_destination, server, username, option_type):
         """Copy data via SCP function
