@@ -133,7 +133,8 @@ class SCPBase(Task):
             datum_new['pax_version'] = datum['pax_version']
             if 'pax_hash' in datum:
                 datum_new['pax_hash'] = datum['pax_hash']
-            datum_new['creation_place'] = datum['creation_place']
+            if 'creation_place' in datum:
+                datum_new['creation_place'] = datum['creation_place']
 
         self.collection.update({'_id': self.run_doc['_id']},
                                {'$push': {'data': datum_new}})
