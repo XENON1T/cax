@@ -65,22 +65,20 @@ First ensure cax/cax.json is the list of sites that you wish to work with.
 
 Then you can run a single instance with::
 
-  bin/./cax-single  # or just cax-single if commonly installed
+  bin/cax --once  # or just 'cax --once' if commonly installed
   
 or continuously running daemon:: 
 
-  bin/./cax  # or just cax if commonly installed
+  bin/cax  # or just cax if commonly installed
   
-This will perform the upload and downloads that are specified in cax.json and update the Runs DB accordingly
+This will perform the upload and downloads that are specified in cax.json and update the Runs DB accordingly. 
 
   https://xenon1t-daq.lngs.infn.it/runs
   
 For checksumming, cax must be run on the storage server whose IP must be whitelisted by LNGS (contact ctunnell@nikhef.nl for this).
 
-Features
---------
+Processing is currently implemented for only Midway and Stockholm.
 
-* TODO
 
 Credits
 ---------
