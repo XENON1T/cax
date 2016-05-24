@@ -173,6 +173,7 @@ export PROCESSING_DIR=/cfs/klemming/projects/xenon/xenon1t/processing/{name}_{pa
         # Script parts common to all sites
         script_template += """mkdir -p ${{PROCESSING_DIR}} {out_location}
 cd ${{PROCESSING_DIR}}
+rm -f pax_event_class*
 
 source activate pax_{pax_version}
 
