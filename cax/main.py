@@ -7,17 +7,14 @@ import os.path
 from cax.config import mongo_password, set_json, get_task_list, get_config
 from cax.tasks import checksum, clear, data_mover, process
 
-
-def single():
-    raise RuntimeError("cax-single has been removed: use cax --once instead")
-
-
 def main():
     parser = argparse.ArgumentParser(description="Copying All kinds of XENON1T data.")
     parser.add_argument('--once', action='store_true',
                         help="Run all tasks just one, then exits")
     parser.add_argument('--config', action='store', dest='config_file',
-                        help="Load a custom .json config file into cax")    
+                        help="Load a custom .json config file into cax")
+    parser.add_argument('--hostname', action='store', dest='hostname',
+                        help="Overload hostname (for DAQ only!)")
 
     args = parser.parse_args()
 
