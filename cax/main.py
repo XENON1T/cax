@@ -4,7 +4,7 @@ import time
 import argparse
 import os.path
 
-from cax.config import mongo_password, set_json, get_task_list
+from cax.config import mongo_password, set_json, get_task_list, get_config
 from cax.tasks import checksum, clear, data_mover, process
 
 
@@ -62,6 +62,9 @@ def main():
              clear.RetryStalledTransfer(),
              clear.RetryBadChecksumTransfer(),
              ]
+
+    # Raises exception if unknown host
+    get_config()
 
     user_tasks = get_task_list()
 
