@@ -8,6 +8,8 @@ import socket
 
 import pymongo
 
+HOSTNAME = None
+
 # global variable to store the specified .json config file
 CAX_CONFIGURE = ''
 
@@ -29,6 +31,9 @@ def mongo_password():
 def get_hostname():
     """Get hostname of the machine we're running on.
     """
+    global HOSTNAME
+    if HOSTNAME is not None:
+        return HOSTNAME
     return socket.gethostname().split('.')[0]
 
 def set_json( confg ):
