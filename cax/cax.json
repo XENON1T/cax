@@ -1,4 +1,12 @@
 [
+    {
+    "name": "xenon1t-daq",
+    "hostname": "xenon1t-daq.lngs.infn.it",
+    "receive": null,
+    "directory": "/data/xenon/raw/",
+    "upload_options": [],
+    "download_options": ["xe-grid01"]
+  },
   {
     "name": "eb0",
     "hostname": "eb0",
@@ -16,7 +24,7 @@
     "directory": "/data/xenon/xenon1t/",
     "upload_options": [],
     "username": "ctunnell",
-    "download_options": ["midway-login1"]
+    "download_options": ["midway-login1", "xenon1t-daq"]
   },
   {
     "name": "xe-grid01",
