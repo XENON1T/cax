@@ -1,9 +1,9 @@
 import datetime
-import os
 import logging
+import os
 
-from paramiko import SSHClient, util
 import scp
+from paramiko import SSHClient, util
 
 from cax import config
 from cax.task import Task
@@ -22,7 +22,7 @@ def copy(datum_original, datum_destination):
         username = config_destination['username']
 
     elif datum_destination['host'] == config.get_hostname():
-        upload = False    # ie., download
+        upload = False  # ie., download
 
         config_original = config.get_config(datum_original['host'])
         server = config_original['hostname']
@@ -81,8 +81,8 @@ class SCPBase(Task):
         for remote_host in options:
             self.log.debug(remote_host)
 
-            datum_here = None    # Information about data here
-            datum_there = None   # Information about data there
+            datum_here = None  # Information about data here
+            datum_there = None  # Information about data there
 
             # Iterate over data locations to know status
             for datum in self.run_doc['data']:
@@ -119,13 +119,14 @@ class SCPBase(Task):
                                                       destination))
 
         self.log.debug("Notifying run database")
-        datum_new = {'type': datum['type'],
-                     'host': destination,
-                     'status': 'transferring',
-                     'location': os.path.join(destination_config['directory'],
-                                              self.run_doc['name'] +
-                                              ('.root' if datum['type'] == 'processed' else '')),
-                     'checksum': None,
+        datum_new = {'type'         : datum['type'],
+                     'host'         : destination,
+                     'status'       : 'transferring',
+                     'location'     : os.path.join(
+                         destination_config['directory'],
+                         self.run_doc['name'] +
+                         ('.root' if datum['type'] == 'processed' else '')),
+                     'checksum'     : None,
                      'creation_time': datetime.datetime.utcnow(),
                      }
 
@@ -149,9 +150,10 @@ class SCPBase(Task):
             datum_new['status'] = 'error'
         self.log.debug("SCP done, telling run database")
 
-        self.collection.update({'_id': self.run_doc['_id'],
-                                'data': {'$elemMatch': { 'host': datum_new['host'],
-                                                         'type': datum_new['type']}}},
+        self.collection.update({'_id' : self.run_doc['_id'],
+                                'data': {
+                                    '$elemMatch': {'host': datum_new['host'],
+                                                   'type': datum_new['type']}}},
                                {'$set': {'data.$': datum_new}})
         self.log.info("Transfer complete")
 
@@ -162,6 +164,7 @@ class SCPPush(SCPBase):
     If the data is transfered to current host and does not exist at any other
     site (including transferring), then copy data there."""
     option_type = 'upload'
+
 
 class SCPPull(SCPBase):
     """Copy data via SCP to here

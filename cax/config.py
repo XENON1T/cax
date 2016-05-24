@@ -8,10 +8,9 @@ import socket
 
 import pymongo
 
-HOSTNAME = None
-
 # global variable to store the specified .json config file
 CAX_CONFIGURE = ''
+
 
 def mongo_password():
     """Fetch passsword for MongoDB
@@ -31,22 +30,20 @@ def mongo_password():
 def get_hostname():
     """Get hostname of the machine we're running on.
     """
-    global HOSTNAME
-    if HOSTNAME is not None:
-        return HOSTNAME
     return socket.gethostname().split('.')[0]
 
-def set_json( confg ):
+
+def set_json(config):
     """Set the cax.json file at your own
     """
     global CAX_CONFIGURE
-    CAX_CONFIGURE = confg
+    CAX_CONFIGURE = config
+
 
 def load():
-
     # User-specified config file
     if CAX_CONFIGURE:
-        filename = os.path.abspath( CAX_CONFIGURE )
+        filename = os.path.abspath(CAX_CONFIGURE)
 
     # Default config file
     else:
@@ -56,6 +53,7 @@ def load():
     logging.debug('Loading config file %s' % filename)
 
     return json.loads(open(filename, 'r').read())
+
 
 def get_config(hostname=get_hostname()):
     """Returns the cax configuration for a particular hostname
@@ -74,7 +72,8 @@ def get_transfer_options(transfer_kind='upload', transfer_method=None):
                      we can work using this method (e.g. scp)
     """
     try:
-        transfer_options = get_config(get_hostname())['%s_options' % transfer_kind]
+        transfer_options = get_config(get_hostname())[
+            '%s_options' % transfer_kind]
     except LookupError:
         logging.info("Host %s has no known transfer options.",
                      get_hostname())
@@ -86,14 +85,16 @@ def get_transfer_options(transfer_kind='upload', transfer_method=None):
 
     return transfer_options
 
+
 def get_pax_options(option_type='versions'):
     try:
-        options = get_config(get_hostname())['pax_%s' % option_type] 
+        options = get_config(get_hostname())['pax_%s' % option_type]
     except LookupError as e:
         logging.info("Unknown config host: %s", get_hostname())
         return []
 
     return options
+
 
 def get_dataset_list():
     try:
@@ -104,6 +105,7 @@ def get_dataset_list():
 
     return options
 
+
 def get_task_list():
     try:
         options = get_config(get_hostname())['task_list']
@@ -113,11 +115,13 @@ def get_task_list():
 
     return options
 
+
 def mongo_collection():
     # For the event builder to communicate with the gateway, we need to use the DAQ network address
     # Otherwise, use the internet to find the runs database
     if get_hostname().startswith('eb'):
-        c = pymongo.MongoClient('mongodb://eb:%s@gw:27017/run' % os.environ.get('MONGO_PASSWORD'))
+        c = pymongo.MongoClient(
+            'mongodb://eb:%s@gw:27017/run' % os.environ.get('MONGO_PASSWORD'))
     else:
         uri = 'mongodb://eb:%s@xenon1t-daq.lngs.infn.it:27017,copslx50.fysik.su.se:27017/run'
         uri = uri % os.environ.get('MONGO_PASSWORD')

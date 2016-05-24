@@ -1,6 +1,7 @@
-import os
-import checksumdir
 import hashlib
+import os
+
+import checksumdir
 
 from cax import config
 from ..task import Task
@@ -33,16 +34,17 @@ class AddChecksum(Task):
         self.log.info("Adding a checksum to run "
                       "%d %s" % (self.run_doc['number'],
                                  data_doc['type']))
-        self.collection.update({'_id': self.run_doc['_id'],
-                                'data': {'$elemMatch': { 'host': data_doc['host'],
-                                                         'type': data_doc['type']}}},
+        self.collection.update({'_id' : self.run_doc['_id'],
+                                'data': {
+                                    '$elemMatch': {'host': data_doc['host'],
+                                                   'type': data_doc['type']}}},
                                {'$set': {'data.$': data_doc}})
 
 
 class CompareChecksums(Task):
     "Perform a checksum on accessible data."
 
-    def get_main_checksum(self, type='raw', pax_version = '', **kwargs):
+    def get_main_checksum(self, type='raw', pax_version='', **kwargs):
         for data_doc in self.run_doc['data']:
             # Only look at transfered data
             if data_doc['status'] == 'transferred' and data_doc['type'] == type:
@@ -50,13 +52,12 @@ class CompareChecksums(Task):
                     return data_doc['checksum']
 
                 if data_doc['type'] == 'processed' and \
-                   data_doc['host'] == 'midway-login1' and \
-                   data_doc['pax_version'] == pax_version:
-                        return data_doc['checksum']
+                                data_doc['host'] == 'midway-login1' and \
+                                data_doc['pax_version'] == pax_version:
+                    return data_doc['checksum']
 
-        #self.log.info("Missing checksum within %d" % self.run_doc['number'])
+        # self.log.info("Missing checksum within %d" % self.run_doc['number'])
         return "not_set"
-
 
     def check(self,
               warn=True):
@@ -76,7 +77,8 @@ class CompareChecksums(Task):
                 if data_doc['host'] == config.get_hostname():
                     error = "Local checksum error " \
                             "run %d" % self.run_doc['number']
-                    if warn: self.give_error(error)
+                    if warn:
+                        self.give_error(error)
             else:
                 n += 1
 
@@ -84,6 +86,5 @@ class CompareChecksums(Task):
 
     def each_run(self):
         self.log.debug("Checking checksums "
-                      "run %d" % self.run_doc['number'])
+                       "run %d" % self.run_doc['number'])
         self.check()
-

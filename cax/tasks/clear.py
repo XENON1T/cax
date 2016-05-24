@@ -1,12 +1,12 @@
-import os
 import datetime
+import os
 import shutil
 
 import pymongo
 
-from cax.tasks import checksum
 from cax import config
 from cax.task import Task
+from cax.tasks import checksum
 
 
 class ClearDAQBuffer(checksum.CompareChecksums):
@@ -31,9 +31,10 @@ class ClearDAQBuffer(checksum.CompareChecksums):
             return None
 
         self.log.info('Dropped %s' % self.untriggered_data['collection'])
-        
+
         self.log.debug(self.collection.update({'_id': self.run_doc['_id']},
-                                              {'$pull': {'data': self.untriggered_data}}))
+                                              {'$pull': {
+                                                  'data': self.untriggered_data}}))
 
     def each_run(self):
         if self.check(warn=False) > 2 and self.untriggered_data:
@@ -56,7 +57,7 @@ class RetryStalledTransfer(checksum.CompareChecksums):
 
     def each_location(self, data_doc):
         if 'host' not in data_doc or data_doc['host'] != config.get_hostname():
-            return # Skip places where we can't locally access data
+            return  # Skip places where we can't locally access data
 
         if 'creation_time' not in data_doc:
             self.log.warning("No creation time for %s" % str(data_doc))
@@ -67,7 +68,7 @@ class RetryStalledTransfer(checksum.CompareChecksums):
         difference = datetime.datetime.utcnow() - time
 
         if data_doc["status"] == "transferred":
-            return # Transfer went fine
+            return  # Transfer went fine
 
         self.log.debug(difference)
 
@@ -91,9 +92,10 @@ class RetryStalledTransfer(checksum.CompareChecksums):
                     self.log.error('did not exist, notify run database.')
 
                 resp = self.collection.update({'_id': self.run_doc['_id']},
-                                               {'$pull': {'data' : data_doc}})
+                                              {'$pull': {'data': data_doc}})
                 self.log.error('Removed from run database.')
                 self.log.debug(resp)
+
 
 class RetryBadChecksumTransfer(checksum.CompareChecksums):
     """Alert if stale transfer."""
@@ -103,11 +105,10 @@ class RetryBadChecksumTransfer(checksum.CompareChecksums):
 
     def each_location(self, data_doc):
         if 'host' not in data_doc or data_doc['host'] != config.get_hostname():
-            return # Skip places where we can't locally access data
+            return  # Skip places where we can't locally access data
 
         if data_doc["status"] != "transferred":
-            return # Transfer went fine
-
+            return  # Transfer went fine
 
         if data_doc['checksum'] != self.get_main_checksum(**data_doc):
             self.give_error("Bad checksum")
@@ -123,6 +124,6 @@ class RetryBadChecksumTransfer(checksum.CompareChecksums):
                     self.log.error('did not exist, notify run database.')
 
                 resp = self.collection.update({'_id': self.run_doc['_id']},
-                                               {'$pull': {'data' : data_doc}})
+                                              {'$pull': {'data': data_doc}})
                 self.log.error('Removed from run database.')
                 self.log.debug(resp)

@@ -1,21 +1,19 @@
 import argparse
 import logging
-import time
-import argparse
 import os.path
+import time
 
-from cax import config
 from cax.config import mongo_password, set_json, get_task_list, get_config
 from cax.tasks import checksum, clear, data_mover, process
 
+
 def main():
-    parser = argparse.ArgumentParser(description="Copying All kinds of XENON1T data.")
+    parser = argparse.ArgumentParser(
+        description="Copying All kinds of XENON1T data.")
     parser.add_argument('--once', action='store_true',
                         help="Run all tasks just one, then exits")
     parser.add_argument('--config', action='store', dest='config_file',
                         help="Load a custom .json config file into cax")
-    parser.add_argument('--hostname', action='store', dest='hostname',
-                        help="Overload hostname (for DAQ only!)")
 
     args = parser.parse_args()
 
@@ -49,11 +47,6 @@ def main():
             logging.info("Using custom config file: %s",
                          args.config_file)
             set_json(args.config_file)
-
-    if args.hostname:
-        logging.warning("Overloading hostname to %s. "
-                        "Intended only for DAQ machines." % args.hostname)
-        config.HOSTNAME = args.hostname
 
     tasks = [process.ProcessBatchQueue(),
              data_mover.SCPPush(),
