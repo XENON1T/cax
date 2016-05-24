@@ -4,6 +4,7 @@ import time
 import argparse
 import os.path
 
+from cax import config
 from cax.config import mongo_password, set_json, get_task_list, get_config
 from cax.tasks import checksum, clear, data_mover, process
 
@@ -23,15 +24,6 @@ def main():
     # Check passwords and API keysspecified
     mongo_password()
 
-    # Get specified cax.json configuration file for cax:
-    caxjson_config = args.config_file
-    if caxjson_config:
-        if not os.path.isfile( caxjson_config ):
-            logging.error("Config file %s not found", caxjson_config)
-        else:
-            #logging.info("Using custom config file: %s", caxjson_config) # seems to kill rest of output...
-            set_json( caxjson_config )
-
     # Setup logging
     logging.basicConfig(filename='cax.log',
                         level=logging.INFO,
@@ -40,7 +32,6 @@ def main():
 
     # define a Handler which writes INFO messages or higher to the sys.stderr
     console = logging.StreamHandler()
-
     console.setLevel(logging.INFO)
 
     # set a format which is simpler for console use
@@ -49,6 +40,20 @@ def main():
     console.setFormatter(formatter)
     # add the handler to the root logger
     logging.getLogger('').addHandler(console)
+
+    # Get specified cax.json configuration file for cax:
+    if args.config_file:
+        if not os.path.isfile(args.config_file):
+            logging.error("Config file %s not found", args.config_file)
+        else:
+            logging.info("Using custom config file: %s",
+                         args.config_file)
+            set_json(args.config_file)
+
+    if args.hostname:
+        logging.warning("Overloading hostname to %s. "
+                        "Intended only for DAQ machines." % args.hostname)
+        config.HOSTNAME = args.hostname
 
     tasks = [process.ProcessBatchQueue(),
              data_mover.SCPPush(),
