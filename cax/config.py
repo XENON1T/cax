@@ -52,11 +52,10 @@ def load():
 
     return json.loads(open(filename, 'r').read())
 
-def get_config(hostname):
+def get_config(hostname=get_hostname()):
     """Returns the cax configuration for a particular hostname
     NB this currently reloads the cax.json file every time it is called!!
     """
-
     for doc in load():
         if doc['name'] == hostname:
             return doc
@@ -72,7 +71,8 @@ def get_transfer_options(transfer_kind='upload', transfer_method=None):
     try:
         transfer_options = get_config(get_hostname())['%s_options' % transfer_kind]
     except LookupError:
-        logging.info("Host %s has no known transfer options.")
+        logging.info("Host %s has no known transfer options.",
+                     get_hostname())
         return []
 
     if transfer_method is not None:
