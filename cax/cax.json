@@ -1,11 +1,13 @@
 [
-    {
+  {
     "name": "xenon1t-daq",
     "hostname": "xenon1t-daq.lngs.infn.it",
     "receive": null,
     "directory": "/data/xenon/raw/",
     "upload_options": [],
-    "download_options": ["xe-grid01"]
+    "download_options": [
+      "xe-grid01"
+    ]
   },
   {
     "name": "eb0",
@@ -24,7 +26,10 @@
     "directory": "/data/xenon/xenon1t/",
     "upload_options": [],
     "username": "ctunnell",
-    "download_options": ["midway-login1", "xenon1t-daq"]
+    "download_options": [
+      "midway-login1",
+      "xenon1t-daq"
+    ]
   },
   {
     "name": "xe-grid01",
@@ -33,7 +38,9 @@
     "directory": "/xetemp/xenon1t/",
     "upload_options": [],
     "username": "tunnell",
-    "download_options": ["midway-login1"]
+    "download_options": [
+      "midway-login1"
+    ]
   },
   {
     "name": "midway-login1",
@@ -43,7 +50,9 @@
     "upload_options": [],
     "username": "tunnell",
     "download_options": [],
-    "pax_versions": ["v4.10.0"]
+    "pax_versions": [
+      "v4.10.0"
+    ]
   },
   {
     "name": "login",
@@ -52,7 +61,9 @@
     "directory": "/xenon/xenon1t_test",
     "upload_options": [],
     "username": "pdeperio",
-    "download_options": ["midway-login1"]
+    "download_options": [
+      "midway-login1"
+    ]
   },
   {
     "name": "tegner-login-1",
@@ -61,6 +72,8 @@
     "directory": "/cfs/klemming/projects/xenon/xenon1t/data",
     "upload_options": [],
     "username": "bobau",
-    "download_options": ["midway-login1"]
+    "download_options": [
+      "midway-login1"
+    ]
   }
 ]
