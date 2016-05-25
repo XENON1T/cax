@@ -201,6 +201,9 @@ mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
         return True  # yeah... TODO.
 
     def each_run(self):
+        if self.has_tag('donotprocess'):
+            self.log.debug("Do not process tag found")
+            return
 
         thishost = config.get_hostname()
 
