@@ -5,9 +5,7 @@
     "receive": null,
     "directory": "/data/xenon/raw/",
     "upload_options": [],
-    "download_options": [
-      "xe-grid01"
-    ]
+    "download_options": []
   },
   {
     "name": "eb0",
