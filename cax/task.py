@@ -72,3 +72,13 @@ class Task():
         santized_run_doc = loads(dumps(santized_run_doc))
 
         self.log.error(message)
+
+    def has_tag(self, name):
+        if 'tags' not in self.run_doc:
+            return False
+
+        for tag in self.run_doc['tags']:
+            if name == tag['name']:
+                return True
+        return False
+

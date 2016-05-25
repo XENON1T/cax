@@ -49,7 +49,7 @@
     "directory": "/project/lgrandi/xenon1t",
     "upload_options": [],
     "username": "tunnell",
-    "download_options": [],
+    "download_options": ["xenon1t-daq"],
     "pax_versions": [
       "v4.10.0"
     ]
