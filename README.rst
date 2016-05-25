@@ -84,6 +84,10 @@ Customizing cax
 
 Customizing the behavior of cax is currently done in `cax/cax.json <https://github.com/XENON1T/cax/blob/master/cax/cax.json>`_, however you should be very careful when modifying this since the head version by default is being used by various sites to handle the XENON1T data flow and processing.
 
+You can feed in a custom cax.json into cax via::
+
+  cax --config <path to custom cax.json>
+
 For development and testing, in addition to the options already in cax.json, you may specify subset of tasks you wish to run, e.g.::
 
   "task_list": ["ProcessBatchQueue", "AddChecksum"]
