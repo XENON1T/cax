@@ -5,7 +5,8 @@
     "receive": null,
     "directory": "/data/xenon/raw/",
     "upload_options": [],
-    "download_options": []
+    "download_options": [],
+    "username": "transfer"
   },
   {
     "name": "eb0",
@@ -34,9 +35,11 @@
     "receive": "scp",
     "hostname": "xe-grid01.lngs.infn.it",
     "directory": "/xetemp/xenon1t/",
-    "upload_options": ["xenon1t-daq"],
+    "upload_options": [
+      "xenon1t-daq"
+    ],
     "username": "tunnell",
-    "download_options": [ ]
+    "download_options": []
   },
   {
     "name": "midway-login1",
@@ -45,7 +48,9 @@
     "directory": "/project/lgrandi/xenon1t",
     "upload_options": [],
     "username": "tunnell",
-    "download_options": ["xenon1t-daq"],
+    "download_options": [
+      "xenon1t-daq"
+    ],
     "pax_versions": [
       "v4.10.0"
     ]
