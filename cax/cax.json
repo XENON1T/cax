@@ -34,11 +34,9 @@
     "receive": "scp",
     "hostname": "xe-grid01.lngs.infn.it",
     "directory": "/xetemp/xenon1t/",
-    "upload_options": [],
+    "upload_options": ["xenon1t-daq"],
     "username": "tunnell",
-    "download_options": [
-      "midway-login1"
-    ]
+    "download_options": [ ]
   },
   {
     "name": "midway-login1",
