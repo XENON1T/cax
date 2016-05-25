@@ -50,6 +50,8 @@ class CompareChecksums(Task):
             if data_doc['status'] == 'transferred' and data_doc['type'] == type:
                 if data_doc['type'] == 'raw' and data_doc['host'] == 'eb0':
                     return data_doc['checksum']
+                if data_doc['type'] == 'raw' and data_doc['host'] == 'xenon1t-daq':
+                    return data_doc['checksum']
 
                 if data_doc['type'] == 'processed' and \
                                 data_doc['host'] == 'midway-login1' and \
