@@ -82,13 +82,13 @@ Processing is currently implemented for only Midway and Stockholm.
 Customizing cax
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Customizing the behavior of cax is currently done in [cax/cax.json](https://github.com/XENON1T/cax/blob/master/cax/cax.json), however you should be very careful when modifying this since the head version by default is being used by various sites to handle the XENON1T data flow and processing.
+Customizing the behavior of cax is currently done in `cax/cax.json <https://github.com/XENON1T/cax/blob/master/cax/cax.json>`_, however you should be very careful when modifying this since the head version by default is being used by various sites to handle the XENON1T data flow and processing.
 
 For development and testing, in addition to the options already in cax.json, you may specify subset of tasks you wish to run, e.g.::
 
   "task_list": ["ProcessBatchQueue", "AddChecksum"]
-  
-corresponding to the tasks in [cax/main.py](https://github.com/XENON1T/cax/blob/master/cax/main.py#L51).
+
+corresponding to the tasks in `cax/main.py <https://github.com/XENON1T/cax/blob/master/cax/main.py#L51>`_.
 
 You may also specify a subset of datasets to operate on with, e.g.::
 
