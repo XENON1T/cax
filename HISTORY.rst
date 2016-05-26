@@ -6,6 +6,7 @@ History
 ------------------
 
 * Add release support
+* Add version number to log output
 
 1.0.0 (2016-5-26)
 ------------------
