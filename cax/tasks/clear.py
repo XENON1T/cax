@@ -78,8 +78,10 @@ class RetryStalledTransfer(checksum.CompareChecksums):
                                          self.run_doc['number'],
                                          self.run_doc['name']))
 
-        if difference > datetime.timedelta(days=2):  # If stale transfer
-            self.give_error("Transfer lasting more than two days, retry.")
+        if difference > datetime.timedelta(days=2) or \
+                        data_doc["status"] == 'error':  # If stale transfer
+            self.give_error("Transfer lasting more than two days "
+                            "or errored, retry.")
 
             self.log.info("Deleting %s" % data_doc['location'])
 
