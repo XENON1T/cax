@@ -82,3 +82,25 @@ dist: clean
 
 install: clean
 	python setup.py install
+
+major: clean docs
+	emacs HISTORY.rst
+	git commit -m "Update HISTORY for the release" HISTORY.rst
+	bumpversion major
+	git push
+	git push --tags
+
+
+minor: clean docs
+	emacs HISTORY.rst
+	git commit -m "Update HISTORY for the release" HISTORY.rst
+	bumpversion minor
+	git push
+	git push --tags
+
+patch: clean docs
+	emacs HISTORY.rst
+	git commit -m "Update HISTORY for the release" HISTORY.rst
+	bumpversion patch
+	git push
+	git push --tags
