@@ -2,6 +2,11 @@
 History
 =======
 
+1.1.1 (2016-5-26)
+------------------
+
+* Version number only in file log, not screen
+
 1.1.0 (2016-5-26)
 ------------------
 
