@@ -5,7 +5,7 @@ import time
 
 from cax.config import mongo_password, set_json, get_task_list, get_config
 from cax.tasks import checksum, clear, data_mover, process
-
+from cax import __version__
 
 def main():
     parser = argparse.ArgumentParser(
@@ -33,7 +33,9 @@ def main():
     console.setLevel(logging.INFO)
 
     # set a format which is simpler for console use
-    formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+    cax_version = 'cax_v%s - ' % __version__
+    formatter = logging.Formatter(cax_version + '%(name)-12s: '
+                                                '%(levelname)-8s %(message)s')
     # tell the handler to use this format
     console.setFormatter(formatter)
     # add the handler to the root logger
