@@ -23,9 +23,10 @@ def main():
     mongo_password()
 
     # Setup logging
+    cax_version = 'cax_v%s - ' % __version__
     logging.basicConfig(filename='cax.log',
                         level=logging.INFO,
-                        format='%(asctime)s [%(levelname)s] %(message)s')
+                        format=cax_version + '%(asctime)s [%(levelname)s] %(message)s')
     logging.info('Daemon is starting')
 
     # define a Handler which writes INFO messages or higher to the sys.stderr
@@ -33,9 +34,8 @@ def main():
     console.setLevel(logging.INFO)
 
     # set a format which is simpler for console use
-    cax_version = 'cax_v%s - ' % __version__
-    formatter = logging.Formatter(cax_version + '%(name)-12s: '
-                                                '%(levelname)-8s %(message)s')
+
+    formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
     # tell the handler to use this format
     console.setFormatter(formatter)
     # add the handler to the root logger
