@@ -2,6 +2,11 @@
 History
 =======
 
+1.2.0 (2016-5-26)
+------------------
+
+* Retry if errored instead of waiting two days.
+
 1.1.2 (2016-5-26)
 ------------------
 
