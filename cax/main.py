@@ -12,10 +12,17 @@ def main():
         description="Copying All kinds of XENON1T data.")
     parser.add_argument('--once', action='store_true',
                         help="Run all tasks just one, then exits")
-    parser.add_argument('--config', action='store', dest='config_file',
+    parser.add_argument('--config', action='store', type=str,
+                        dest='config_file',
                         help="Load a custom .json config file into cax")
+    parser.add_argument('--log',  dest='log', type=str, default='info',
+                        help="Logging level e.g. debug")
 
     args = parser.parse_args()
+
+    log_level = getattr(logging, args.log.upper())
+    if not isinstance(log_level, int):
+        raise ValueError('Invalid log level: %s' % args.log)
 
     run_once = args.once
 
@@ -25,13 +32,13 @@ def main():
     # Setup logging
     cax_version = 'cax_v%s - ' % __version__
     logging.basicConfig(filename='cax.log',
-                        level=logging.INFO,
+                        level=log_level,
                         format=cax_version + '%(asctime)s [%(levelname)s] %(message)s')
     logging.info('Daemon is starting')
 
     # define a Handler which writes INFO messages or higher to the sys.stderr
     console = logging.StreamHandler()
-    console.setLevel(logging.INFO)
+    console.setLevel(log_level)
 
     # set a format which is simpler for console use
 
