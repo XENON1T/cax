@@ -13,9 +13,7 @@
     "hostname": "eb0",
     "receive": null,
     "directory": "/data/xenon1t_data/",
-    "upload_options": [
-      "midway-login1"
-    ],
+    "upload_options": [],
     "download_options": []
   },
   {
