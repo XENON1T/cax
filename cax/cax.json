@@ -3,7 +3,7 @@
     "name": "xenon1t-daq",
     "hostname": "xenon1t-daq.lngs.infn.it",
     "receive": null,
-    "directory": "/data/xenon/raw/",
+    "dir_raw": "/data/xenon/raw/",
     "upload_options": [],
     "download_options": [],
     "username": "transfer"
@@ -12,7 +12,7 @@
     "name": "eb0",
     "hostname": "eb0",
     "receive": null,
-    "directory": "/data/xenon1t_data/",
+    "dir_raw": "/data/xenon1t_data/",
     "upload_options": [],
     "download_options": []
   },
@@ -20,7 +20,7 @@
     "name": "lena",
     "receive": "scp",
     "hostname": "login.nikhef.nl",
-    "directory": "/data/xenon/xenon1t/",
+    "dir_raw": "/data/xenon/xenon1t/",
     "upload_options": [],
     "username": "ctunnell",
     "download_options": [
@@ -32,7 +32,7 @@
     "name": "xe-grid01",
     "receive": "scp",
     "hostname": "xe-grid01.lngs.infn.it",
-    "directory": "/xetemp/xenon1t/",
+    "dir_raw": "/xetemp/xenon1t/",
     "upload_options": [
       "xenon1t-daq"
     ],
@@ -43,7 +43,6 @@
     "name": "midway-login1",
     "receive": "scp",
     "hostname": "midway-login1.rcc.uchicago.edu",
-    "directory": "/project/lgrandi/xenon1t",
     "dir_raw": "/project/lgrandi/xenon1t",
     "dir_root": "/project/lgrandi/xenon1t/processed",
     "upload_options": [],
@@ -60,7 +59,7 @@
     "name": "login",
     "receive": "scp",
     "hostname": "login.ci-connect.uchicago.edu",
-    "directory": "/xenon/xenon1t_test",
+    "dir_raw": "/xenon/xenon1t_test",
     "upload_options": [],
     "username": "pdeperio",
     "download_options": [
@@ -71,7 +70,6 @@
     "name": "tegner-login-1",
     "receive": "scp",
     "hostname": "tegner-login-1.pdc.kth.se",
-    "directory": "/cfs/klemming/projects/xenon/xenon1t/data",
     "dir_raw": "/cfs/klemming/projects/xenon/xenon1t/data",
     "dir_root": "/cfs/klemming/projects/xenon/xenon1t/processed",
     "upload_options": [],
