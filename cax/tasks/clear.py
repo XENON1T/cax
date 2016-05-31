@@ -31,8 +31,9 @@ class ClearDAQBuffer(checksum.CompareChecksums):
             return None
 
         self.log.info('Dropped %s' % self.untriggered_data['collection'])
-
-        self.log.debug(self.collection.update({'_id': self.run_doc['_id']},
+        
+        if config.DATABASE_LOG == True:
+          self.log.debug(self.collection.update({'_id': self.run_doc['_id']},
                                               {'$pull': {
                                                   'data': self.untriggered_data}}))
 
@@ -93,7 +94,8 @@ class RetryStalledTransfer(checksum.CompareChecksums):
             else:
                 self.log.error('did not exist, notify run database.')
 
-            resp = self.collection.update({'_id': self.run_doc['_id']},
+            if config.DATABASE_LOG == True:
+              resp = self.collection.update({'_id': self.run_doc['_id']},
                                           {'$pull': {'data': data_doc}})
             self.log.error('Removed from run database.')
             self.log.debug(resp)
@@ -124,8 +126,10 @@ class RetryBadChecksumTransfer(checksum.CompareChecksums):
                     os.remove(data_doc['location'])
                 else:
                     self.log.error('did not exist, notify run database.')
-
-                resp = self.collection.update({'_id': self.run_doc['_id']},
+                
+                if config.DATABASE_LOG == True:
+                  resp = self.collection.update({'_id': self.run_doc['_id']},
                                               {'$pull': {'data': data_doc}})
+                
                 self.log.error('Removed from run database.')
                 self.log.debug(resp)

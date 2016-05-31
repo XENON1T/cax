@@ -100,11 +100,13 @@ def process(name, in_location, host, pax_version, pax_hash, out_location,
     except Exception as exception:
         # Data processing failed.
         datum['status'] = 'error'
-        collection.update(query, {'$set': {'data.$': datum}})
+        if config.DATABASE_LOG == True:
+          collection.update(query, {'$set': {'data.$': datum}})
         raise
 
     datum['status'] = 'verifying'
-    collection.update(query, {'$set': {'data.$': datum}})
+    if config.DATABASE_LOG == True:
+      collection.update(query, {'$set': {'data.$': datum}})
 
     datum['checksum'] = checksumdir._filehash(datum['location'],
                                               hashlib.sha512)
@@ -112,7 +114,9 @@ def process(name, in_location, host, pax_version, pax_hash, out_location,
         datum['status'] = 'transferred'
     else:
         datum['status'] = 'failed'
-    collection.update(query, {'$set': {'data.$': datum}})
+    
+    if config.DATABASE_LOG == True:    
+      collection.update(query, {'$set': {'data.$': datum}})
 
 
 class ProcessBatchQueue(Task):
