@@ -45,7 +45,7 @@ class CopyBase(Task):
         #   -f: overwrite 
         #   -r: recursive
         #   -n: number of streams (6 for now, but should be tuned)
-        command = "time gfal-copy -f -r -p -n6 "
+        command = "time gfal-copy -vv -f -r -p -n4 "
 
         status = -1
 
@@ -71,10 +71,13 @@ class CopyBase(Task):
                            "file://"+datum_destination['location']
 
         self.log.info(full_command)
-        status = subprocess.call(full_command, shell=True)
-        
-        if status != 0:
-            self.log.error("Error: gfal-copy status = %d" % status)
+
+        try:
+            gfal_out = subprocess.check_output(full_command, stderr=subprocess.STDOUT, shell=True)
+
+        except subprocess.CalledProcessError as gfal_exec:
+            self.log.error(gfal_exec.output.rstrip().decode('ascii'))
+            self.log.error("Error: gfal-copy status = %d" % gfal_exec.returncode)
             raise 
 
     def copySCP(self, datum_original, datum_destination, server, username, option_type):
