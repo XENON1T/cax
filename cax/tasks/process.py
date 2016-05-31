@@ -27,7 +27,7 @@ def get_pax_hash(pax_version, host):
     if pax_version == 'head':
         git_args = "--git-dir=" + PAX_DEPLOY_DIR + "/.git rev-parse HEAD"
     else:
-        git_args = "--git-dir=" + PAX_DEPLOY_DIR + "/.git rev-parse " + pax_version
+        git_args = "--git-dir=" + PAX_DEPLOY_DIR + "/.git rev-parse HEAD"
 
     git_out = subprocess.check_output("git " + git_args, shell=True)
     pax_hash = git_out.rstrip().decode('ascii')
@@ -266,15 +266,17 @@ mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
         # Reduce to 1 CPU for small number of events (sometimes pax stalls with too many CPU)
         if events < 500:
             ncpus = 1
-
+        
         # Process all specified versions
         for version in versions:
+            
+            if config.get_config(thishost)['processing'] == False:
+                self.log.debug("No reprocessing enabled for %s", self.run_doc['name'])
+                break
+            
             pax_version = version
             pax_hash = get_pax_hash(pax_version, thishost)
-            out_location = os.path.join(
-                config.get_config(thishost)['directory'],
-                'processed',
-                'pax_%s' % version)
+            out_location = os.path.join( config.get_config(thishost)['dir_root'], 'pax_%s' % version)
 
             if have_processed[version]:
                 self.log.debug("Skipping %s already processed with %s",
@@ -283,13 +285,12 @@ mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
                 continue
 
             queue_list = qsub.get_queue(thishost)
-            if self.run_doc[
-                'name'] in queue_list:  # Should check pax_version here too
+            if self.run_doc['name'] in queue_list:  # Should check pax_version here too
                 self.log.debug("Skipping %s currently in queue",
                                self.run_doc['name'])
                 continue
 
-            if self.run_doc['reader']['ini']['write_mode'] == 2:
+            if self.run_doc['reader']['ini']['write_mode'] == 2 and config.get_config(thishost)['processing'] == True:
 
                 self.log.info("Submitting %s with pax_%s (%s), output to %s",
                               self.run_doc['name'], pax_version, pax_hash,

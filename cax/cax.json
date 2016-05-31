@@ -53,7 +53,8 @@
     ],
     "pax_versions": [
       "v4.10.0"
-    ]
+    ],
+    "processing": true
   },
   {
     "name": "login",
@@ -80,6 +81,7 @@
     ],
     "pax_versions": [
       "v4.10.0"
-    ]
+    ],
+    "processing": false
   }
 ]

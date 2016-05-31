@@ -3,7 +3,8 @@ import logging
 import os.path
 import time
 
-from cax.config import mongo_password, set_json, set_database_log, get_task_list, get_config
+from cax import config
+#from cax.config import mongo_password, set_json, set_database_log, get_task_list, get_config
 from cax.tasks import checksum, clear, data_mover, process
 from cax import __version__
 
@@ -17,7 +18,7 @@ def main():
                         help="Load a custom .json config file into cax")
     parser.add_argument('--log',  dest='log', type=str, default='info',
                         help="Logging level e.g. debug")
-    parser.add_argument('--database',  dest='database_log', type=str, default=True,
+    parser.add_argument('--disable_database_update', action='store_false',
                         help="Disable the update function the run data base")
 
     args = parser.parse_args()
@@ -27,14 +28,13 @@ def main():
         raise ValueError('Invalid log level: %s' % args.log)
 
     run_once = args.once
-    database_log = args.database_log
- 
+    database_log = args.disable_database_update
 
     # Set information to update the run database 
-    set_database_log( database_log )
+    config.set_database_log( database_log )
 
     # Check passwords and API keysspecified
-    mongo_password()
+    config.mongo_password()
 
     # Setup logging
     cax_version = 'cax_v%s - ' % __version__
@@ -62,10 +62,10 @@ def main():
         else:
             logging.info("Using custom config file: %s",
                          args.config_file)
-            set_json(args.config_file)
+            config.set_json(args.config_file)
 
     tasks = [
-             #process.ProcessBatchQueue(),
+             process.ProcessBatchQueue(),
              data_mover.SCPPush(),
              data_mover.SCPPull(),
              checksum.AddChecksum(),
@@ -76,9 +76,9 @@ def main():
              ]
 
     # Raises exception if unknown host
-    get_config()
+    config.get_config()
 
-    user_tasks = get_task_list()
+    user_tasks = config.get_task_list()
 
     while True:
         for task in tasks:
