@@ -44,6 +44,8 @@
     "receive": "scp",
     "hostname": "midway-login1.rcc.uchicago.edu",
     "directory": "/project/lgrandi/xenon1t",
+    "dir_raw": "/project/lgrandi/xenon1t",
+    "dir_root": "/project/lgrandi/xenon1t/processed",
     "upload_options": [],
     "username": "tunnell",
     "download_options": [
@@ -69,10 +71,15 @@
     "receive": "scp",
     "hostname": "tegner-login-1.pdc.kth.se",
     "directory": "/cfs/klemming/projects/xenon/xenon1t/data",
+    "dir_raw": "/cfs/klemming/projects/xenon/xenon1t/data",
+    "dir_root": "/cfs/klemming/projects/xenon/xenon1t/processed",
     "upload_options": [],
     "username": "bobau",
     "download_options": [
       "midway-login1"
+    ],
+    "pax_versions": [
+      "v4.10.0"
     ]
   }
 ]

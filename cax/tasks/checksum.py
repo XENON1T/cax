@@ -34,7 +34,9 @@ class AddChecksum(Task):
         self.log.info("Adding a checksum to run "
                       "%d %s" % (self.run_doc['number'],
                                  data_doc['type']))
-        self.collection.update({'_id' : self.run_doc['_id'],
+        
+        if config.DATABASE_LOG == True:
+          self.collection.update({'_id' : self.run_doc['_id'],
                                 'data': {
                                     '$elemMatch': {'host': data_doc['host'],
                                                    'type': data_doc['type']}}},

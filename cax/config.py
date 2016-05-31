@@ -10,7 +10,7 @@ import pymongo
 
 # global variable to store the specified .json config file
 CAX_CONFIGURE = ''
-
+DATABASE_LOG = True
 
 def mongo_password():
     """Fetch passsword for MongoDB
@@ -39,6 +39,11 @@ def set_json(config):
     global CAX_CONFIGURE
     CAX_CONFIGURE = config
 
+def set_database_log(config):
+    """Set the database update
+    """
+    global DATABASE_LOG
+    DATABASE_LOG = config
 
 def load():
     # User-specified config file

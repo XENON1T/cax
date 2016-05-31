@@ -3,7 +3,7 @@ import logging
 import os.path
 import time
 
-from cax.config import mongo_password, set_json, get_task_list, get_config
+from cax.config import mongo_password, set_json, set_database_log, get_task_list, get_config
 from cax.tasks import checksum, clear, data_mover, process
 from cax import __version__
 
@@ -17,6 +17,8 @@ def main():
                         help="Load a custom .json config file into cax")
     parser.add_argument('--log',  dest='log', type=str, default='info',
                         help="Logging level e.g. debug")
+    parser.add_argument('--database',  dest='database_log', type=str, default=True,
+                        help="Disable the update function the run data base")
 
     args = parser.parse_args()
 
@@ -25,6 +27,11 @@ def main():
         raise ValueError('Invalid log level: %s' % args.log)
 
     run_once = args.once
+    database_log = args.database_log
+ 
+
+    # Set information to update the run database 
+    set_database_log( database_log )
 
     # Check passwords and API keysspecified
     mongo_password()
@@ -57,7 +64,8 @@ def main():
                          args.config_file)
             set_json(args.config_file)
 
-    tasks = [process.ProcessBatchQueue(),
+    tasks = [
+             #process.ProcessBatchQueue(),
              data_mover.SCPPush(),
              data_mover.SCPPull(),
              checksum.AddChecksum(),

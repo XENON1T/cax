@@ -10,6 +10,10 @@ from cax.task import Task
 
 
 def copy(datum_original, datum_destination):
+    print('copy 04')
+    print(datum_original)
+    print(datum_destination)
+    #exit()
     util.log_to_file('ssh.log')
     ssh = SSHClient()
     ssh.load_system_host_keys()
@@ -59,6 +63,8 @@ class SCPBase(Task):
     """
 
     def each_run(self):
+        print('scpbase 02')
+        
         for data_type in ['raw', 'processed']:
             self.log.debug("%s" % data_type)
             self.do_possible_transfers(option_type=self.option_type,
@@ -69,7 +75,8 @@ class SCPBase(Task):
                               data_type='raw'):
         """Determine candidate transfers
         """
-
+        print('do_possible_transfers 03')
+        
         # Get the 'upload' or 'download' options.
         options = config.get_transfer_options(option_type)
 
@@ -86,6 +93,7 @@ class SCPBase(Task):
 
             # Iterate over data locations to know status
             for datum in self.run_doc['data']:
+                print( 'iterate: ', datum)
                 # Is host known?
                 if 'host' not in datum or datum['type'] != data_type:
                     continue
@@ -103,6 +111,7 @@ class SCPBase(Task):
                     if option_type == 'download' and not transferred:
                         continue
                     datum_there = datum.copy()
+                    print('test:', datum_there)
 
             # Upload logic
             if option_type == 'upload' and datum_here and datum_there is None:
@@ -113,32 +122,49 @@ class SCPBase(Task):
                 self.copy_handshake(datum_there, config.get_hostname())
 
     def copy_handshake(self, datum, destination):
+        print('copy_handshake 04', datum, destination)
+        
         destination_config = config.get_config(destination)
-
+        print('destination config: ', destination_config['directory'])
+        
         self.log.info("Transferring run %d to: %s" % (self.run_doc['number'],
                                                       destination))
 
+        #define_location:
+        plocation = ''
+        if datum['type'] == 'processed':
+          print('check for the directories later')
+          plocation = ''.join(destination_config['dir_root']) + "/pax_" + ''.join(destination_config['pax_versions'] )
+          if not os.path.exists(plocation):
+            os.makedirs(plocation)
+        if datum['type'] == 'raw':
+          plocation = destination_config['dir_raw']
+          if not os.path.exists(plocation):
+            os.makedirs(plocation)
+        
+        print(datum['type'], 'destination according cax.json:', plocation)
+        #'location'     : os.path.join(destination_config['directory'], self.run_doc['name'] + ('.root' if datum['type'] == 'processed' else '')),
+        
         self.log.debug("Notifying run database")
         datum_new = {'type'         : datum['type'],
                      'host'         : destination,
                      'status'       : 'transferring',
-                     'location'     : os.path.join(
-                         destination_config['directory'],
-                         self.run_doc['name'] +
-                         ('.root' if datum['type'] == 'processed' else '')),
+                     'location'     : os.path.join( plocation, self.run_doc['name'] + ('.root' if datum['type'] == 'processed' else '')),
                      'checksum'     : None,
                      'creation_time': datetime.datetime.utcnow(),
                      }
-
+        print( datum_new )
+        
         if datum['type'] == 'processed':
             datum_new['pax_version'] = datum['pax_version']
             if 'pax_hash' in datum:
                 datum_new['pax_hash'] = datum['pax_hash']
             if 'creation_place' in datum:
                 datum_new['creation_place'] = datum['creation_place']
-
-        self.collection.update({'_id': self.run_doc['_id']},
-                               {'$push': {'data': datum_new}})
+        
+        if config.DATABASE_LOG == True:
+          self.collection.update({'_id': self.run_doc['_id']}, {'$push': {'data': datum_new}})
+          
         self.log.info('Starting SCP')
 
         try:
@@ -150,11 +176,13 @@ class SCPBase(Task):
             datum_new['status'] = 'error'
         self.log.debug("SCP done, telling run database")
 
-        self.collection.update({'_id' : self.run_doc['_id'],
+        if config.DATABASE_LOG == True:
+          self.collection.update({'_id' : self.run_doc['_id'],
                                 'data': {
                                     '$elemMatch': {'host': datum_new['host'],
                                                    'type': datum_new['type']}}},
                                {'$set': {'data.$': datum_new}})
+        
         self.log.info("Transfer complete")
 
 
@@ -171,4 +199,5 @@ class SCPPull(SCPBase):
 
     If data exists at a reachable host but not here, pull it.
     """
+    print('scppull 01')
     option_type = 'download'
