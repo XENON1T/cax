@@ -51,7 +51,8 @@ setup(
             'cax = cax.main:main',
             'caxer = cax.main:main',  # For uniformity with paxer
             'cax-process = cax.tasks.process:main',
-            'cax-mv = cax.main:move'
+            'cax-mv = cax.main:move',
+            'cax-rm = cax.main:remove'
         ],
     },
 )

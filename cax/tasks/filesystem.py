@@ -1,6 +1,6 @@
-import datetime
 import logging
 import os
+import shutil
 
 import scp
 from paramiko import SSHClient, util
@@ -78,10 +78,39 @@ class RenameSingle(Task):
             os.rename(self.input,
                       self.output)
 
-            if config.DATABASE_LOG == True:
+            if config.DATABASE_LOG is True:
                 self.collection.update({'_id' : self.run_doc['_id'],
                                         'data': {'$elemMatch': data_doc}},
                                        {'$set': {'data.$.location': self.output}})
             break
 
 
+class RemoveSingle(Task):
+    def __init__(self, location):
+        # Save filesnames to use
+        self.location = location
+
+        # Perform base class initialization
+        Task.__init__(self)
+
+    def each_run(self):
+       # For each data location, see if this filename in it
+       for data_doc in self.run_doc['data']:
+            # Is not local, skip
+            if 'host' not in data_doc or data_doc['host'] != config.get_hostname():
+                continue
+
+            if data_doc['location'] != self.location:
+                continue
+
+            if config.DATABASE_LOG is True:
+                self.collection.update({'_id': self.run_doc['_id']},
+                                        {'$pull': {'data': data_doc}})
+
+            self.log.info("Removing %s" % (self.location))
+            if os.path.isdir(data_doc['location']):
+                shutil.rmtree(data_doc['location'])
+            else:
+                os.remove(self.location)
+
+            break

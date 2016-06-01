@@ -4,7 +4,7 @@ import os.path
 import time
 
 from cax import config
-from cax.tasks import checksum, clear, data_mover, process, rename
+from cax.tasks import checksum, clear, data_mover, process, filesystem
 from cax import __version__
 
 def main():
@@ -115,8 +115,24 @@ def move():
     config.set_database_log(database_log)
     config.mongo_password()
 
-    rename.RenameSingle(args.input,
-                        args.output).go()
+    filesystem.RenameSingle(args.input,
+                            args.output).go()
+
+def remove():
+    parser = argparse.ArgumentParser(description="Remove data and notify"
+                                                  " the run database.")
+    parser.add_argument('--location', type=str, required=True,
+                        help="Location of file or folder to be removed")
+
+    args = parser.parse_args()
+
+    database_log = not args.disable_database_update
+
+    # Set information to update the run database
+    config.set_database_log(database_log)
+    config.mongo_password()
+
+    filesystem.RemoveSingle(args.location).go()
 
 
 if __name__ == '__main__':
