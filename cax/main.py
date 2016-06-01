@@ -4,13 +4,12 @@ import os.path
 import time
 
 from cax import config
-#from cax.config import mongo_password, set_json, set_database_log, get_task_list, get_config
-from cax.tasks import checksum, clear, data_mover, process
+from cax.tasks import checksum, clear, data_mover, process, rename
 from cax import __version__
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Copying All kinds of XENON1T data.")
+    parser = argparse.ArgumentParser(description="Copying All kinds of XENON1T "
+                                                 "data.")
     parser.add_argument('--once', action='store_true',
                         help="Run all tasks just one, then exits")
     parser.add_argument('--config', action='store', type=str,
@@ -18,7 +17,7 @@ def main():
                         help="Load a custom .json config file into cax")
     parser.add_argument('--log',  dest='log', type=str, default='info',
                         help="Logging level e.g. debug")
-    parser.add_argument('--disable_database_update', action='store_false',
+    parser.add_argument('--disable_database_update', action='store_true',
                         help="Disable the update function the run data base")
 
     args = parser.parse_args()
@@ -28,10 +27,10 @@ def main():
         raise ValueError('Invalid log level: %s' % args.log)
 
     run_once = args.once
-    database_log = args.disable_database_update
+    database_log = not args.disable_database_update
 
     # Set information to update the run database 
-    config.set_database_log( database_log )
+    config.set_database_log(database_log)
 
     # Check passwords and API keysspecified
     config.mongo_password()
@@ -40,7 +39,8 @@ def main():
     cax_version = 'cax_v%s - ' % __version__
     logging.basicConfig(filename='cax.log',
                         level=log_level,
-                        format=cax_version + '%(asctime)s [%(levelname)s] %(message)s')
+                        format=cax_version + '%(asctime)s [%(levelname)s] '
+                                             '%(message)s')
     logging.info('Daemon is starting')
 
     # define a Handler which writes INFO messages or higher to the sys.stderr
@@ -82,7 +82,6 @@ def main():
 
     while True:
         for task in tasks:
-
             # Skip tasks that user did not specify
             if user_tasks and task.__class__.__name__ not in user_tasks:
                 continue
@@ -96,6 +95,28 @@ def main():
         else:
             logging.info('Sleeping.')
             time.sleep(60)
+
+
+def move():
+    parser = argparse.ArgumentParser(description="Move single file and notify"
+                                                  " the run database.")
+    parser.add_argument('--input', type=str, required=True,
+                        help="Location of file or folder to be moved")
+    parser.add_argument('--output', type=str, required=True,
+                        help="Location file should be moved to.")
+    parser.add_argument('--disable_database_update', action='store_true',
+                        help="Disable the update function the run data base")
+
+    args = parser.parse_args()
+
+    database_log = not args.disable_database_update
+
+    # Set information to update the run database
+    config.set_database_log(database_log)
+    config.mongo_password()
+
+    rename.RenameSingle(args.input,
+                        args.output).go()
 
 
 if __name__ == '__main__':

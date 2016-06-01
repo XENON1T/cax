@@ -137,7 +137,8 @@ class SCPBase(Task):
         datum_new = {'type'         : datum['type'],
                      'host'         : destination,
                      'status'       : 'transferring',
-                     'location'     : os.path.join( plocation, self.run_doc['name'] + ('.root' if datum['type'] == 'processed' else '')),
+                     'location'     : os.path.join(plocation,
+                                                   self.run_doc['name'] + ('.root' if datum['type'] == 'processed' else '')),
                      'checksum'     : None,
                      'creation_time': datetime.datetime.utcnow(),
                      }

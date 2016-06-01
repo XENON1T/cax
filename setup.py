@@ -50,7 +50,8 @@ setup(
         'console_scripts': [
             'cax = cax.main:main',
             'caxer = cax.main:main',  # For uniformity with paxer
-            'cax-process = cax.tasks.process:main'
+            'cax-process = cax.tasks.process:main',
+            'cax-mv = cax.main:move'
         ],
     },
 )
