@@ -123,6 +123,8 @@ def remove():
                                                   " the run database.")
     parser.add_argument('--location', type=str, required=True,
                         help="Location of file or folder to be removed")
+    parser.add_argument('--disable_database_update', action='store_true',
+                        help="Disable the update function the run data base")
 
     args = parser.parse_args()
 
