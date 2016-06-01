@@ -57,8 +57,8 @@ def copy(datum_original, datum_destination):
 class RenameSingle(Task):
     def __init__(self, input, output):
         # Save filesnames to use
-        self.input = input
-        self.output = output
+        self.input = os.path.abspath(input)
+        self.output = os.path.abspath(output)
 
         # Perform base class initialization
         Task.__init__(self)
@@ -88,7 +88,7 @@ class RenameSingle(Task):
 class RemoveSingle(Task):
     def __init__(self, location):
         # Save filesnames to use
-        self.location = location
+        self.location = os.path.abspath(location)
 
         # Perform base class initialization
         Task.__init__(self)
