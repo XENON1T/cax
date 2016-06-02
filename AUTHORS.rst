@@ -10,4 +10,6 @@ Development Lead
 Contributors
 ------------
 
-None yet. Why not be the first?
+* Jelle Aalbers <jaalbers@nikhef.nl>
+* Boris Bauermeister <boris.bauermeister@fysik.su.se>
+* Patrick de Perio <pdeperio@astro.columbia.edu>
