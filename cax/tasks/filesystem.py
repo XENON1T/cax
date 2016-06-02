@@ -46,8 +46,7 @@ class RenameSingle(Task):
             if config.DATABASE_LOG is True:
                 self.collection.update({'_id' : self.run_doc['_id'],
                                         'data': {'$elemMatch': data_doc}},
-                                       {'$set': {
-                                           'data.$.location': self.output}})
+                                       {'$set': {'data.$.location': self.output}})
             break
 
 

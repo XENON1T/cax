@@ -28,19 +28,18 @@ class AddChecksum(Task):
             value = checksumdir._filehash(data_doc['location'],
                                           hashlib.sha512)
 
-        data_doc['checksum'] = value
-        data_doc['status'] = 'transferred'
-
         self.log.info("Adding a checksum to run "
                       "%d %s" % (self.run_doc['number'],
                                  data_doc['type']))
         
-        if config.DATABASE_LOG == True:
+        if config.DATABASE_LOG is True:
+                           # self.collection.update({'_id' : self.run_doc['_id'],
+                           #             'data': {'$elemMatch': data_doc}},
+                           #            {'$set': {'data.$.location': self.output}})
           self.collection.update({'_id' : self.run_doc['_id'],
-                                'data': {
-                                    '$elemMatch': {'host': data_doc['host'],
-                                                   'type': data_doc['type']}}},
-                               {'$set': {'data.$': data_doc}})
+                                'data': {'$elemMatch': data_doc}},
+                               {'$set': {'data.$.status': 'transferred',
+                                         'data.$.checksum': value}})
 
 
 class CompareChecksums(Task):

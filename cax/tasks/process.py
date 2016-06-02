@@ -10,37 +10,38 @@ from pymongo import ReturnDocument
 
 from cax import qsub, config
 from cax.task import Task
-
+from cax.config import PAX_DEPLOY_DIRS
 
 def get_pax_hash(pax_version, host):
     """Obtain pax repository hash"""
 
-    PAX_DEPLOY_DIR = ''
-    if host == 'midway-login1':
-        # Location of GitHub source code on Midway
-        PAX_DEPLOY_DIR = "/project/lgrandi/deployHQ/pax"
-    elif host == 'tegner-login-1':
-        # Location of GitHub source code on Stockholm
-        PAX_DEPLOY_DIR = "/afs/pdc.kth.se/projects/xenon/software/pax"
-
     # Get hash of this pax version
     if pax_version == 'head':
-        git_args = "--git-dir=" + PAX_DEPLOY_DIR + "/.git rev-parse HEAD"
+        git_args = "--git-dir=" + PAX_DEPLOY_DIRS[host] + \
+                   "/.git rev-parse HEAD"
     else:
-        git_args = "--git-dir=" + PAX_DEPLOY_DIR + "/.git rev-parse HEAD"
+        git_args = "--git-dir=" + PAX_DEPLOY_DIRS[host] + \
+                   "/.git rev-parse " + pax_version
 
-    git_out = subprocess.check_output("git " + git_args, shell=True)
+    git_out = subprocess.check_output("git " + git_args,
+                                      shell=True)
     pax_hash = git_out.rstrip().decode('ascii')
 
     return pax_hash
 
 
 def verify():
+    """Verify the file
+
+    Now is nothing.  Could check number of events later?
+    """
     return True
 
 
-def process(name, in_location, host, pax_version, pax_hash, out_location,
-            ncpus=1):
+def _process(name, in_location, host, pax_version, pax_hash, out_location,
+             ncpus=1):
+    """Called by another command.
+    """
     print('Welcome to cax-process')
 
     # Import pax so can process the data
@@ -303,4 +304,4 @@ mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
 # Arguments from process function: (name, in_location, host, pax_version,
 #                                   pax_hash, out_location, ncpus):
 def main():
-    process(*sys.argv[1:])
+    _process(*sys.argv[1:])

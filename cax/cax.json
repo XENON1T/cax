@@ -29,22 +29,11 @@
     ]
   },
   {
-    "name": "xe-grid01",
-    "receive": "scp",
-    "hostname": "xe-grid01.lngs.infn.it",
-    "dir_raw": "/xetemp/xenon1t/",
-    "upload_options": [
-      "xenon1t-daq"
-    ],
-    "username": "tunnell",
-    "download_options": []
-  },
-  {
     "name": "midway-login1",
     "receive": "scp",
     "hostname": "midway-login1.rcc.uchicago.edu",
-    "dir_raw": "/project/lgrandi/xenon1t",
-    "dir_root": "/project/lgrandi/xenon1t/processed",
+    "dir_raw": "/project/lgrandi/xenon1t/raw",
+    "dir_processed": "/project/lgrandi/xenon1t/processed",
     "upload_options": [],
     "username": "tunnell",
     "download_options": [
@@ -70,8 +59,8 @@
     "name": "tegner-login-1",
     "receive": "scp",
     "hostname": "tegner-login-1.pdc.kth.se",
-    "dir_raw": "/cfs/klemming/projects/xenon/xenon1t/data",
-    "dir_root": "/cfs/klemming/projects/xenon/xenon1t/processed",
+    "dir_raw": "/cfs/klemming/projects/xenon/xenon1t/raw",
+    "dir_processed": "/cfs/klemming/projects/xenon/xenon1t/processed",
     "upload_options": [],
     "username": "bobau",
     "download_options": [

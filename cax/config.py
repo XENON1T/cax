@@ -12,6 +12,11 @@ import pymongo
 CAX_CONFIGURE = ''
 DATABASE_LOG = True
 
+PAX_DEPLOY_DIRS = {
+    'midway-login1' : '/project/lgrandi/deployHQ/pax',
+    'tegner-login-1': '/afs/pdc.kth.se/projects/xenon/software/pax'
+}
+
 def mongo_password():
     """Fetch passsword for MongoDB
 
@@ -39,11 +44,13 @@ def set_json(config):
     global CAX_CONFIGURE
     CAX_CONFIGURE = config
 
+
 def set_database_log(config):
     """Set the database update
     """
     global DATABASE_LOG
     DATABASE_LOG = config
+
 
 def load():
     # User-specified config file

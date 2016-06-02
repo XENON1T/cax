@@ -3,9 +3,10 @@ import logging
 import os.path
 import time
 
+from cax import __version__
 from cax import config
 from cax.tasks import checksum, clear, data_mover, process, filesystem
-from cax import __version__
+
 
 def main():
     parser = argparse.ArgumentParser(description="Copying All kinds of XENON1T "
@@ -15,7 +16,7 @@ def main():
     parser.add_argument('--config', action='store', type=str,
                         dest='config_file',
                         help="Load a custom .json config file into cax")
-    parser.add_argument('--log',  dest='log', type=str, default='info',
+    parser.add_argument('--log', dest='log', type=str, default='info',
                         help="Logging level e.g. debug")
     parser.add_argument('--disable_database_update', action='store_true',
                         help="Disable the update function the run data base")
@@ -65,15 +66,15 @@ def main():
             config.set_json(args.config_file)
 
     tasks = [
-             process.ProcessBatchQueue(),
-             data_mover.SCPPush(),
-             data_mover.SCPPull(),
-             checksum.AddChecksum(),
-             checksum.CompareChecksums(),
-             clear.ClearDAQBuffer(),
-             clear.RetryStalledTransfer(),
-             clear.RetryBadChecksumTransfer(),
-             ]
+        process.ProcessBatchQueue(),
+        data_mover.SCPPush(),
+        data_mover.SCPPull(),
+        checksum.AddChecksum(),
+        checksum.CompareChecksums(),
+        clear.ClearDAQBuffer(),
+        clear.RetryStalledTransfer(),
+        clear.RetryBadChecksumTransfer(),
+    ]
 
     # Raises exception if unknown host
     config.get_config()
@@ -99,7 +100,7 @@ def main():
 
 def move():
     parser = argparse.ArgumentParser(description="Move single file and notify"
-                                                  " the run database.")
+                                                 " the run database.")
     parser.add_argument('--input', type=str, required=True,
                         help="Location of file or folder to be moved")
     parser.add_argument('--output', type=str, required=True,
@@ -118,9 +119,10 @@ def move():
     filesystem.RenameSingle(args.input,
                             args.output).go()
 
+
 def remove():
     parser = argparse.ArgumentParser(description="Remove data and notify"
-                                                  " the run database.")
+                                                 " the run database.")
     parser.add_argument('--location', type=str, required=True,
                         help="Location of file or folder to be removed")
     parser.add_argument('--disable_database_update', action='store_true',
