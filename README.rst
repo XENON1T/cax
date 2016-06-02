@@ -2,21 +2,30 @@
 Copying All XENON1T
 ===============================
 
-.. image:: https://img.shields.io/pypi/v/cax.svg
-        :target: https://pypi.python.org/pypi/cax
-
-.. image:: https://img.shields.io/travis/tunnell/cax.svg
-        :target: https://travis-ci.org/tunnell/cax
-
-.. image:: https://readthedocs.org/projects/cax/badge/?version=latest
-        :target: https://readthedocs.org/projects/cax/?badge=latest
-        :alt: Documentation Status
-
+.. image:: http://img.shields.io/badge/gitter-XENON1T/computing-blue.svg 
+    :target: https://gitter.im/XENON1T/computing
 
 Copying XENON1T data around
 
 * Free software: ISC license
 * Documentation: https://cax.readthedocs.org.
+
+
+Overview
+--------
+
+This program is a daemonized data-management tool used within the XENON1T collaboration.  The idea is that a 'cax' daemon is run at each computing site within the collaboration.  Each daemon is responsible for common data management tasks on both raw and processed data, such as:
+
+* Distribution of data (push and pull) via SCP
+* Checksumming data
+* Processing raw data into processed data
+* Reporting information about data to a central MongoDB instance.
+
+The configuration of each site is done via a JSON file called `cax.json` within this repository `cax.json <https://github.com/XENON1T/cax/blob/master/cax/cax.json>`_.  Each site has it's own section that allows each site to know where it can push or pull data from and also any information about processing.  
+
+All information about the data and its copies is stored within MongoDB.  This is a central MongoDB that requires authentication.  If it is not already setup for you, you have to specify an environmental variable MONGODB_PASSWORD to use cax.  If you are a member of XENON1T, you can see what information is known about each run by using the run database website <https://xenon1t-daq.lngs.infn.it/runs>.
+
+Changes to this repository are deployed to each site using DeployHQ <https://www.deployhq.com>.  This service has a web hook for this responsitory that deploys then installs new versions of `cax` each time the master branch is changed.  This copying happens via SCP.
 
 Installation
 ------------
@@ -30,11 +39,10 @@ To install this in Linux do::
   wget http://repo.continuum.io/archive/Anaconda3-2.4.0-Linux-x86_64.sh  # Linux
   bash Anaconda3-2.4.0-Linux-x86_64.sh  # Say 'yes' to appending to .bashrc and specify the installation directory
 
-You will also need the following libraries:
+You can setup the environemnt by doing::
 
-``conda install paramiko pymongo``
+  conda create -n cax python=3.4 paramiko pymongo
 
-  
 Setting Up the Anaconda Libraries
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -104,12 +112,9 @@ Beware that in most tasks are commands that modify the Runs DB live, so for deve
 Credits
 ---------
 
+Please see the AUTHORS.rst file for information about contributors.
+
 This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template.
 
 .. _Cookiecutter: https://github.com/audreyr/cookiecutter
 .. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage
-
-Write description in cax.json
-run db -> json ->
-
-untriggered, raw, processed
