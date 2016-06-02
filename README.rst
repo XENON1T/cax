@@ -27,6 +27,12 @@ All information about the data and its copies is stored within MongoDB.  This is
 
 Changes to this repository are deployed to each site using DeployHQ <https://www.deployhq.com>.  This service has a web hook for this responsitory that deploys then installs new versions of `cax` each time the master branch is changed.  This copying happens via SCP.
 
+The requirements to run `cax` at a new site are:
+
+1. SSH-key access from the sites listed in `cax.json <https://github.com/XENON1T/cax/blob/master/cax/cax.json>`_ to the new site.
+2. A directory specified in `cax.json <https://github.com/XENON1T/cax/blob/master/cax/cax.json>`_ where the data is located.  This needs to be able to be read, written once, and deleted.
+3. Ability to run a daemon or process in the background permanently.  This is frequently done in a `screen` session.
+
 Installation
 ------------
 
