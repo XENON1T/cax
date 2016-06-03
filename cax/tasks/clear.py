@@ -9,16 +9,19 @@ import datetime
 import os
 import shutil
 
-import pymongo
-
 from cax import config
 from cax.task import Task
 from cax.tasks import checksum
 
-class RetryStalledTransfer(checksum.CompareChecksums):
-    """Alert if stale transfer."""
 
-    # Do not overload this routine.
+class RetryStalledTransfer(checksum.CompareChecksums):
+    """Alert if stale transfer.
+
+    Inherits from the checksum task since we use checksums to know when we
+    can delete data.
+    """
+
+    # Do not overload this routine from checksum inheritance.
     each_run = Task.each_run
 
     def has_untriggered(self):
@@ -66,16 +69,20 @@ class RetryStalledTransfer(checksum.CompareChecksums):
                 self.log.error('did not exist, notify run database.')
 
             if config.DATABASE_LOG == True:
-              resp = self.collection.update({'_id': self.run_doc['_id']},
-                                          {'$pull': {'data': data_doc}})
+                resp = self.collection.update({'_id': self.run_doc['_id']},
+                                              {'$pull': {'data': data_doc}})
             self.log.error('Removed from run database.')
             self.log.debug(resp)
 
 
 class RetryBadChecksumTransfer(checksum.CompareChecksums):
-    """Alert if stale transfer."""
+    """Alert if stale transfer.
 
-    # Do not overload this routine.
+    Inherits from the checksum task since we use checksums to know when we
+    can delete data.
+    """
+
+    # Do not overload this routine from checksum inheritance.
     each_run = Task.each_run
 
     def each_location(self, data_doc):
@@ -97,10 +104,10 @@ class RetryBadChecksumTransfer(checksum.CompareChecksums):
                     os.remove(data_doc['location'])
                 else:
                     self.log.error('did not exist, notify run database.')
-                
+
                 if config.DATABASE_LOG == True:
-                  resp = self.collection.update({'_id': self.run_doc['_id']},
-                                              {'$pull': {'data': data_doc}})
-                
+                    resp = self.collection.update({'_id': self.run_doc['_id']},
+                                                  {'$pull': {'data': data_doc}})
+
                 self.log.error('Removed from run database.')
                 self.log.debug(resp)

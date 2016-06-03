@@ -81,8 +81,9 @@ def get_queue(host):
     """Get list of jobs in queue"""
 
     if host == "midway-login1":
-        queue = subprocess.check_output(
-            "squeue --partition=xenon1t -o \"\%.30j\"", shell=True)
+        queue = subprocess.check_output("squeue --partition=xenon1t "
+                                        "-o \"\%.30j\"",
+                                        shell=True)
 
     else:  # To be implemented for Stockholm
         logging.error("Host %s not implemented in get_queue()" % host)

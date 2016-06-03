@@ -72,7 +72,7 @@ def main():
         checksum.AddChecksum(),
         checksum.CompareChecksums(),
         clear.RetryStalledTransfer(),
-        clear.RetryBadChecksumTransfer(),
+        clear.RetryBadChecksumTransfer()
     ]
 
     # Raises exception if unknown host

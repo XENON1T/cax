@@ -158,3 +158,70 @@ def data_availability(hostname=get_hostname()):
                 continue
             results.append(doc)
     return results
+
+
+def processing_script(host):
+    # Script parts common to all sites
+    script_template = """#!/bin/bash
+#SBATCH --job-name={name}_{pax_version}
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task={ncpus}
+#SBATCH --mem-per-cpu=2000
+#SBATCH --mail-type=ALL
+"""
+    # Midway-specific script options
+    if host == "midway-login1":
+        script_template += """
+#SBATCH --output=/project/lgrandi/xenon1t/processing/logs/{name}_{pax_version}_%J.log
+#SBATCH --error=/project/lgrandi/xenon1t/processing/logs/{name}_{pax_version}_%J.log
+#SBATCH --account=pi-lgrandi
+#SBATCH --qos=xenon1t
+#SBATCH --partition=xenon1t
+#SBATCH --mail-user=pdeperio@astro.columbia.edu
+
+export PATH=/project/lgrandi/anaconda3/bin:$PATH
+        """
+    elif host == "tegner-login-1": # Stockolm-specific script options
+        script_template = """
+#SBATCH --output=/cfs/klemming/projects/xenon/common/xenon1t/processing/logs/{name}_{pax_version}_%J.log
+#SBATCH --error=/cfs/klemming/projects/xenon/common/xenon1t/processing/logs/{name}_{pax_version}_%J.log
+#SBATCH --account=xenon
+#SBATCH --partition=main
+#SBATCH -t 72:00:00
+#SBATCH --mail-user=Boris.Bauermeister@fysik.su.se
+
+source /afs/pdc.kth.se/home/b/bobau/load_4.8.4.sh
+        """
+    else:
+        raise NotImplementedError("Host %s processing not implemented",
+                                  host)
+
+    # Script parts common to all sites
+    script_template += """
+export PROCESSING_DIR={processing_dir}
+mkdir -p ${{PROCESSING_DIR}} {out_location}
+cd ${{PROCESSING_DIR}}
+rm -f pax_event_class*
+
+source activate pax_{pax_version}
+
+echo time cax-process {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
+time cax-process {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
+
+mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
+"""
+    return script_template
+
+
+def get_processing_base_dir(host):
+    destination_config = get_config(host)
+
+    # Determine where data should be copied to
+    base_dir = destination_config['dir_processed']
+    if base_dir:
+        return base_dir
+    raise NotImplementedError()
+
+def get_processing_dir(host, version):
+    return os.path.join(get_processing_base_dir(host),
+                        'pax_%s' % version)

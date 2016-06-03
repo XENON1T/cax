@@ -4,29 +4,35 @@
     "hostname": "xenon1t-daq.lngs.infn.it",
     "receive": null,
     "dir_raw": "/data/xenon/raw/",
+    "dir_processed": null,
     "upload_options": [],
     "download_options": [],
-    "username": "transfer"
+    "username": "transfer",
+    "pax_processing_versions": null
   },
   {
     "name": "eb0",
     "hostname": "eb0",
     "receive": null,
     "dir_raw": "/data/xenon1t_data/",
+    "dir_processed": null,
     "upload_options": [],
-    "download_options": []
+    "download_options": [],
+    "pax_processing_versions": null
   },
   {
     "name": "lena",
     "receive": "scp",
     "hostname": "login.nikhef.nl",
     "dir_raw": "/data/xenon/xenon1t/",
+    "dir_processed": null,
     "upload_options": [],
     "username": "ctunnell",
     "download_options": [
       "midway-login1",
       "xenon1t-daq"
-    ]
+    ],
+    "pax_processing_versions": null
   },
   {
     "name": "midway-login1",
@@ -39,21 +45,20 @@
     "download_options": [
       "xenon1t-daq"
     ],
-    "pax_versions": [
-      "v4.10.0"
-    ],
-    "processing": true
+    "pax_processing_versions": ["v4.10.0"]
   },
   {
     "name": "login",
     "receive": "scp",
     "hostname": "login.ci-connect.uchicago.edu",
     "dir_raw": "/xenon/xenon1t_test",
+    "dir_processed": null,
     "upload_options": [],
     "username": "pdeperio",
     "download_options": [
       "midway-login1"
-    ]
+    ],
+    "pax_processing_versions": null
   },
   {
     "name": "tegner-login-1",
@@ -66,9 +71,6 @@
     "download_options": [
       "midway-login1"
     ],
-    "pax_versions": [
-      "v4.10.0"
-    ],
-    "processing": false
+    "pax_processing_versions": null
   }
 ]
