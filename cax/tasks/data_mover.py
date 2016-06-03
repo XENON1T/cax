@@ -161,7 +161,7 @@ class SCPBase(Task):
         if datum['type'] == 'processed':
             self.log.info(datum)
             base_dir = os.path.join(base_dir,
-                                    'pax_%s' % datum['pax_verison'])
+                                    'pax_%s' % datum['pax_version'])
 
         if not os.path.exists(base_dir):
             if destination != config.get_hostname():
