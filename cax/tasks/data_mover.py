@@ -98,29 +98,9 @@ class SCPBase(Task):
         for remote_host in options:
             self.log.debug(remote_host)
 
-            datum_here = None  # Information about data here
-            datum_there = None  # Information about data there
-
-            # Iterate over data locations to know status
-            for datum in self.run_doc['data']:
-
-                # Is host known?
-                if 'host' not in datum or datum['type'] != data_type:
-                    continue
-
-                transferred = (datum['status'] == 'transferred')
-
-                # If the location refers to here
-                if datum['host'] == config.get_hostname():
-                    # If uploading, we should have data
-                    if option_type == 'upload' and not transferred:
-                        continue
-                    datum_here = datum.copy()
-                elif datum['host'] == remote_host:  # This the remote host?
-                    # If downloading, they should have data
-                    if option_type == 'download' and not transferred:
-                        continue
-                    datum_there = datum.copy()
+            datum_here, datum_there = self.local_data_finder(data_type,
+                                                             option_type,
+                                                             remote_host)
 
             # Upload logic
             if option_type == 'upload' and datum_here and datum_there is None:
@@ -129,6 +109,32 @@ class SCPBase(Task):
             # Download logic
             if option_type == 'download' and datum_there and datum_here is None:
                 self.copy_handshake(datum_there, config.get_hostname())
+
+    def local_data_finder(self, data_type, option_type, remote_host):
+        datum_here = None  # Information about data here
+        datum_there = None  # Information about data there
+        # Iterate over data locations to know status
+        for datum in self.run_doc['data']:
+
+            # Is host known?
+            if 'host' not in datum or datum['type'] != data_type:
+                continue
+
+            transferred = (datum['status'] == 'transferred')
+
+            # If the location refers to here
+            if datum['host'] == config.get_hostname():
+                # If uploading, we should have data
+                if option_type == 'upload' and not transferred:
+                    continue
+                datum_here = datum.copy()
+            elif datum['host'] == remote_host:  # This the remote host?
+                # If downloading, they should have data
+                if option_type == 'download' and not transferred:
+                    continue
+                datum_there = datum.copy()
+
+        return datum_here, datum_there
 
     def copy_handshake(self, datum, destination):
         """ Perform all the handshaking required with the run DB.
@@ -148,6 +154,9 @@ class SCPBase(Task):
 
         # Determine where data should be copied to
         base_dir = destination_config['dir_%s' % datum['type']]
+        if base_dir:
+            self.log.info("no directory specified for %s" % datum['type'])
+
         if datum['type'] == 'processed':
             base_dir = os.path.join(base_dir,
                                     'pax_%s' % datum['pax_verison'])
