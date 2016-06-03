@@ -156,8 +156,10 @@ class SCPBase(Task):
         base_dir = destination_config['dir_%s' % datum['type']]
         if base_dir:
             self.log.info("no directory specified for %s" % datum['type'])
+            return
 
         if datum['type'] == 'processed':
+            self.log.info(datum)
             base_dir = os.path.join(base_dir,
                                     'pax_%s' % datum['pax_verison'])
 
