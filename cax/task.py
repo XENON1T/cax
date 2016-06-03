@@ -23,7 +23,7 @@ class Task():
         # Collect all run document ids.  This has to be turned into a list
         # to avoid timeouts if a task takes too long.
         ids = [doc['_id'] for doc in self.collection.find({'detector': 'tpc',
-                                                           'number'  : {'$gt': 0}})]
+                                                           'number'  : {'$gt': 500}})]
 
         # Iterate over each run
         for id in ids:
