@@ -71,7 +71,6 @@ def main():
         data_mover.SCPPull(),
         checksum.AddChecksum(),
         checksum.CompareChecksums(),
-        clear.ClearDAQBuffer(),
         clear.RetryStalledTransfer(),
         clear.RetryBadChecksumTransfer(),
     ]
