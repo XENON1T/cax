@@ -154,10 +154,12 @@ class SCPBase(Task):
 
         # Determine where data should be copied to
         base_dir = destination_config['dir_%s' % datum['type']]
-        if base_dir:
+        if base_dir is None:
             self.log.info("no directory specified for %s" % datum['type'])
+            return
 
         if datum['type'] == 'processed':
+            self.log.info(datum)
             base_dir = os.path.join(base_dir,
                                     'pax_%s' % datum['pax_version'])
 
@@ -184,7 +186,7 @@ class SCPBase(Task):
 
         if datum['type'] == 'processed':
             for variable in ('pax_version', 'pax_hash', 'creation_place'):
-                datum_new = datum.get(variable)
+                datum_new[variable] = datum.get(variable)
 
         if config.DATABASE_LOG == True:
             self.collection.update({'_id': self.run_doc['_id']},

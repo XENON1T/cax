@@ -27,7 +27,7 @@
     "receive": "scp",
     "hostname": "login.nikhef.nl",
     "dir_raw": "/data/xenon/xenon1t/raw",
-    "dir_processed": null,
+    "dir_processed": "/data/xenon/xenon1t/processed",
     "upload_options": [],
     "username": "ctunnell",
     "download_options": [
