@@ -216,11 +216,7 @@ def get_base_dir(category, host):
     destination_config = get_config(host)
 
     # Determine where data should be copied to
-    base_dir = destination_config['dir_%s' % category]
-    if base_dir:
-        return base_dir
-    raise NotImplementedError()
-
+    return destination_config['dir_%s' % category]
 
 def get_raw_base_dir(host=get_hostname()):
     return get_base_dir('raw', host)
