@@ -1,6 +1,7 @@
 """File system operations through cax
 
-This allows you to move or remove files while still notifying the run database.
+This allows you to move or remove files while still notifying the run database,
+but also checks for strays.
 """
 
 import os
@@ -87,3 +88,18 @@ class RemoveSingle(Task):
                 os.remove(self.location)
 
             break
+
+class FindStrays(Task):
+    """Remove a single file or directory
+
+    This notifies the run database.
+    """
+
+    locations = []
+
+    def each_location(self, data_doc):
+        if data_doc['host'] == config.get_hostname():
+            self.locations.append(data_doc['location'])
+
+    def shutdown(self):
+       print(self.locations)

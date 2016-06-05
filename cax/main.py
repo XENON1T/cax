@@ -137,6 +137,15 @@ def remove():
 
     filesystem.RemoveSingle(args.location).go()
 
+def stray():
+    parser = argparse.ArgumentParser(description="Find stray files.")
+    parser.add_argument('--delete', action='store_true',
+                        help="Delete strays (default: false)")
+
+    args = parser.parse_args()
+    config.mongo_password()
+
+    filesystem.FindStrays().go()
 
 if __name__ == '__main__':
     main()
