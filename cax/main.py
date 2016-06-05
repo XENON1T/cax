@@ -67,10 +67,10 @@ def main():
 
     tasks = [
         process.ProcessBatchQueue(),
-        data_mover.SCPPush(),
         data_mover.SCPPull(),
-        checksum.AddChecksum(),
+        data_mover.SCPPush(),
         checksum.CompareChecksums(),
+        checksum.AddChecksum(),
         clear.RetryStalledTransfer(),
         clear.RetryBadChecksumTransfer()
     ]
