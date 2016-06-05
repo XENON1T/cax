@@ -26,6 +26,9 @@ def copy(datum_original, datum_destination):
     ssh = SSHClient()
     ssh.load_system_host_keys()
 
+    #print(datum_original)
+    #print(datum_destination)
+
     if datum_original['host'] == config.get_hostname():
         upload = True
 
@@ -104,6 +107,7 @@ class SCPBase(Task):
 
             # Upload logic
             if option_type == 'upload' and datum_here and datum_there is None:
+                print (datum_here, remote_host)
                 self.copy_handshake(datum_here, remote_host)
 
             # Download logic
@@ -160,8 +164,7 @@ class SCPBase(Task):
 
         if datum['type'] == 'processed':
             self.log.info(datum)
-            base_dir = os.path.join(base_dir,
-                                    'pax_%s' % datum['pax_version'])
+            base_dir = os.path.join(base_dir, 'pax_%s' % datum['pax_version'])
 
         if not os.path.exists(base_dir):
             if destination != config.get_hostname():

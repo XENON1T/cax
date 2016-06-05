@@ -72,9 +72,9 @@
     "dir_processed": "/cfs/klemming/projects/xenon/xenon1t/processed",
     "upload_options": [],
     "username": "bobau",
-    "download_options": [
-      "midway-login1"
-    ],
-    "pax_processing_versions": null
+    "download_options": ["midway-login1"],
+    "pax_processing_versions": [
+      "v4.10.0"
+    ]
   }
 ]

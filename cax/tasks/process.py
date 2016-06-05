@@ -23,11 +23,9 @@ def get_pax_hash(pax_version, host):
 
     # Get hash of this pax version
     if pax_version == 'head':
-        git_args = "--git-dir=" + PAX_DEPLOY_DIRS[host] + \
-                   "/.git rev-parse HEAD"
+        git_args = "--git-dir=" + PAX_DEPLOY_DIRS[host] + "/.git rev-parse HEAD"
     else:
-        git_args = "--git-dir=" + PAX_DEPLOY_DIRS[host] + \
-                   "/.git rev-parse " + pax_version
+        git_args = "--git-dir=" + PAX_DEPLOY_DIRS[host] + "/.git rev-parse " + pax_version
 
     git_out = subprocess.check_output("git " + git_args,
                                       shell=True)
@@ -44,8 +42,7 @@ def verify():
     return True
 
 
-def _process(name, in_location, host, pax_version, pax_hash, out_location,
-             ncpus=1):
+def _process(name, in_location, host, pax_version, pax_hash, out_location, ncpus=1):
     """Called by another command.
     """
     print('Welcome to cax-process')
@@ -146,8 +143,8 @@ class ProcessBatchQueue(Task):
                                         out_location=out_location,
                                         ncpus=ncpus)
         self.log.info(script)
-        qsub.submit_job(script,
-                        name + "_" + pax_version)
+        print( script)
+        #qsub.submit_job(script, name + "_" + pax_version)
 
     def verify(self):
         """Verify processing worked"""
@@ -159,12 +156,6 @@ class ProcessBatchQueue(Task):
             return
 
         thishost = config.get_hostname()
-
-        # Only process at Midway or Stockholm for now.
-        # TODO: not sure this hard coding necessary
-        if not thishost == "midway-login1" and not thishost == "tegner-login-1":
-            self.log.debug("Host %s processing not implemented", thishost)
-            return
 
         # Get desired pax versions and corresponding output directories
         versions = config.get_pax_options('pax_processing_versions')
@@ -184,13 +175,11 @@ class ProcessBatchQueue(Task):
             return
 
         # Get number of events in data set
-        events = self.run_doc.get('trigger',
-                                  {}).get('events_built', 0)
+        events = self.run_doc.get('trigger', {}).get('events_built', 0)
 
         # Skip if 0 events in dataset
         if events <= 0:
-            self.log.debug("Skipping %s with 0 events",
-                           self.run_doc['name'])
+            self.log.debug("Skipping %s with 0 events", self.run_doc['name'])
             return
 
         # Specify number of cores for pax multiprocess
@@ -204,11 +193,9 @@ class ProcessBatchQueue(Task):
         # Process all specified versions
         for version in versions:
             version = version
-            pax_hash = get_pax_hash(version,
-                                    thishost)
+            pax_hash = get_pax_hash(version, thishost)
 
-            out_location = config.get_processing_dir(thishost,
-                                                     version)
+            out_location = config.get_processing_dir(thishost, version)
 
             if have_processed[version]:
                 self.log.debug("Skipping %s already processed with %s",
