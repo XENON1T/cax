@@ -105,14 +105,15 @@ class FindStrays(Task):
     def check(self, directory):
         for root, dirs, files in os.walk(directory, topdown=False):
             if root in self.locations:
-                print('skip,', root)
+                continue
             for name in files:
-                print((os.path.join(root, name)))
-            for name in dirs:
-                print(os.path.join(root, name))
-
+                if os.path.join(root, name) not in self.locations:
+                    print(os.path.join(root, name))
+            for dir in dirs:
+                if os.path.join(root, dir) not in self.locations:
+                    if root != config.get_processing_base_dir():
+                        print(os.path.join(root, name)) 
 
     def shutdown(self):
        self.check(config.get_raw_base_dir())
        self.check(config.get_processing_base_dir())
-       print(self.locations)
