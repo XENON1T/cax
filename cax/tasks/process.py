@@ -158,7 +158,7 @@ class ProcessBatchQueue(Task):
         thishost = config.get_hostname()
 
         # Get desired pax versions and corresponding output directories
-        versions = config.get_pax_options('pax_processing_versions')
+        versions = config.get_pax_options('processing_versions')
         if versions is None:
             self.log.debug("No pax versions specified for processing")
             return

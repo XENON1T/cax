@@ -102,7 +102,7 @@ def get_pax_options(option_type='versions'):
     try:
         options = get_config(get_hostname())['pax_%s' % option_type]
     except LookupError as e:
-        logging.info("Unknown config host: %s", get_hostname())
+        logging.info("Pax versions not specified: %s", get_hostname())
         return []
 
     return options
