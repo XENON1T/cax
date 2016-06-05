@@ -212,15 +212,21 @@ mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
 """
     return script_template
 
-
-def get_processing_base_dir(host):
+def get_base_dir(category, host):
     destination_config = get_config(host)
 
     # Determine where data should be copied to
-    base_dir = destination_config['dir_processed']
+    base_dir = destination_config['dir_%s' % category]
     if base_dir:
         return base_dir
     raise NotImplementedError()
+
+
+def get_raw_base_dir(host=get_hostname()):
+    return get_base_dir('raw', host)
+
+def get_processing_base_dir(host=get_hostname()):
+    return get_base_dir('processed', host)
 
 def get_processing_dir(host, version):
     return os.path.join(get_processing_base_dir(host),

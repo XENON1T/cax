@@ -9,6 +9,7 @@ import shutil
 
 from cax import config
 from cax.task import Task
+import os
 
 
 class RenameSingle(Task):
@@ -101,5 +102,15 @@ class FindStrays(Task):
         if data_doc['host'] == config.get_hostname():
             self.locations.append(data_doc['location'])
 
+    def check(self, directory):
+        for root, dirs, files in os.walk(top, topdown=False):
+            for name in files:
+                print((os.path.join(root, name)))
+            for name in dirs:
+                print(os.path.join(root, name))
+
+
     def shutdown(self):
+       self.check(config.get_raw_base_dir())
+       self.check(config.get_processing_base_dir)
        print(self.locations)
