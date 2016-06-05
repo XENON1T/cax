@@ -103,6 +103,9 @@ class FindStrays(Task):
             self.locations.append(data_doc['location'])
 
     def check(self, directory):
+        if directory is None:
+            return
+
         for root, dirs, files in os.walk(directory, topdown=False):
             if root in self.locations:
                 continue
