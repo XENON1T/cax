@@ -6,6 +6,7 @@ but also checks for strays.
 
 import os
 import shutil
+import logging
 
 from cax import config
 from cax.task import Task
@@ -120,3 +121,39 @@ class FindStrays(Task):
     def shutdown(self):
        self.check(config.get_raw_base_dir())
        self.check(config.get_processing_base_dir())
+       
+class StatusSingle(Task):
+    """Status of a single file or directory
+
+    This notifies the run database.
+    """
+
+    def __init__(self, node__, status__):
+        # Save filesnames to use
+        self.node = node__
+        self.status = status__
+
+        # Perform base class initialization
+        Task.__init__(self)
+
+    def each_run(self):
+        #print(self.run_doc['data'])
+        
+        # For each data location, see if this filename in it
+        for data_doc in self.run_doc['data']:
+            ## Is not local, skip
+            if 'host' not in data_doc or data_doc['host'] != config.get_hostname():
+                continue
+                
+            if self.node == data_doc['host'] and self.status == data_doc['status']:
+              status_db = data_doc["status"]
+              location_db = data_doc['location']
+              logging.info("Ask for status %s at node %s: %s", self.node, status_db, location_db)
+              
+            ## Notify run database
+            #if config.DATABASE_LOG is True:
+                #self.collection.update({'_id': self.run_doc['_id']},
+                                       #{'$pull': {'data': data_doc}})
+
+            # TODO
+            # Add a memberfunction to change the status manually:

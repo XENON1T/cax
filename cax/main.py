@@ -147,5 +147,50 @@ def stray():
 
     filesystem.FindStrays().go()
 
+def status():
+    #Ask the database for the actual status of the file or folder:
+    
+    parser = argparse.ArgumentParser(description="Check the database status")
+    
+    parser.add_argument('--node', type=str, required=True,
+                        help="Select the node")
+    parser.add_argument('--status', type=str, required=True,
+                        help="Which status should be asked: error, transferred, none, ")
+    parser.add_argument('--disable_database_update', action='store_true',
+                        help="Disable the update function the run data base")
+
+    args = parser.parse_args()
+
+    database_log = not args.disable_database_update
+    node = args.node
+    status = args.status
+    
+    # Setup logging
+    cax_version = 'cax_v%s - ' % __version__
+    logging.basicConfig(filename='status.log',
+                        level="INFO",
+                        format=cax_version + '%(asctime)s [%(levelname)s] '
+                                             '%(message)s')
+    logging.info('Start: Ask for Status')
+
+    # define a Handler which writes INFO messages or higher to the sys.stderr
+    console = logging.StreamHandler()
+    console.setLevel("INFO")
+
+    # set a format which is simpler for console use
+
+    formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+    # tell the handler to use this format
+    console.setFormatter(formatter)
+    # add the handler to the root logger
+    logging.getLogger('').addHandler(console)
+    
+
+    # Set information to update the run database
+    config.set_database_log(database_log)
+    config.mongo_password()
+    
+    filesystem.StatusSingle(args.node, args.status).go()
+
 if __name__ == '__main__':
     main()
