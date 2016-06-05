@@ -6,9 +6,7 @@
     "dir_raw": "/data/xenon/raw/",
     "dir_processed": null,
     "upload_options": [],
-    "download_options": [
-      "midway-login1"
-    ],
+    "download_options": [],
     "username": "transfer",
     "pax_processing_versions": null
   },
@@ -18,7 +16,7 @@
     "receive": null,
     "dir_raw": "/data/xenon1t_data/",
     "dir_processed": null,
-    "upload_options": [],
+    "upload_options": ["xenon1t-daq"],
     "download_options": [],
     "pax_processing_versions": null
   },
