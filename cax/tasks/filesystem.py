@@ -103,7 +103,7 @@ class FindStrays(Task):
             self.locations.append(data_doc['location'])
 
     def check(self, directory):
-        for root, dirs, files in os.walk(top, topdown=False):
+        for root, dirs, files in os.walk(directory, topdown=False):
             for name in files:
                 print((os.path.join(root, name)))
             for name in dirs:
