@@ -44,6 +44,8 @@ class Task():
 
             self.each_run()
 
+        self.shutdown()
+
     def each_run(self):
         for data_doc in self.run_doc['data']:
             self.log.debug('%s on %s' % (self.__class__.__name__,
@@ -81,4 +83,9 @@ class Task():
             if name == tag['name']:
                 return True
         return False
+
+    def shutdown(self):
+        """Runs at end and can be overloaded by subclasses
+        """
+        pass
 
