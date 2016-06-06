@@ -144,7 +144,7 @@ class ProcessBatchQueue(Task):
                                         ncpus=ncpus)
         self.log.info(script)
         print( script)
-        #qsub.submit_job(script, name + "_" + pax_version)
+        qsub.submit_job(script, name + "_" + pax_version)
 
     def verify(self):
         """Verify processing worked"""

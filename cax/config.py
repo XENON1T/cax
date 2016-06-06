@@ -208,7 +208,6 @@ source activate pax_{pax_version}
 echo time cax-process {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
 time cax-process {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
 
-mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
 """
     return script_template
 
