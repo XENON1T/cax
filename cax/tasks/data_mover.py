@@ -1,3 +1,9 @@
+"""Handle copying data between sites.
+
+This is one of the key tasks of 'cax' because it's responsible for moving
+data between sites.  At present, it just does scp.
+"""
+
 import datetime
 import logging
 import os
@@ -10,9 +16,18 @@ from cax.task import Task
 
 
 def copy(datum_original, datum_destination):
+    """Wrap the SSH and SCP libraries.
+
+    The inputs to this function are dictionaries that describe the data
+    location. It also determines if this is an upload or download.  The
+    locations are already defined by this point.
+    """
     util.log_to_file('ssh.log')
     ssh = SSHClient()
     ssh.load_system_host_keys()
+
+    #print(datum_original)
+    #print(datum_destination)
 
     if datum_original['host'] == config.get_hostname():
         upload = True
@@ -30,7 +45,7 @@ def copy(datum_original, datum_destination):
     else:
         raise ValueError()
 
-    logging.info("connection to %s" % server)
+    logging.info("Connection to %s" % server)
     ssh.connect(server,
                 username=username,
                 compress=True)
@@ -67,7 +82,12 @@ class SCPBase(Task):
     def do_possible_transfers(self,
                               option_type='upload',
                               data_type='raw'):
-        """Determine candidate transfers
+        """Determine candidate transfers.
+        :param option_type: 'upload' or 'download'
+         :type str
+        :param data_type: 'raw' or 'processed'
+         :type str
+        :return:
         """
 
         # Get the 'upload' or 'download' options.
@@ -81,80 +101,117 @@ class SCPBase(Task):
         for remote_host in options:
             self.log.debug(remote_host)
 
-            datum_here = None  # Information about data here
-            datum_there = None  # Information about data there
-
-            # Iterate over data locations to know status
-            for datum in self.run_doc['data']:
-                # Is host known?
-                if 'host' not in datum or datum['type'] != data_type:
-                    continue
-
-                transferred = (datum['status'] == 'transferred')
-
-                # If the location refers to here
-                if datum['host'] == config.get_hostname():
-                    # If uploading, we should have data
-                    if option_type == 'upload' and not transferred:
-                        continue
-                    datum_here = datum.copy()
-                elif datum['host'] == remote_host:  # This the remote host?
-                    # If downloading, they should have data
-                    if option_type == 'download' and not transferred:
-                        continue
-                    datum_there = datum.copy()
+            datum_here, datum_there = self.local_data_finder(data_type,
+                                                             option_type,
+                                                             remote_host)
 
             # Upload logic
             if option_type == 'upload' and datum_here and datum_there is None:
+                print (datum_here, remote_host)
                 self.copy_handshake(datum_here, remote_host)
 
             # Download logic
             if option_type == 'download' and datum_there and datum_here is None:
                 self.copy_handshake(datum_there, config.get_hostname())
 
+    def local_data_finder(self, data_type, option_type, remote_host):
+        datum_here = None  # Information about data here
+        datum_there = None  # Information about data there
+        # Iterate over data locations to know status
+        for datum in self.run_doc['data']:
+
+            # Is host known?
+            if 'host' not in datum or datum['type'] != data_type:
+                continue
+
+            transferred = (datum['status'] == 'transferred')
+
+            # If the location refers to here
+            if datum['host'] == config.get_hostname():
+                # If uploading, we should have data
+                if option_type == 'upload' and not transferred:
+                    continue
+                datum_here = datum.copy()
+            elif datum['host'] == remote_host:  # This the remote host?
+                # If downloading, they should have data
+                if option_type == 'download' and not transferred:
+                    continue
+                datum_there = datum.copy()
+
+        return datum_here, datum_there
+
     def copy_handshake(self, datum, destination):
+        """ Perform all the handshaking required with the run DB.
+        :param datum: The dictionary data location describing data to be
+                      transferred
+         :type str
+        :param destination:  The host name where data should go to.
+         :type str
+        :return:
+        """
+
+        # Get information about this destination
         destination_config = config.get_config(destination)
 
         self.log.info("Transferring run %d to: %s" % (self.run_doc['number'],
                                                       destination))
 
+        # Determine where data should be copied to
+        base_dir = destination_config['dir_%s' % datum['type']]
+        if base_dir is None:
+            self.log.info("no directory specified for %s" % datum['type'])
+            return
+
+        if datum['type'] == 'processed':
+            self.log.info(datum)
+            base_dir = os.path.join(base_dir, 'pax_%s' % datum['pax_version'])
+
+        if not os.path.exists(base_dir):
+            if destination != config.get_hostname():
+                raise NotImplementedError("Cannot create directory on another "
+                                          "machine.")
+
+            # Recursively make directories
+            os.makedirs(base_dir)
+
+        # Directory or filename to be copied
+        filename = datum['location'].split('/')[-1]
+
         self.log.debug("Notifying run database")
         datum_new = {'type'         : datum['type'],
                      'host'         : destination,
                      'status'       : 'transferring',
-                     'location'     : os.path.join(
-                         destination_config['directory'],
-                         self.run_doc['name'] +
-                         ('.root' if datum['type'] == 'processed' else '')),
+                     'location'     : os.path.join(base_dir,
+                                                   filename),
                      'checksum'     : None,
                      'creation_time': datetime.datetime.utcnow(),
                      }
 
         if datum['type'] == 'processed':
-            datum_new['pax_version'] = datum['pax_version']
-            if 'pax_hash' in datum:
-                datum_new['pax_hash'] = datum['pax_hash']
-            if 'creation_place' in datum:
-                datum_new['creation_place'] = datum['creation_place']
+            for variable in ('pax_version', 'pax_hash', 'creation_place'):
+                datum_new[variable] = datum.get(variable)
 
-        self.collection.update({'_id': self.run_doc['_id']},
-                               {'$push': {'data': datum_new}})
+        if config.DATABASE_LOG == True:
+            self.collection.update({'_id': self.run_doc['_id']},
+                                   {'$push': {'data': datum_new}})
+
         self.log.info('Starting SCP')
 
-        try:
+        try:  # try to copy
             copy(datum,
                  datum_new)
-            datum_new['status'] = 'verifying'
+            status = 'verifying'
         except scp.SCPException as e:
             self.log.exception(e)
-            datum_new['status'] = 'error'
+            status = 'error'
         self.log.debug("SCP done, telling run database")
 
-        self.collection.update({'_id' : self.run_doc['_id'],
-                                'data': {
-                                    '$elemMatch': {'host': datum_new['host'],
-                                                   'type': datum_new['type']}}},
-                               {'$set': {'data.$': datum_new}})
+        if config.DATABASE_LOG:
+            self.collection.update({'_id' : self.run_doc['_id'],
+                                    'data': {
+                                        '$elemMatch': datum_new}},
+                                   {'$set': {'data.$.status': status}})
+
         self.log.info("Transfer complete")
 
 
