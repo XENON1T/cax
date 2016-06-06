@@ -2,6 +2,23 @@
 History
 =======
 
+2.0.0 (2016-06-06)
+------------------
+
+* Use different folder for raw and root data
+
+* Add cax-mv, cax-rm, cax-stray
+
+* Don't need to clear DAQ buffer anymore in cax.
+
+* Cleanup and fixes related to processing.
+
+* Transfer bug that made bad element in data location list
+
+* Specify the partition in qsub.py
+
+* filesystem.py: Add a class to ask for the status of a file or folder
+
 1.2.0 (2016-5-26)
 ------------------
 
