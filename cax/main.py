@@ -5,7 +5,7 @@ import time
 
 from cax import __version__
 from cax import config
-from cax.tasks import checksum, clear, data_mover, process, filesystem
+from cax.tasks import checksum, clear, data_mover, process, filesystem, purity
 
 
 def main():
@@ -66,6 +66,7 @@ def main():
             config.set_json(args.config_file)
 
     tasks = [
+        purity.AddElectronLifetime(),
         process.ProcessBatchQueue(),
         data_mover.SCPPull(),
         data_mover.SCPPush(),
