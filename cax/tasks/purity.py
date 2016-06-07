@@ -27,7 +27,7 @@ class AddElectronLifetime(Task):
 
         # Arguments from the fit (required to execute function below even
         # though it doesn't appear to be called.
-        popt = pickle.loads(doc['popt'])
+        popt = doc['popt']
 
         # Fit function
         if doc['electron_lifetime_function'] == 'exponential':
