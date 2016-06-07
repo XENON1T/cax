@@ -5,7 +5,7 @@ import numpy as np
 from pax import units
 
 from cax import config
-from ..task import Task
+from cax.task import Task
 
 
 class AddElectronLifetime(Task):
