@@ -155,6 +155,9 @@ class ProcessBatchQueue(Task):
             self.log.debug("Do not process tag found")
             return
 
+        if 'processor' not in self.run_doc:
+            return
+
         thishost = config.get_hostname()
 
         # Get desired pax versions and corresponding output directories
