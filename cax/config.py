@@ -128,7 +128,7 @@ def get_task_list():
     return options
 
 
-def mongo_collection():
+def mongo_collection(collection_name='runs_new'):
     # For the event builder to communicate with the gateway, we need to use the DAQ network address
     # Otherwise, use the internet to find the runs database
     if get_hostname().startswith('eb'):
@@ -141,7 +141,7 @@ def mongo_collection():
                                 replicaSet='runs',
                                 read_preference=pymongo.ReadPreference.PRIMARY_PREFERRED)
     db = c['run']
-    collection = db['runs_new']
+    collection = db[collection_name]
     return collection
 
 
