@@ -38,7 +38,9 @@ class AddElectronLifetime(Task):
         # Compute value from this function on this dataset
         lifetime = f(self.run_doc['start'].timestamp())
 
-        self.log.info("Calculated lifetime of %d us" % lifetime)
+        run_number = self.run_doc['number']
+        self.log.info("Run %d: calculated lifetime of %d us" % (run_number,
+                                                                lifetime))
 
         if not config.DATABASE_LOG:
             return
