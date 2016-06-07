@@ -1,8 +1,6 @@
 """Add electron lifetime
 """
 
-import pickle
-
 import numpy as np
 from pax import units
 
