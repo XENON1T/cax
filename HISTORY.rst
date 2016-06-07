@@ -1,6 +1,12 @@
 =======
 History
 =======
+
+2.0.2 (2016-06-07)
+------------------
+
+* If task timeout of mongo find, have it skip that task.
+
 2.0.1 (2016-06-06)
 ------------------
 
