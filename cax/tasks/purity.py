@@ -7,6 +7,9 @@ from pax import units
 from cax import config
 from ..task import Task
 
+# This following import is actually used when evaluating the lifetime function
+# noinspection PyUnresolvedReferences
+import numpy as np
 
 class AddElectronLifetime(Task):
     "Add electron lifetime to dataset"
@@ -23,7 +26,8 @@ class AddElectronLifetime(Task):
         doc = self.collection_purity.find_one(sort=(('calculation_time',
                                                      -1),))
 
-        # Arguments from the fit
+        # Arguments from the fit (required to execute function below even
+        # though it doesn't appear to be called.
         popt = pickle.loads(doc['popt'])
 
         # Fit function
