@@ -1,6 +1,12 @@
 =======
 History
 =======
+2.0.1 (2016-06-06)
+------------------
+
+* Remove mv command for logs from job, doesn't work with new {processing_dir}. Keep them all in same location for now.
+
+* Uncomment submit command for automatic processing
 
 2.0.0 (2016-06-06)
 ------------------
