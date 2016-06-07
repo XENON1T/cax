@@ -13,8 +13,8 @@ import checksumdir
 from pymongo import ReturnDocument
 
 from cax import qsub, config
-from cax.config import PAX_DEPLOY_DIRS, processing_script, \
-    get_processing_base_dir
+from cax.config import PAX_DEPLOY_DIRS
+from cax.config import processing_script, get_processing_base_dir
 from cax.task import Task
 
 
