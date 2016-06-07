@@ -1,12 +1,14 @@
 """Add electron lifetime
 """
 
-from pax import units
 import pickle
+
+import numpy as np
+from pax import units
+
 from cax import config
 from ..task import Task
 
-import numpy as np
 
 class AddElectronLifetime(Task):
     "Add electron lifetime to dataset"
@@ -29,7 +31,7 @@ class AddElectronLifetime(Task):
 
         # Fit function
         if doc['electron_lifetime_function'] == 'exponential':
-            f = lambda x: np.exp((x - popt[0].copy())/popt[1].copy())
+            f = lambda x: np.exp((x - popt[0].copy()) / popt[1].copy())
         else:
             raise NotImplementedError()
 
