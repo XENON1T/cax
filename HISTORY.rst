@@ -2,6 +2,11 @@
 History
 =======
 
+2.0.3 (2016-06-07)
+------------------
+
+* When task looks for runs, have it only return the _id then fetch that id later.  Helps with timeouts.
+
 2.0.2 (2016-06-07)
 ------------------
 
