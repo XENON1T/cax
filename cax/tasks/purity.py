@@ -1,14 +1,11 @@
 """Add electron lifetime
 """
 
-import dill as pickle
 from pax import units
-
+import pickle
 from cax import config
 from ..task import Task
 
-# This following import is actually used when evaluating the lifetime function
-# noinspection PyUnresolvedReferences
 import numpy as np
 
 class AddElectronLifetime(Task):
@@ -31,10 +28,11 @@ class AddElectronLifetime(Task):
         popt = pickle.loads(doc['popt'])
 
         # Fit function
-        f = pickle.loads(doc['electron_lifetime_function'])
+        if doc['electron_lifetime_function'] == 'exponential':
+            f = lambda x: np.exp((x - popt[0].copy())/popt[1].copy())
+        else:
+            raise NotImplementedError()
 
-
-        self.log.info(np)
         # Compute value from this function on this dataset
         lifetime = f(self.run_doc['start'].timestamp())
 
