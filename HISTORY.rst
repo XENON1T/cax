@@ -2,6 +2,11 @@
 History
 =======
 
+2.1.3 (2016-06-08)
+------------------
+
+* Revert PROCESSING_DIR to separate directories for each job
+  
 2.1.2 (2016-06-08)
 ------------------
 
