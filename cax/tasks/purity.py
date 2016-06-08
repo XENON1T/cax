@@ -29,7 +29,7 @@ class AddElectronLifetime(Task):
 
         # Fit function
         if doc['electron_lifetime_function'] == 'exponential':
-            f = lambda x: np.exp((x - popt[0].copy()) / popt[1].copy())
+            f = lambda x: np.exp((x - popt[0]) / popt[1])
         else:
             raise NotImplementedError()
 
