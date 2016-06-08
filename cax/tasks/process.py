@@ -2,7 +2,7 @@
 
 Performs batch queue operations to run pax.
 """
-
+import argparse
 import datetime
 import hashlib
 import subprocess
@@ -25,7 +25,7 @@ def get_pax_hash(pax_version, host):
     if pax_version == 'head':
         git_args = "--git-dir=" + PAX_DEPLOY_DIRS[host] + "/.git rev-parse HEAD"
     else:
-        git_args = "--git-dir=" + PAX_DEPLOY_DIRS[host] + "/.git rev-parse " + pax_version
+        git_args = "--git-dir=" + PAX_DEPLOY_DIRS[host] + "/.git rev-parse HEAD"
 
     git_out = subprocess.check_output("git " + git_args,
                                       shell=True)
@@ -45,8 +45,7 @@ def verify():
 def _process(name, in_location, host, pax_version, pax_hash, out_location, ncpus=1):
     """Called by another command.
     """
-    print('Welcome to cax-process')
-
+    
     # Import pax so can process the data
     from pax import core
 
@@ -54,7 +53,8 @@ def _process(name, in_location, host, pax_version, pax_hash, out_location, ncpus
     collection = config.mongo_collection()
 
     output_fullname = out_location + '/' + name
-
+        
+    
     # New data location
     datum = {'host'          : host,
              'type'          : 'processed',
@@ -75,23 +75,29 @@ def _process(name, in_location, host, pax_version, pax_hash, out_location, ncpus
              'data'    : {'$elemMatch': {'host'       : host,
                                          'type'       : 'processed',
                                          'pax_version': pax_version}}}
+    
+    
     doc = collection.find_one(query)  # Query DB
+    
     if doc is not None:
-        print("Already processed %s.  Clear first.  %s" % (name,
-                                                           pax_version))
+        print("Already processed %s.  Clear first.  %s" % (name, pax_version))
         return 1
+    
 
     # Not processed this way already, so notify run DB we will
-    doc = collection.find_one_and_update({'detector': 'tpc', 'name': name},
-                                         {'$push': {'data': datum}},
-                                         return_document=ReturnDocument.AFTER)
-
+    if config.DATABASE_LOG == True:
+      doc = collection.find_one_and_update({'detector': 'tpc', 'name': name},
+                                           {'$push': {'data': datum}},
+                                           return_document=ReturnDocument.AFTER)
+    else:
+      doc = collection.find_one({'detector': 'tpc', 'name': name})
+    
     # Determine based on run DB what settings to use for processing.
     if doc['reader']['self_trigger']:
         pax_config = 'XENON1T'
     else:
         pax_config = 'XENON1T_LED'
-
+    
     # Try to process data.
     try:
         print('processing', name, in_location, pax_config)
@@ -136,14 +142,12 @@ class ProcessBatchQueue(Task):
         script_template = processing_script(host)
 
         script = script_template.format(name=name, in_location=in_location,
-                                        processing_dir=get_processing_base_dir(
-                                            host),
+                                        processing_dir=get_processing_base_dir(host),
                                         host=host, pax_version=pax_version,
                                         pax_hash=pax_hash,
                                         out_location=out_location,
                                         ncpus=ncpus)
         self.log.info(script)
-        print(script)
         qsub.submit_job(script, name + "_" + pax_version)
 
     def verify(self):
@@ -247,4 +251,37 @@ class ProcessBatchQueue(Task):
 # Arguments from process function: (name, in_location, host, pax_version,
 #                                   pax_hash, out_location, ncpus):
 def main():
-    _process(*sys.argv[1:])
+    parser = argparse.ArgumentParser(description="Welcome to cax-process")
+    
+    parser.add_argument('--in-location', action='store', type=str, dest='in_location',
+                        help="Specify the location of the raw data")
+    
+    parser.add_argument('--name', action='store', type=str, dest='name',
+                        help="Specify the name")
+    
+    parser.add_argument('--host', action='store', type=str, dest='host',
+                        help="Specify the host")
+    
+    parser.add_argument('--pax-version', action='store', type=str, dest='pax_version',
+                        help="Specify the name")
+    
+    parser.add_argument('--pax-hash', action='store', type=str, dest='pax_hash',
+                        help="Specify the pax_hash")
+    
+    parser.add_argument('--out-location', action='store', type=str, dest='out_location',
+                        help="Specify the location for storing the root file")
+    
+    parser.add_argument('--cpus', action='store', type=int, dest='ncpus',
+                        help="Specify the number of cpus")
+    
+    parser.add_argument('--disable_database_update', action='store_true',
+                        help="Disable the update function the run data base")
+    
+    args = parser.parse_args()
+    
+    # Set information to update the run database 
+    database_log = not args.disable_database_update
+    config.set_database_log(database_log)
+    
+    marg = [args.name, args.in_location, args.host, args.pax_version, args.pax_hash, args.out_location, args.ncpus]
+    _process(*marg[0:])

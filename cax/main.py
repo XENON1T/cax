@@ -67,12 +67,12 @@ def main():
 
     tasks = [
         process.ProcessBatchQueue(),
-        data_mover.SCPPull(),
-        data_mover.SCPPush(),
-        checksum.CompareChecksums(),
-        checksum.AddChecksum(),
-        clear.RetryStalledTransfer(),
-        clear.RetryBadChecksumTransfer()
+        #data_mover.SCPPull(),
+        #data_mover.SCPPush(),
+        #checksum.CompareChecksums(),
+        #checksum.AddChecksum(),
+        #clear.RetryStalledTransfer(),
+        #clear.RetryBadChecksumTransfer()
     ]
 
     # Raises exception if unknown host
@@ -154,8 +154,12 @@ def status():
     
     parser.add_argument('--node', type=str, required=True,
                         help="Select the node")
-    parser.add_argument('--status', type=str, required=True,
-                        help="Which status should be asked: error, transferred, none, ")
+    parser.add_argument('--status', type=str,
+                        help="Which status should be asked: error, transferred, transferring, ")
+    parser.add_argument('--set', type=str, required=False,
+                        help="Allowed: error, transferred, verifying, transferring")
+    parser.add_argument('--file', type=str, required=False,
+                        help="Specify a certain rootfile or dataset location and change its database status. The alternative is: all - Then all database entries with the asked status are re-set.")
     parser.add_argument('--disable_database_update', action='store_true',
                         help="Disable the update function the run data base")
 
@@ -164,6 +168,9 @@ def status():
     database_log = not args.disable_database_update
     node = args.node
     status = args.status
+    status_update = args.set
+    dfile = args.file
+            
     
     # Setup logging
     cax_version = 'cax_v%s - ' % __version__
@@ -185,12 +192,14 @@ def status():
     # add the handler to the root logger
     logging.getLogger('').addHandler(console)
     
+    if args.set == None:
+        logging.info('None of the following attributes are set: error, transferred or verifying!')
 
     # Set information to update the run database
     config.set_database_log(database_log)
     config.mongo_password()
     
-    filesystem.StatusSingle(args.node, args.status).go()
+    filesystem.StatusSingle(args.node, args.status, args.set, args.file).go()
 
 if __name__ == '__main__':
     main()

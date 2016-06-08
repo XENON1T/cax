@@ -14,7 +14,7 @@ DATABASE_LOG = True
 
 PAX_DEPLOY_DIRS = {
     'midway-login1' : '/project/lgrandi/deployHQ/pax',
-    'tegner-login-1': '/afs/pdc.kth.se/projects/xenon/software/pax'
+    'tegner-login-1': '/afs/pdc.kth.se/projects/xenon/software/pax/pax_v4.10.2'
 }
 
 def mongo_password():
@@ -193,8 +193,7 @@ export PATH=/project/lgrandi/anaconda3/bin:$PATH
 source /afs/pdc.kth.se/home/b/bobau/load_4.8.4.sh
         """
     else:
-        raise NotImplementedError("Host %s processing not implemented",
-                                  host)
+        raise NotImplementedError("Host %s processing not implemented", host)
 
     # Script parts common to all sites
     script_template += """
@@ -205,8 +204,8 @@ rm -f pax_event_class*
 
 source activate pax_{pax_version}
 
-echo time cax-process {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
-time cax-process {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
+echo time cax-process --name {name} --in-location {in_location} --host {host} --pax-version {pax_version} --pax-hash {pax_hash} --out-location {out_location} --cpus {ncpus}
+aprun time cax-process --name {name} --in-location {in_location} --host {host} --pax-version {pax_version} --pax-hash {pax_hash} --out-location {out_location} --cpus {ncpus}
 
 """
     return script_template
