@@ -180,6 +180,8 @@ def processing_script(host):
 #SBATCH --mail-user=pdeperio@astro.columbia.edu
 
 export PATH=/project/lgrandi/anaconda3/bin:$PATH
+
+export PROCESSING_DIR=/project/lgrandi/xenon1t/processing/{name}_{pax_version}
         """
     elif host == "tegner-login-1": # Stockolm-specific script options
         script_template = """
@@ -191,6 +193,10 @@ export PATH=/project/lgrandi/anaconda3/bin:$PATH
 #SBATCH --mail-user=Boris.Bauermeister@fysik.su.se
 
 source /afs/pdc.kth.se/home/b/bobau/load_4.8.4.sh
+
+export PROCESSING_DIR=/cfs/klemming/projects/xenon/xenon1t/processing/{name}_{pax_version}
+# WARNING: Boris should check this directory and the one above for log/error output ^        
+#     multiple instances of pax should be run in separate directories to avoid clash of libraries     
         """
     else:
         raise NotImplementedError("Host %s processing not implemented",
@@ -198,7 +204,6 @@ source /afs/pdc.kth.se/home/b/bobau/load_4.8.4.sh
 
     # Script parts common to all sites
     script_template += """
-export PROCESSING_DIR={processing_dir}
 mkdir -p ${{PROCESSING_DIR}} {out_location}
 cd ${{PROCESSING_DIR}}
 rm -f pax_event_class*
@@ -208,6 +213,7 @@ source activate pax_{pax_version}
 echo time cax-process {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
 time cax-process {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
 
+mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
 """
     return script_template
 
