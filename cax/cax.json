@@ -11,16 +11,6 @@
     "pax_processing_versions": null
   },
   {
-    "name": "eb0",
-    "hostname": "eb0",
-    "receive": null,
-    "dir_raw": "/data/xenon1t_data/",
-    "dir_processed": null,
-    "upload_options": ["xenon1t-daq"],
-    "download_options": [],
-    "pax_processing_versions": null
-  },
-  {
     "name": "lena",
     "receive": "scp",
     "hostname": "login.nikhef.nl",
@@ -70,7 +60,7 @@
     "dir_processed": "/cfs/klemming/projects/xenon/xenon1t/processed",
     "upload_options": [],
     "username": "bobau",
-    "download_options": ["midway-login1"],
+    "download_options": ["midway-login1", "xenon1t-daq"],
     "pax_processing_versions": [
       "v4.10.0"
     ]
