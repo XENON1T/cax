@@ -2,6 +2,11 @@
 History
 =======
 
+2.1.1 (2016-06-08)
+------------------
+
+* Fix bug in parameter manipulation for lifetime fit.
+
 2.1.0 (2016-06-07)
 ------------------
 
