@@ -148,6 +148,7 @@ class ProcessBatchQueue(Task):
                                         out_location=out_location,
                                         ncpus=ncpus)
         self.log.info(script)
+        
         qsub.submit_job(script, name + "_" + pax_version)
 
     def verify(self):

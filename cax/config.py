@@ -168,7 +168,13 @@ def processing_script(host):
 #SBATCH --cpus-per-task={ncpus}
 #SBATCH --mem-per-cpu=2000
 #SBATCH --mail-type=ALL
+
+export PROCESSING_DIR={processing_dir}
+mkdir -p ${{PROCESSING_DIR}} {out_location}
+cd ${{PROCESSING_DIR}}
+rm -f pax_event_class*
 """
+
     # Midway-specific script options
     if host == "midway-login1":
         script_template += """
@@ -178,36 +184,30 @@ def processing_script(host):
 #SBATCH --qos=xenon1t
 #SBATCH --partition=xenon1t
 #SBATCH --mail-user=pdeperio@astro.columbia.edu
-
+source activate pax_{pax_version}
 export PATH=/project/lgrandi/anaconda3/bin:$PATH
+
+echo time cax-process --name {name} --in-location {in_location} --host {host} --pax-version {pax_version} --pax-hash {pax_hash} --out-location {out_location} --cpus {ncpus}
+time cax-process --name {name} --in-location {in_location} --host {host} --pax-version {pax_version} --pax-hash {pax_hash} --out-location {out_location} --cpus {ncpus}
         """
-    elif host == "tegner-login-1": # Stockolm-specific script options
-        script_template = """
+    elif host == "tegner-login-1": # Stockholm-specific script options
+        script_template += """
 #SBATCH --output=/cfs/klemming/projects/xenon/common/xenon1t/processing/logs/{name}_{pax_version}_%J.log
 #SBATCH --error=/cfs/klemming/projects/xenon/common/xenon1t/processing/logs/{name}_{pax_version}_%J.log
 #SBATCH --account=xenon
 #SBATCH --partition=main
 #SBATCH -t 72:00:00
 #SBATCH --mail-user=Boris.Bauermeister@fysik.su.se
-
+source activate pax_{pax_version}
 source /afs/pdc.kth.se/home/b/bobau/load_4.8.4.sh
+
+echo time cax-process --name {name} --in-location {in_location} --host {host} --pax-version {pax_version} --pax-hash {pax_hash} --out-location {out_location} --cpus {ncpus}
+srun time cax-process --name {name} --in-location {in_location} --host {host} --pax-version {pax_version} --pax-hash {pax_hash} --out-location {out_location} --cpus {ncpus}
         """
     else:
         raise NotImplementedError("Host %s processing not implemented", host)
 
-    # Script parts common to all sites
-    script_template += """
-export PROCESSING_DIR={processing_dir}
-mkdir -p ${{PROCESSING_DIR}} {out_location}
-cd ${{PROCESSING_DIR}}
-rm -f pax_event_class*
 
-source activate pax_{pax_version}
-
-echo time cax-process --name {name} --in-location {in_location} --host {host} --pax-version {pax_version} --pax-hash {pax_hash} --out-location {out_location} --cpus {ncpus}
-aprun time cax-process --name {name} --in-location {in_location} --host {host} --pax-version {pax_version} --pax-hash {pax_hash} --out-location {out_location} --cpus {ncpus}
-
-"""
     return script_template
 
 def get_base_dir(category, host):
