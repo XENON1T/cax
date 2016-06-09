@@ -53,15 +53,19 @@ class RetryStalledTransfer(checksum.CompareChecksums):
                                           self.run_doc['number'],
                                           self.run_doc['name']))
 
-        if difference > datetime.timedelta(hours=6) or data_doc["status"] == 'error':  # If stale transfer
+        if difference > datetime.timedelta(hours=6) or \
+                        data_doc["status"] == 'error':  # If stale transfer
             self.give_error("Transfer lasting more than six hours "
                             "or errored, retry.")
 
             self.log.info("Deleting %s" % data_doc['location'])
 
             if os.path.isdir(data_doc['location']):
-                shutil.rmtree(data_doc['location'])
-                self.log.error('Deleted, notify run database.')
+                try:
+                    shutil.rmtree(data_doc['location'])
+                except FileNotFoundError:
+                    self.log.warning("FileNotFoundError within %s" % data_doc['location'])
+                self.log.info('Deleted, notify run database.')
             elif os.path.isfile(data_doc['location']):
                 os.remove(data_doc['location'])
             else:
