@@ -128,11 +128,10 @@ class StatusSingle(Task):
     This notifies the run database.
     """
 
-    def __init__(self, node__, status__, set__, file__):
+    def __init__(self, host__, status__, file__):
         # Save filesnames to use
-        self.node = node__
+        self.host = host__
         self.status = status__
-        self.set = set__
         self.file = file__
 
         # Perform base class initialization
@@ -147,28 +146,13 @@ class StatusSingle(Task):
             if 'host' not in data_doc or data_doc['host'] != config.get_hostname():
                 continue
                 
-            if self.node == data_doc['host'] and self.status == data_doc['status'] and self.file == None and self.set == None:
-              #cax-status --disable_database_update --node tegner-login-1 --status verifying
+            if self.host == data_doc['host'] and self.status == data_doc['status'] and self.file == None:
+              #cax-status --disable_database_update --host tegner-login-1 --status verifying
               status_db = data_doc["status"]
               location_db = data_doc['location']
-              logging.info("Ask for status %s at node %s: %s", self.node, status_db, location_db)
+              logging.info("Ask for status %s at host %s: %s", self.host, status_db, location_db)
             
-            if self.node == data_doc['host'] and self.status == data_doc['status'] and self.set != None and self.file == "all":
-              #example: cax-status --file all --disable_database_update --node tegner-login-1 --status verifying --set processed
-              if config.DATABASE_LOG is True:
-                self.collection.update({'_id' : self.run_doc['_id'],
-                                        'data': {'$elemMatch': data_doc}},
-                                       {'$set': {'data.$.status': self.set}})
-              logging.info('File/Data: %s is set from status %s to %s', data_doc['location'], data_doc['status'], self.set)
-            
-            if self.node == data_doc['host'] and self.status == data_doc['status'] and self.set != None and self.file == data_doc['location']:
-              #example: cax-status --file /cfs/klemming/projects/xenon/xenon1t/processed/pax_v4.10.0/160530_0505.root --disable_database_update --node tegner-login-1 --status verifying --set processed
-              if config.DATABASE_LOG is True:
-                self.collection.update({'_id' : self.run_doc['_id'],
-                                        'data': {'$elemMatch': data_doc}},
-                                       {'$set': {'data.$.status': self.set}})
-              logging.info('File/Data: %s is set from status %s to %s', data_doc['location'], data_doc['status'], self.set)
               
-            if self.node == data_doc['host'] and self.status == None and self.file == data_doc['location'] and self.set == None:
+            if self.host == data_doc['host'] and self.status == None and self.file == data_doc['location']:
               logging.info('Status of %s is: ', data_doc['location'], data_doc["status"] )  
-              #example: cax-status --file /cfs/klemming/projects/xenon/xenon1t/processed/pax_v4.10.0/160530_0505.root --disable_database_update --node #tegner-login-1
+              #example: cax-status --file /cfs/klemming/projects/xenon/xenon1t/processed/pax_v4.10.0/160530_0505.root --disable_database_update --host #tegner-login-1

@@ -152,12 +152,10 @@ def status():
     
     parser = argparse.ArgumentParser(description="Check the database status")
     
-    parser.add_argument('--node', type=str, required=True,
-                        help="Select the node")
+    parser.add_argument('--host', type=str, required=True,
+                        help="Select the host")
     parser.add_argument('--status', type=str,
                         help="Which status should be asked: error, transferred, transferring, ")
-    parser.add_argument('--set', type=str, required=False,
-                        help="Allowed: error, transferred, verifying, transferring")
     parser.add_argument('--file', type=str, required=False,
                         help="Specify a certain rootfile or dataset location and change its database status. The alternative is: all - Then all database entries with the asked status are re-set.")
     parser.add_argument('--disable_database_update', action='store_true',
@@ -166,9 +164,8 @@ def status():
     args = parser.parse_args()
 
     database_log = not args.disable_database_update
-    node = args.node
+    host = args.host
     status = args.status
-    status_update = args.set
     dfile = args.file
             
     
@@ -192,14 +189,12 @@ def status():
     # add the handler to the root logger
     logging.getLogger('').addHandler(console)
     
-    if args.set == None:
-        logging.info('None of the following attributes are set: error, transferred or verifying!')
 
     # Set information to update the run database
     config.set_database_log(database_log)
     config.mongo_password()
     
-    filesystem.StatusSingle(args.node, args.status, args.set, args.file).go()
+    filesystem.StatusSingle(args.host, args.status, args.file).go()
 
 if __name__ == '__main__':
     main()
