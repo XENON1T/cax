@@ -2,6 +2,11 @@
 History
 =======
 
+2.1.5 (2016-06-09)
+------------------
+
+* Catch FileNotFoundError when deleting files, then warn.
+
 2.1.4 (2016-06-08)
 ------------------
 
