@@ -67,12 +67,12 @@ def main():
 
     tasks = [
         process.ProcessBatchQueue(),
-        #data_mover.SCPPull(),
-        #data_mover.SCPPush(),
-        #checksum.CompareChecksums(),
-        #checksum.AddChecksum(),
-        #clear.RetryStalledTransfer(),
-        #clear.RetryBadChecksumTransfer()
+        data_mover.SCPPull(),
+        data_mover.SCPPush(),
+        checksum.CompareChecksums(),
+        checksum.AddChecksum(),
+        clear.RetryStalledTransfer(),
+        clear.RetryBadChecksumTransfer()
     ]
 
     # Raises exception if unknown host
