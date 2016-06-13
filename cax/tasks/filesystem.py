@@ -7,10 +7,57 @@ but also checks for strays.
 import os
 import shutil
 import logging
+import subprocess
 
 from cax import config
 from cax.task import Task
 import os
+
+class SetPermission(Task):
+    """Set the correct permissions"""
+    
+    def __init__(self):
+      self.counter = 0
+      self.chmod_file = '/cfs/klemming/projects/xenon/misc/basic_file'
+      self.chmod_foder = '/cfs/klemming/projects/xenon/misc/basic'
+            
+      Task.__init__(self)
+      self.destination_config = config.get_config( config.get_hostname() )
+
+    def go(self):
+      """Run the standard procedure to set ownership and permissons for files/folders"""
+      self.ChangePermisson()
+      self.SetCounter()
+      self.ResetCounter(60) #Reset counter after 60 cycles: Permissions and ownership is changed every hour
+
+    def ChangePermisson(self):
+      set_rec = "-R"
+      
+      if self.counter == 0 and config.get_hostname() == "tegner-login-1":
+        self.log.info("Set owner and group via chmod on host %s", config.get_hostname())  
+        #self.log.info( ["chown", set_rec, "bobau:xenon-users", self.destination_config['dir_raw'] ] )
+        #self.log.info( ["chown", set_rec, "bobau:xenon-users", self.destination_config['dir_processed'] ] )
+        a_env = subprocess.Popen(["chown", set_rec, "bobau:xenon-users", self.destination_config['dir_raw'] ], stdout=subprocess.PIPE)
+        b_env = subprocess.Popen(["chown", set_rec, "bobau:xenon-users", self.destination_config['dir_processed'] ], stdout=subprocess.PIPE)        
+        
+        self.log.info("Set permissions via setfacl on host %s", config.get_hostname())
+        a_env = subprocess.Popen(["setfacl", set_rec, "-M", self.chmod_foder, self.destination_config['dir_raw'] ], stdout=subprocess.PIPE)
+        b_env = subprocess.Popen(["setfacl", set_rec, "-M", self.chmod_foder, self.destination_config['dir_processed'] ], stdout=subprocess.PIPE)
+        #self.log.info(["setfacl", set_rec, "-M", self.chmod_foder, self.destination_config['dir_raw'] ])
+        #self.log.info(["setfacl", set_rec, "-M", self.chmod_foder, self.destination_config['dir_processed'] ])
+      elif self.counter != 0:
+        self.log.info("Nothing needs to be done")
+      else:
+        self.log.info("Host %s is not know for this permission setup", config.get_hostname())  
+          
+    def SetCounter(self):
+      """Add +1 after each cycle"""
+      self.counter += 1
+        
+    def ResetCounter(self, reset):
+      """Reset the counter after a certain number of cycles"""
+      if self.counter == reset:
+        self.counter = 0
 
 
 class RenameSingle(Task):
