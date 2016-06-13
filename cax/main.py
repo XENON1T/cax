@@ -66,13 +66,13 @@ def main():
             config.set_json(args.config_file)
 
     tasks = [
-        #process.ProcessBatchQueue(),
-        #data_mover.SCPPull(),
-        #data_mover.SCPPush(),
-        #checksum.CompareChecksums(),
-        #checksum.AddChecksum(),
-        #clear.RetryStalledTransfer(),
-        #clear.RetryBadChecksumTransfer()
+        process.ProcessBatchQueue(),
+        data_mover.SCPPull(),
+        data_mover.SCPPush(),
+        checksum.CompareChecksums(),
+        checksum.AddChecksum(),
+        clear.RetryStalledTransfer(),
+        clear.RetryBadChecksumTransfer()
         filesystem.SetPermission()
     ]
 
