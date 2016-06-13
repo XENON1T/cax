@@ -189,9 +189,6 @@ class StatusSingle(Task):
         
         # For each data location, see if this filename in it
         for data_doc in self.run_doc['data']:
-            ## Is not local, skip
-            if 'host' not in data_doc or data_doc['host'] != config.get_hostname():
-                continue
                 
             if self.host == data_doc['host'] and self.status == data_doc['status'] and self.file == None:
               #cax-status --disable_database_update --host tegner-login-1 --status verifying
