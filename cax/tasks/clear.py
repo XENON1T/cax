@@ -38,25 +38,26 @@ class RetryStalledTransfer(checksum.CompareChecksums):
             self.log.warning("No creation time for %s" % str(data_doc))
             return
 
-        # How long has transfer been ongoing
-        time = data_doc['creation_time']
-        difference = datetime.datetime.utcnow() - time
-
+        # How long since last update to file
+        difference = self.check_file_age(data_doc['location'])
+        timeoutseconds = 6 * 3600 # six hours
+        
         if data_doc["status"] == "transferred":
             return  # Transfer went fine
 
         self.log.debug(difference)
 
-        if difference > datetime.timedelta(hours=1):  # If stale transfer
+        if difference > timeoutseconds:  # If stale transfer
             self.give_error("Transfer %s from run %d (%s) lasting more than "
-                            "one hour" % (data_doc['type'],
-                                          self.run_doc['number'],
-                                          self.run_doc['name']))
+                            "%i seconds" % (data_doc['type'],
+                                            self.run_doc['number'],
+                                            self.run_doc['name'],
+                                            timeoutseconds))
 
-        if difference > datetime.timedelta(hours=6) or \
+        if difference > timeoutseconds or \
                         data_doc["status"] == 'error':  # If stale transfer
-            self.give_error("Transfer lasting more than six hours "
-                            "or errored, retry.")
+            self.give_error("Transfer lasting more than %i seconds "
+                            "or errored, retry." % (timeoutseconds))
 
             self.log.info("Deleting %s" % data_doc['location'])
 
@@ -77,6 +78,22 @@ class RetryStalledTransfer(checksum.CompareChecksums):
             self.log.error('Removed from run database.')
             self.log.debug(resp)
 
+        def check_file_age(path):
+            # Path can be a file or a directory
+            modtime = (datetime.datetime.now()-
+                       datetime.datetime.strptime
+                       (time.ctime(os.path.getmtime(path)),
+                        "%a %b %d %H:%M:%S %Y")).total_seconds()
+
+            for subdir, dirs, files in os.walk(path):
+                if subdir == path:
+                    continue
+
+                sdirtime = CheckFileDir(subdir)
+                if sdirtime < modtime:
+                    modtime = sdirtime                    
+            return (int)(modtime)
+                                                                
 
 class RetryBadChecksumTransfer(checksum.CompareChecksums):
     """Alert if stale transfer.
