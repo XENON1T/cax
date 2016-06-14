@@ -14,7 +14,7 @@ from pymongo import ReturnDocument
 
 from cax import qsub, config
 from cax.config import PAX_DEPLOY_DIRS
-from cax.config import processing_script, get_processing_base_dir
+from cax.config import get_processing_base_dir
 from cax.task import Task
 
 
@@ -133,11 +133,10 @@ class ProcessBatchQueue(Task):
 
         name = self.run_doc['name']
 
-        script_template = processing_script(host)
+        script_template = config.processing_script(host)
 
         script = script_template.format(name=name, in_location=in_location,
-                                        processing_dir=get_processing_base_dir(
-                                            host),
+                                        processing_dir=get_processing_base_dir(host),
                                         host=host, pax_version=pax_version,
                                         pax_hash=pax_hash,
                                         out_location=out_location,
