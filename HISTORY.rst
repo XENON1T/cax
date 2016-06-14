@@ -2,6 +2,11 @@
 History
 =======
 
+2.1.6 (2016-06-14)
+------------------
+
+* Check modified times before deleting data for timeout
+
 2.1.5 (2016-06-09)
 ------------------
 
