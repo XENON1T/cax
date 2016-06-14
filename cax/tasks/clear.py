@@ -110,7 +110,7 @@ class RetryStalledTransfer(checksum.CompareChecksums):
                 if subdir == path:
                     continue
 
-                sdirtime = CheckFileDir(subdir)
+                sdirtime = check_file_age(subdir)
                 if sdirtime < modtime:
                     modtime = sdirtime                    
             return (int)(modtime)
