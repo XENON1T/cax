@@ -2,6 +2,11 @@
 History
 =======
 
+2.1.7 (2016-06-15)
+------------------
+
+* Handle modified times even if file does not exist
+
 2.1.6 (2016-06-14)
 ------------------
 
