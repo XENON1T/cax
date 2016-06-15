@@ -35,7 +35,12 @@ class Task():
         # Iterate over each run
         for id in ids:
             # Make sure up to date
-            self.run_doc = self.collection.find_one({'_id': id})
+            try:
+                self.run_doc = self.collection.find_one({'_id': id})
+            except pymongo.errors.AutoReconnect:
+                self.log.error("pymongo.errors.AutoReconnect, skipping...")
+                continue
+
 
             if 'data' not in self.run_doc:
                 continue
