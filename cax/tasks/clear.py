@@ -39,7 +39,10 @@ class RetryStalledTransfer(checksum.CompareChecksums):
             return
 
         # How long has transfer been ongoing
-        time_modified = os.stat(data_doc['location']).st_mtime
+        try:
+            time_modified = os.stat(data_doc['location']).st_mtime
+        except FileNotFoundError:
+            time_modified = 0
         time_modified = datetime.datetime.fromtimestamp(time_modified)
         time_made = data_doc['creation_time']
         difference = datetime.datetime.utcnow() - max(time_modified,
