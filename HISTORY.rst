@@ -2,6 +2,11 @@
 History
 =======
 
+2.2.0 (2016-06-15)
+------------------
+
+* Generalized purification evolution function in run database
+
 2.1.8 (2016-06-15)
 ------------------
 
