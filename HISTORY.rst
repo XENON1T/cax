@@ -2,6 +2,12 @@
 History
 =======
 
+2.1.8 (2016-06-15)
+------------------
+
+* Handle reconnect signal from Mongo if LNGS connection unstable
+
+
 2.1.7 (2016-06-15)
 ------------------
 
