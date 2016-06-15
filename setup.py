@@ -13,7 +13,7 @@ with open('HISTORY.rst') as history_file:
 
 requirements = [
     'checksumdir', 'scp', 'pagerduty-api', 'pymongo', 'paramiko',
-    'numpy'
+    'numpy', 'sympy'
 ]
 
 test_requirements = [
