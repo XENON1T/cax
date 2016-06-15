@@ -1,7 +1,7 @@
 """Add electron lifetime
 """
 
-import numpy as np
+from sympy.parsing.sympy_parser import parse_expr
 from pax import units
 
 from cax import config
@@ -23,18 +23,11 @@ class AddElectronLifetime(Task):
         doc = self.collection_purity.find_one(sort=(('calculation_time',
                                                      -1),))
 
-        # Arguments from the fit (required to execute function below even
-        # though it doesn't appear to be called.
-        popt = doc['popt']
 
-        # Fit function
-        if doc['electron_lifetime_function'] == 'exponential':
-            f = lambda x: np.exp((x - popt[0]) / popt[1])
-        else:
-            raise NotImplementedError()
+        function = parse_expr(doc['electron_lifetime_function'])
 
         # Compute value from this function on this dataset
-        lifetime = f(self.run_doc['start'].timestamp())
+        lifetime = function.evalf(subs={"t" : self.run_doc['start'].timestamp()})
 
         run_number = self.run_doc['number']
         self.log.info("Run %d: calculated lifetime of %d us" % (run_number,
