@@ -2,6 +2,12 @@
 History
 =======
 
+2.2.1 (2016-06-16)
+------------------
+
+* Purity is float and not sympy float type.  Otherwise, MongoDB doesn't understand it.
+
+
 2.2.0 (2016-06-15)
 ------------------
 
