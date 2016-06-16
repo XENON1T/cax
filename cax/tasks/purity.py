@@ -28,6 +28,7 @@ class AddElectronLifetime(Task):
 
         # Compute value from this function on this dataset
         lifetime = function.evalf(subs={"t" : self.run_doc['start'].timestamp()})
+        lifetime = float(lifetime)  # Convert away from Sympy type.
 
         run_number = self.run_doc['number']
         self.log.info("Run %d: calculated lifetime of %d us" % (run_number,
