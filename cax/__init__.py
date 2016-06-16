@@ -2,4 +2,4 @@
 
 __author__ = 'Christopher Tunnell'
 __email__ = 'ctunnell@nikhef.nl'
-__version__ = '2.2.1'
+__version__ = '2.2.2'
