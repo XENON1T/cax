@@ -193,8 +193,16 @@ class SCPBase(Task):
                 datum_new[variable] = datum.get(variable)
 
         if config.DATABASE_LOG == True:
-            self.collection.update({'_id': self.run_doc['_id']},
+            result = self.collection.update_one({'_id': self.run_doc['_id'],
+                                                 "$or" : [{"data.host" : {"$ne" : destination}},
+                                                          {"data.type" : {"$ne" : datum['type']}}]
+                                                 },
                                    {'$push': {'data': datum_new}})
+
+            if result.matched_count == 0:
+                self.log.error("Race condition!  Could not copy because another "
+                               "process seemed to already start.")
+                return
 
         self.log.info('Starting SCP')
 
