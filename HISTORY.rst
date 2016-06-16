@@ -2,6 +2,12 @@
 History
 =======
 
+2.2.2 (2016-06-16)
+------------------
+
+* Avoid race condition if two cax running with copies.
+
+
 2.2.1 (2016-06-16)
 ------------------
 
