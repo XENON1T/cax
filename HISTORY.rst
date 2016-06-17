@@ -2,6 +2,11 @@
 History
 =======
 
+2.2.4 (2016-06-17)
+------------------
+
+* Fix bug/typo in logic checking that data location doesn't already exist before transferring processed data.
+
 2.2.3 (2016-06-17)
 ------------------
 
