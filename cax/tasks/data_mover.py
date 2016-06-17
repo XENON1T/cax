@@ -194,7 +194,7 @@ class SCPBase(Task):
         if datum['type'] == 'processed':
             for variable in ('pax_version', 'pax_hash', 'creation_place'):
                 datum_new[variable] = datum.get(variable)
-                comparison_query[variable] = {"$ne" : datum.get(variable)}
+                comparison_query.append({variable : {"$ne" : datum.get(variable)}})
 
         if config.DATABASE_LOG == True:
             result = self.collection.update_one({'_id': self.run_doc['_id'],
