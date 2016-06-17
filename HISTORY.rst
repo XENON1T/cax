@@ -2,6 +2,13 @@
 History
 =======
 
+2.2.3 (2016-06-17)
+------------------
+
+* Do not retransfer processed data now also checks pax_version because otherwise would stop after any version
+* Execute one candidate transfer instead of all candidate transfers so it can recheck next time task is executed what candidates are
+
+
 2.2.2 (2016-06-16)
 ------------------
 
