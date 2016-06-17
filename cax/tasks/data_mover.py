@@ -194,8 +194,8 @@ class SCPBase(Task):
 
         if config.DATABASE_LOG == True:
             result = self.collection.update_one({'_id': self.run_doc['_id'],
-                                                 "$or" : [{"data.host" : {"$ne" : destination}},
-                                                          {"data.type" : {"$ne" : datum['type']}}]
+                                                 #"$or" : [{"data.host" : {"$ne" : destination}},
+                                                 #         {"data.type" : {"$ne" : datum['type']}}]
                                                  },
                                    {'$push': {'data': datum_new}})
 
