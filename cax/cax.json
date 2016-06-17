@@ -71,8 +71,6 @@
     "upload_options": [],
     "username": "bobau",
     "download_options": ["midway-login1"],
-    "pax_processing_versions": [
-      "v4.10.0"
-    ]
+    "pax_processing_versions": null
   }
 ]

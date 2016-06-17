@@ -13,7 +13,7 @@ import checksumdir
 from pymongo import ReturnDocument
 
 from cax import qsub, config
-from cax.config import pax_deploy_directories, processing_script, verify_anaconda_environment, \
+from cax.config import PAX_DEPLOY_DIRS, WORKLOAD_MANAGER_COMMAND, processing_script, verify_anaconda_environment, \
     get_processing_base_dir
 from cax.task import Task
 
@@ -23,9 +23,9 @@ def get_pax_hash(pax_version, host):
 
     # Get hash of this pax version
     if pax_version == 'head':
-        git_args = "--git-dir=" + pax_deploy_directories(host, pax_version) + "/.git rev-parse HEAD"
+        git_args = "--git-dir=" + PAX_DEPLOY_DIRS[host] + "/.git rev-parse HEAD"
     else:
-        git_args = "--git-dir=" + pax_deploy_directories(host, pax_version) + "/.git rev-parse " + pax_version
+        git_args = "--git-dir=" + PAX_DEPLOY_DIRS[host] + "/.git rev-parse " + pax_version
 
     git_out = subprocess.check_output("git " + git_args, shell=True)
     pax_hash = git_out.rstrip().decode('ascii')
@@ -138,11 +138,12 @@ class ProcessBatchQueue(Task):
 
         name = self.run_doc['name']
         
-        anaconda_exists = verify_anaconda_environment(pax_version)
+        anaconda_exists = verify_anaconda_environment( "head" )
         
         script_template = processing_script(host)
 
-        script = script_template.format(name=name, in_location=in_location,
+        script = script_template.format(workloadmanaer=WORKLOAD_MANAGER_COMMAND[host],
+                                        name=name, in_location=in_location,
                                         processing_dir=get_processing_base_dir(host),
                                         host=host, pax_version=pax_version,
                                         pax_hash=pax_hash,
@@ -153,7 +154,7 @@ class ProcessBatchQueue(Task):
           self.log.info(script)
           qsub.submit_job(script, name + "_" + pax_version)   
         else:
-          self.log.warning("There is not anaconda environment defined according to the requested pax version")
+          self.log.warning("There is no anaconda environment defined according to the requested pax version")
         
 
     def verify(self):

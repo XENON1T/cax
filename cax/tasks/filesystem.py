@@ -14,7 +14,7 @@ from cax.task import Task
 import os
 
 class SetPermission(Task):
-    """Set the correct permissions"""
+    """Set the correct permissions at the PDC in Stockholm"""
     
     def __init__(self):
       self.counter = 0
@@ -27,13 +27,11 @@ class SetPermission(Task):
     def go(self):
       """Run the standard procedure to set ownership and permissons for files/folders"""
       self.ChangePermisson()
-      self.SetCounter()
-      self.ResetCounter(60) #Reset counter after 60 cycles: Permissions and ownership is changed every hour
 
     def ChangePermisson(self):
       set_rec = "-R"
       
-      if self.counter == 0 and config.get_hostname() == "tegner-login-1":
+      if config.get_hostname() == "tegner-login-1":
         self.log.info("Set owner and group via chmod on host %s", config.get_hostname())  
         #self.log.info( ["chown", set_rec, "bobau:xenon-users", self.destination_config['dir_raw'] ] )
         #self.log.info( ["chown", set_rec, "bobau:xenon-users", self.destination_config['dir_processed'] ] )
@@ -45,19 +43,9 @@ class SetPermission(Task):
         b_env = subprocess.Popen(["setfacl", set_rec, "-M", self.chmod_foder, self.destination_config['dir_processed'] ], stdout=subprocess.PIPE)
         #self.log.info(["setfacl", set_rec, "-M", self.chmod_foder, self.destination_config['dir_raw'] ])
         #self.log.info(["setfacl", set_rec, "-M", self.chmod_foder, self.destination_config['dir_processed'] ])
-      elif self.counter != 0:
-        self.log.info("Nothing needs to be done")
       else:
         self.log.info("Host %s is not know for this permission setup", config.get_hostname())  
-          
-    def SetCounter(self):
-      """Add +1 after each cycle"""
-      self.counter += 1
-        
-    def ResetCounter(self, reset):
-      """Reset the counter after a certain number of cycles"""
-      if self.counter == reset:
-        self.counter = 0
+
 
 
 class RenameSingle(Task):

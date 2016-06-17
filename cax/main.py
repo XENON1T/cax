@@ -72,7 +72,7 @@ def main():
         checksum.CompareChecksums(),
         checksum.AddChecksum(),
         clear.RetryStalledTransfer(),
-        clear.RetryBadChecksumTransfer()
+        clear.RetryBadChecksumTransfer(),
         filesystem.SetPermission()
     ]
 

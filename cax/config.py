@@ -13,14 +13,16 @@ import pymongo
 CAX_CONFIGURE = ''
 DATABASE_LOG = True
 
+WORKLOAD_MANAGER_COMMAND = {
+  'midway-login1' : 'time pax-process',
+  'tegner-login-1': 'srun time pax-process'
+}
 
+PAX_DEPLOY_DIRS = {
+  'midway-login1' : '/project/lgrandi/deployHQ/pax',
+  'tegner-login-1': '/afs/pdc.kth.se/projects/xenon/software/pax/pax_head'
+}
 
-def pax_deploy_directories(host, pax_version):
-    PAX_DEPLOY_DIRS = {
-      'midway-login1' : '/project/lgrandi/deployHQ/pax',
-      'tegner-login-1': '/afs/pdc.kth.se/projects/xenon/software/pax/pax_'+pax_version
-    }
-    return PAX_DEPLOY_DIRS[host]
 
 def mongo_password():
     """Fetch passsword for MongoDB
@@ -213,22 +215,11 @@ export PROCESSING_DIR=/cfs/klemming/projects/xenon/xenon1t/processing/{name}_{pa
 mkdir -p ${{PROCESSING_DIR}} {out_location}
 cd ${{PROCESSING_DIR}}
 rm -f pax_event_class*
-source activate pax_{pax_version}
+source activate pax_head
+
+echo {workloadmanaer} --name {name} --in-location {in_location} --host {host} --pax-version {pax_version} --pax-hash {pax_hash} --out-location {out_location} --cpus {ncpus}
+{workloadmanaer} --name {name} --in-location {in_location} --host {host} --pax-version {pax_version} --pax-hash {pax_hash} --out-location {out_location} --cpus {ncpus}
         """
-    
-    if host == "midway-login1":
-      script_template += """
-echo time cax-process --name {name} --in-location {in_location} --host {host} --pax-version {pax_version} --pax-hash {pax_hash} --out-location {out_location} --cpus {ncpus}
-time cax-process --name {name} --in-location {in_location} --host {host} --pax-version {pax_version} --pax-hash {pax_hash} --out-location {out_location} --cpus {ncpus}
-        """
-    elif host == "tegner-login-1": # Stockolm-specific script options
-        script_template += """
-echo time cax-process --name {name} --in-location {in_location} --host {host} --pax-version {pax_version} --pax-hash {pax_hash} --out-location {out_location} --cpus {ncpus}
-srun time cax-process --name {name} --in-location {in_location} --host {host} --pax-version {pax_version} --pax-hash {pax_hash} --out-location {out_location} --cpus {ncpus}        
-        """
-    else:
-        raise NotImplementedError("Host %s processing not implemented",
-                                  host)
 
 # Script parts common to all sites
     script_template += """
