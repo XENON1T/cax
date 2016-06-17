@@ -108,12 +108,13 @@ class SCPBase(Task):
 
             # Upload logic
             if option_type == 'upload' and datum_here and datum_there is None:
-                print (datum_here, remote_host)
                 self.copy_handshake(datum_here, remote_host)
+                break
 
             # Download logic
             if option_type == 'download' and datum_there and datum_here is None:
                 self.copy_handshake(datum_there, config.get_hostname())
+                break
 
     def local_data_finder(self, data_type, option_type, remote_host):
         datum_here = None  # Information about data here
@@ -188,14 +189,16 @@ class SCPBase(Task):
                      'creation_time': datetime.datetime.utcnow(),
                      }
 
+        comparison_query = [{"data.host" : {"$ne" : destination}},
+                            {"data.type" : {"$ne" : datum['type']}}]
         if datum['type'] == 'processed':
             for variable in ('pax_version', 'pax_hash', 'creation_place'):
                 datum_new[variable] = datum.get(variable)
+                comparison_query[variable] = {"$ne" : datum.get(variable)}
 
         if config.DATABASE_LOG == True:
             result = self.collection.update_one({'_id': self.run_doc['_id'],
-                                                 #"$or" : [{"data.host" : {"$ne" : destination}},
-                                                 #         {"data.type" : {"$ne" : datum['type']}}]
+                                                 "$or" : comparison_query
                                                  },
                                    {'$push': {'data': datum_new}})
 
