@@ -198,7 +198,7 @@ class SCPBase(Task):
 
         if config.DATABASE_LOG == True:
             result = self.collection.update_one({'_id': self.run_doc['_id'],
-                                                 "$and" : comparison_query
+                                                 #"$and" : comparison_query
                                                  },
                                    {'$push': {'data': datum_new}})
 
