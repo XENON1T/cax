@@ -83,12 +83,21 @@ def main():
 
     while True:
         for task in tasks:
+            name = task.__class__.__name__
+
             # Skip tasks that user did not specify
-            if user_tasks and task.__class__.__name__ not in user_tasks:
+            if user_tasks and name not in user_tasks:
                 continue
 
-            logging.info("Executing %s." % task.__class__.__name__)
-            task.go()
+            logging.info("Executing %s." % name)
+
+            try:
+                task.go()
+            except Exception as e:
+                logging.fatal("Exception caught from task %s" % name,
+                              exc_info=True)
+                logging.exception(e)
+                raise
 
         # Decide to continue or not
         if run_once:
