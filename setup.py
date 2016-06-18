@@ -3,7 +3,7 @@
 from setuptools import setup, find_packages
 
 PROJECT = 'cax'
-VERSION = '2.2.5'
+VERSION = '2.2.6'
 
 with open('README.rst') as readme_file:
     readme = readme_file.read()
