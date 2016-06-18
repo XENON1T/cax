@@ -2,6 +2,12 @@
 History
 =======
 
+2.2.6 (2016-06-18)
+------------------
+
+* Remove race condition check since didn't work
+
+
 2.2.7 (2016-06-18)
 ------------------
 
