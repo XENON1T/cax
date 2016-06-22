@@ -1,7 +1,9 @@
 import logging
-from cax import config
-from bson.json_util import dumps
 from json import loads
+
+from bson.json_util import dumps
+
+from cax import config
 
 
 class Task():
@@ -21,12 +23,12 @@ class Task():
         # Collect all run document ids.  This has to be turned into a list
         # to avoid timeouts if a task takes too long.
         ids = [doc['_id'] for doc in self.collection.find({'detector': 'tpc',
-                                                           'number' : {'$gt': 28}})]
+                                                           'number'  : {'$gt': 0}})]
 
         # Iterate over each run
         for id in ids:
             # Make sure up to date
-            self.run_doc = self.collection.find_one({'_id' : id})
+            self.run_doc = self.collection.find_one({'_id': id})
 
             if 'data' not in self.run_doc:
                 continue
@@ -34,14 +36,13 @@ class Task():
             # DAQ experts only:
             # Find location of untriggered DAQ data (if exists)
             self.untriggered_data = self.get_daq_buffer()
- 
+
             # Operate on only user-specified datasets
             if datasets:
                 if self.run_doc['name'] not in datasets:
                     continue
-          
+
             self.each_run()
-            
 
     def each_run(self):
         for data_doc in self.run_doc['data']:
@@ -71,3 +72,13 @@ class Task():
         santized_run_doc = loads(dumps(santized_run_doc))
 
         self.log.error(message)
+
+    def has_tag(self, name):
+        if 'tags' not in self.run_doc:
+            return False
+
+        for tag in self.run_doc['tags']:
+            if name == tag['name']:
+                return True
+        return False
+

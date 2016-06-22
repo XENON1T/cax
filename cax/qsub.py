@@ -10,8 +10,8 @@
         >>> qsub.submit_job('touch /data/hisparc/test', 'job_1', 'express')
 
 """
-import os
 import logging
+import os
 import subprocess
 from distutils.spawn import find_executable
 
@@ -28,6 +28,7 @@ def which(program):
     if not path:
         raise Exception('The program %s is not available.' % program)
 
+
 def submit_job(script, name, extra=''):
     """Submit a job
 
@@ -36,15 +37,15 @@ def submit_job(script, name, extra=''):
     :param extra: optional extra arguments for the sbatch command.
 
     """
-    
+
     which('sbatch')
     script_path, script_name = create_script(script, name)
 
     # Effect of the arguments for sbatch:
     # http://slurm.schedmd.com/sbatch.html
     sbatch = ('sbatch -J {name} {extra} {script}'
-            .format(name=name, script=script_path,
-                    extra=extra))
+              .format(name=name, script=script_path,
+                      extra=extra))
 
     result = subprocess.check_output(sbatch,
                                      stderr=subprocess.STDOUT,
@@ -75,13 +76,15 @@ def delete_script(script_path):
     """
     os.remove(script_path)
 
+
 def get_queue(host):
     """Get list of jobs in queue"""
 
     if host == "midway-login1":
-        queue = subprocess.check_output("squeue --partition=xenon1t -o \"\%.30j\"", shell=True)
+        queue = subprocess.check_output(
+            "squeue --partition=xenon1t -o \"\%.30j\"", shell=True)
 
-    else: # To be implemented for Stockholm
+    else:  # To be implemented for Stockholm
         logging.error("Host %s not implemented in get_queue()" % host)
         return ''
 

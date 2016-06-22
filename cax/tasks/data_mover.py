@@ -1,9 +1,9 @@
 import datetime
-import os
 import logging
+import os
 
-from paramiko import SSHClient, util
 import scp
+from paramiko import SSHClient, util
 
 from cax import config
 from cax.task import Task
@@ -97,7 +97,10 @@ class CopyBase(Task):
         ssh.load_system_host_keys()
 
         logging.info("connection to %s" % server)
-        ssh.connect(server, username=username)
+        ssh.connect(server, 
+                    username=username,
+                    compress=True,
+                    timeout=60)
 
         # SCPCLient takes a paramiko transport as its only argument
         client = scp.SCPClient(ssh.get_transport())
@@ -194,20 +197,23 @@ class CopyBase(Task):
                                                       destination))
 
         self.log.debug("Notifying run database")
-        datum_new = {'type': datum['type'],
-                     'host': destination,
-                     'status': 'transferring',
-                     'location': os.path.join(destination_config['directory'],
-                                              self.run_doc['name'] +
-                                              ('.root' if datum['type'] == 'processed' else '')),
-                     'checksum': None,
+        datum_new = {'type'         : datum['type'],
+                     'host'         : destination,
+                     'status'       : 'transferring',
+                     'location'     : os.path.join(
+                         destination_config['directory'],
+                         self.run_doc['name'] +
+                         ('.root' if datum['type'] == 'processed' else '')),
+                     'checksum'     : None,
                      'creation_time': datetime.datetime.utcnow(),
                      }
 
         if datum['type'] == 'processed':
             datum_new['pax_version'] = datum['pax_version']
-            datum_new['pax_hash'] = datum['pax_hash']
-            datum_new['creation_place'] = datum['creation_place']
+            if 'pax_hash' in datum:
+                datum_new['pax_hash'] = datum['pax_hash']
+            if 'creation_place' in datum:
+                datum_new['creation_place'] = datum['creation_place']
 
         self.collection.update({'_id': self.run_doc['_id']},
                                {'$push': {'data': datum_new}})
@@ -228,9 +234,10 @@ class CopyBase(Task):
 
         self.log.debug(method+" done, telling run database")
 
-        self.collection.update({'_id': self.run_doc['_id'],
-                                'data': {'$elemMatch': { 'host': datum_new['host'],
-                                                         'type': datum_new['type']}}},
+        self.collection.update({'_id' : self.run_doc['_id'],
+                                'data': {
+                                    '$elemMatch': {'host': datum_new['host'],
+                                                   'type': datum_new['type']}}},
                                {'$set': {'data.$': datum_new}})
 
         self.log.debug(method+" done, telling run database")

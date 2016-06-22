@@ -1,14 +1,16 @@
-import sys
 import datetime
-import os
-import checksumdir
-import subprocess
 import hashlib
+import os
+import subprocess
+import sys
 from collections import defaultdict
+
+import checksumdir
 from pymongo import ReturnDocument
 
 from cax import qsub, config
 from cax.task import Task
+
 
 def get_pax_hash(pax_version, host):
     """Obtain pax repository hash"""
@@ -16,26 +18,28 @@ def get_pax_hash(pax_version, host):
     PAX_DEPLOY_DIR = ''
     if host == 'midway-login1':
         # Location of GitHub source code on Midway
-        PAX_DEPLOY_DIR="/project/lgrandi/deployHQ/pax"
+        PAX_DEPLOY_DIR = "/project/lgrandi/deployHQ/pax"
     elif host == 'tegner-login-1':
         # Location of GitHub source code on Stockholm
-        PAX_DEPLOY_DIR="/afs/pdc.kth.se/projects/xenon/software/pax"
+        PAX_DEPLOY_DIR = "/afs/pdc.kth.se/projects/xenon/software/pax"
     elif host == 'xe1t-datamanager':
         PAX_DEPLOY_DIR="/home/xe1tdatamanager/deployHQ/pax"
 
     # Get hash of this pax version
     if pax_version == 'head':
-        git_args = "--git-dir="+PAX_DEPLOY_DIR+"/.git rev-parse HEAD"
+        git_args = "--git-dir=" + PAX_DEPLOY_DIR + "/.git rev-parse HEAD"
     else:
-        git_args = "--git-dir="+PAX_DEPLOY_DIR+"/.git rev-parse "+pax_version
+        git_args = "--git-dir=" + PAX_DEPLOY_DIR + "/.git rev-parse " + pax_version
 
-    git_out = subprocess.check_output("git "+git_args, shell=True)
+    git_out = subprocess.check_output("git " + git_args, shell=True)
     pax_hash = git_out.rstrip().decode('ascii')
 
     return pax_hash
 
+
 def verify():
     return True
+
 
 def process(name, in_location, host, pax_version, pax_hash, out_location,
             ncpus=1):
@@ -50,25 +54,25 @@ def process(name, in_location, host, pax_version, pax_hash, out_location,
     output_fullname = out_location + '/' + name
 
     # New data location
-    datum = {'host'       : host,
-             'type'       : 'processed',
-             'pax_hash'   : pax_hash,
-             'pax_version': pax_version,
-             'status'     : 'transferring',
-             'location'   : output_fullname + '.root',
-             'checksum'   : None,
+    datum = {'host'          : host,
+             'type'          : 'processed',
+             'pax_hash'      : pax_hash,
+             'pax_version'   : pax_version,
+             'status'        : 'transferring',
+             'location'      : output_fullname + '.root',
+             'checksum'      : None,
              'creation_time' : datetime.datetime.utcnow(),
-             'creation_place' : host}
+             'creation_place': host}
 
     # This query is used to find if this run has already processed this data
     # in the same way.  If so, quit.
     query = {'detector': 'tpc',
-             'name' : name,
+             'name'    : name,
 
              # This 'data' gets deleted later and only used for checking
-             'data': { '$elemMatch': { 'host': host,
-                                       'type': 'processed',
-                                       'pax_version': pax_version}}}
+             'data'    : {'$elemMatch': {'host'       : host,
+                                         'type'       : 'processed',
+                                         'pax_version': pax_version}}}
     doc = collection.find_one(query)  # Query DB
     if doc is not None:
         print("Already processed %s.  Clear first.  %s" % (name,
@@ -76,15 +80,15 @@ def process(name, in_location, host, pax_version, pax_hash, out_location,
         return 1
 
     # Not processed this way already, so notify run DB we will
-    doc = collection.find_one_and_update({'detector': 'tpc', 'name' : name},
+    doc = collection.find_one_and_update({'detector': 'tpc', 'name': name},
                                          {'$push': {'data': datum}},
                                          return_document=ReturnDocument.AFTER)
 
     # Determine based on run DB what settings to use for processing.
     if doc['reader']['self_trigger']:
-        pax_config='XENON1T'
+        pax_config = 'XENON1T'
     else:
-        pax_config='XENON1T_LED'
+        pax_config = 'XENON1T_LED'
 
     # Try to process data.
     try:
@@ -92,7 +96,7 @@ def process(name, in_location, host, pax_version, pax_hash, out_location,
         p = core.Processor(config_names=pax_config,
                            config_dict={'pax': {'input_name' : in_location,
                                                 'output_name': output_fullname,
-                                                'n_cpus': ncpus}})
+                                                'n_cpus'     : ncpus}})
         p.run()
 
     except Exception as exception:
@@ -116,10 +120,11 @@ def process(name, in_location, host, pax_version, pax_hash, out_location,
 class ProcessBatchQueue(Task):
     "Create and submit job submission script."
 
-    def submit(self, in_location, host, pax_version, pax_hash, out_location, ncpus):
+    def submit(self, in_location, host, pax_version, pax_hash, out_location,
+               ncpus):
         '''Submission Script
         '''
- 
+
         name = self.run_doc['name']
         run_mode = ''
 
@@ -146,7 +151,7 @@ export PATH=/project/lgrandi/anaconda3/bin:$PATH
 
 export PROCESSING_DIR=/project/lgrandi/xenon1t/processing/{name}_{pax_version}
         """
-# ^ Hardcode warning for previous line: PROCESSING_DIR must be same as in #SBATCH --output and --error
+        # ^ Hardcode warning for previous line: PROCESSING_DIR must be same as in #SBATCH --output and --error
 
         # Stockolm-specific script options
         elif host == "tegner-login-1":
@@ -166,7 +171,7 @@ export PROCESSING_DIR=/cfs/klemming/projects/xenon/xenon1t/processing/{name}_{pa
 #     multiple instances of pax should be run in separate directories to avoid clash of libraries
 
         """
-# ^ Hardcode warning for previous line: PROCESSING_DIR must be same as in #SBATCH --output and --error
+        # ^ Hardcode warning for previous line: PROCESSING_DIR must be same as in #SBATCH --output and --error
 
         else:
             self.log.error("Host %s processing not implemented", host)
@@ -175,6 +180,7 @@ export PROCESSING_DIR=/cfs/klemming/projects/xenon/xenon1t/processing/{name}_{pa
         # Script parts common to all sites
         script_template += """mkdir -p ${{PROCESSING_DIR}} {out_location}
 cd ${{PROCESSING_DIR}}
+rm -f pax_event_class*
 
 source activate pax_{pax_version}
 
@@ -190,28 +196,31 @@ mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
                                         out_location=out_location,
                                         ncpus=ncpus)
         self.log.info(script)
-        qsub.submit_job(script, name+"_"+pax_version)
+        qsub.submit_job(script, name + "_" + pax_version)
 
     def verify(self):
         """Verify processing worked"""
         return True  # yeah... TODO.
 
     def each_run(self):
+        if self.has_tag('donotprocess'):
+            self.log.debug("Do not process tag found")
+            return
 
         thishost = config.get_hostname()
 
         # Only process at Midway or Stockholm for now
-        if not thishost == "midway-login1" and not thishost== "tegner-login-1":
+        if not thishost == "midway-login1" and not thishost == "tegner-login-1":
             self.log.debug("Host %s processing not implemented", thishost)
             return
-                
-        # Get dict of desired pax versions and corresponding output directories
+
+        # Get desired pax versions and corresponding output directories
         versions = config.get_pax_options('versions')
         out_locations = config.get_pax_options('directories')
 
         have_processed = defaultdict(bool)
         have_raw = False
-        
+
         # Iterate over data locations to know status
         for datum in self.run_doc['data']:
 
@@ -242,7 +251,7 @@ mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
         # Get number of events in data set
         events = self.run_doc.get('trigger',
                                   {}).get('events_built', 0)
-                
+
         # Skip if 0 events in dataset
         if events <= 0:
             self.log.debug("Skipping %s with 0 events",
@@ -250,7 +259,7 @@ mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
             return
 
         # Specify number of cores for pax multiprocess
-        ncpus = 4 # based on Figure 2 here https://xecluster.lngs.infn.it/dokuwiki/doku.php?id=xenon:xenon1t:shockley:performance#automatic_processing
+        ncpus = 4  # based on Figure 2 here https://xecluster.lngs.infn.it/dokuwiki/doku.php?id=xenon:xenon1t:shockley:performance#automatic_processing
         # Should be tuned on Stockholm too
 
         # Reduce to 1 CPU for small number of events (sometimes pax stalls with too many CPU)
@@ -258,22 +267,29 @@ mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
             ncpus = 1
 
         # Process all specified versions
-        for version, out_location in zip(versions, out_locations):
-
-            pax_hash = get_pax_hash(version, thishost)
+        for version in versions:
+            pax_version = version
+            pax_hash = get_pax_hash(pax_version, thishost)
+            out_location = os.path.join(
+                config.get_config(thishost)['directory'],
+                'processed',
+                'pax_%s' % version)
 
             if have_processed[version]:
-                self.log.debug("Skipping %s already processed with %s", self.run_doc['name'],
-                               version)
+                self.log.debug("Skipping %s already processed with %s",
+                               self.run_doc['name'],
+                               pax_version)
                 continue
 
             queue_list = qsub.get_queue(thishost)
-            if self.run_doc['name'] in queue_list: # Should check version here too 
-                self.log.debug("Skipping %s currently in queue", self.run_doc['name']) 
+            if self.run_doc[
+                'name'] in queue_list:  # Should check pax_version here too
+                self.log.debug("Skipping %s currently in queue",
+                               self.run_doc['name'])
                 continue
 
             if self.run_doc['reader']['ini']['write_mode'] == 2:
-                
+
                 self.log.info("Submitting %s with pax_%s (%s), output to %s",
                               self.run_doc['name'], version, pax_hash,
                               out_location)
@@ -281,8 +297,8 @@ mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
                 self.submit(have_raw['location'], thishost, version,
                             pax_hash, out_location, ncpus)
 
+
 # Arguments from process function: (name, in_location, host, pax_version,
 #                                   pax_hash, out_location, ncpus):
 def main():
     process(*sys.argv[1:])
-
