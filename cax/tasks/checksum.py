@@ -16,10 +16,17 @@ class AddChecksum(Task):
             self.log.debug('Location does not qualify')
             return
 
-        # Require data be here
-        if 'host' not in data_doc or data_doc['host'] != config.get_hostname():
-            self.log.debug('Location not here')
+        # Data must be hosted somewhere
+        if 'host' not in data_doc:
             return
+
+        # Data must be here locally
+        if data_doc['host'] != config.get_hostname():
+
+            # Special case of midway-srm accessible via POSIX on midway-login1
+            if not (data_doc['host']  == "midway-srm" and config.get_hostname() == "midway-login1"):
+                self.log.debug('Location not here')
+                return
 
         if os.path.isdir(data_doc['location']):
             value = checksumdir.dirhash(data_doc['location'],
@@ -46,13 +53,15 @@ class CompareChecksums(Task):
 
     def get_main_checksum(self, type='raw', pax_version='', **kwargs):
         for data_doc in self.run_doc['data']:
+
             # Only look at transfered data
             if data_doc['status'] == 'transferred' and data_doc['type'] == type:
-                if data_doc['type'] == 'raw' and data_doc['host'] == 'eb0':
+                if data_doc['type'] == 'raw' and data_doc['host'] == 'xe1t-datamanager':
                     return data_doc['checksum']
                 if data_doc['type'] == 'raw' and data_doc['host'] == 'xenon1t-daq':
                     return data_doc['checksum']
 
+                # Warning: Host here needs to change if processed elsewhere
                 if data_doc['type'] == 'processed' and \
                                 data_doc['host'] == 'midway-login1' and \
                                 data_doc['pax_version'] == pax_version:
@@ -76,7 +85,10 @@ class CompareChecksums(Task):
 
             # Grab main checksum.
             if data_doc['checksum'] != self.get_main_checksum(**data_doc):
-                if data_doc['host'] == config.get_hostname():
+
+                # Special case of midway-srm accessible via POSIX on midway-login1
+                if data_doc['host'] == config.get_hostname() \
+                   or (data_doc['host'] == "midway-srm" and config.get_hostname() == "midway-login1"):
                     error = "Local checksum error " \
                             "run %d" % self.run_doc['number']
                     if warn:
