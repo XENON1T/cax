@@ -1,3 +1,6 @@
+"""Responsible for all checksum operations on data.
+"""
+
 import hashlib
 import os
 
@@ -28,47 +31,59 @@ class AddChecksum(Task):
                 self.log.debug('Location not here')
                 return
 
+        # This status is given after checksumming
+        status = 'transferred'
+
+        # Find file and perform checksum
         if os.path.isdir(data_doc['location']):
             value = checksumdir.dirhash(data_doc['location'],
                                         'sha512')
-        else:
+        elif os.path.isfile(data_doc['location']):
             value = checksumdir._filehash(data_doc['location'],
                                           hashlib.sha512)
+        else:
+            # Data not actually found
+            self.log.error("Location %s not found." % data_doc['location'])
+            value = None
+            status = 'error'
 
-        data_doc['checksum'] = value
-        data_doc['status'] = 'transferred'
-
-        self.log.info("Adding a checksum to run "
-                      "%d %s" % (self.run_doc['number'],
-                                 data_doc['type']))
-        self.collection.update({'_id' : self.run_doc['_id'],
-                                'data': {
-                                    '$elemMatch': {'host': data_doc['host'],
-                                                   'type': data_doc['type']}}},
-                               {'$set': {'data.$': data_doc}})
+        if config.DATABASE_LOG:
+            self.log.info("Adding a checksum to run "
+                          "%d %s" % (self.run_doc['number'],
+                                     data_doc['type']))
+            self.collection.update({'_id' : self.run_doc['_id'],
+                                    'data': {'$elemMatch': data_doc}},
+                                   {'$set': {'data.$.status'  : status,
+                                             'data.$.checksum': value}})
 
 
 class CompareChecksums(Task):
     "Perform a checksum on accessible data."
 
     def get_main_checksum(self, type='raw', pax_version='', **kwargs):
+        """Iterate over data locations and search for priviledged checksum
+        """
+
+        # These types of data and location provide master checksum
+        master_checksums = (('raw', 'eb0', None),
+                            ('raw', 'xenon1t-daq', None),
+                            ('processed', 'midway-login1', pax_version))
+
         for data_doc in self.run_doc['data']:
 
             # Only look at transfered data
             if data_doc['status'] == 'transferred' and data_doc['type'] == type:
-                if data_doc['type'] == 'raw' and data_doc['host'] == 'xe1t-datamanager':
-                    return data_doc['checksum']
-                if data_doc['type'] == 'raw' and data_doc['host'] == 'xenon1t-daq':
+
+                # Search key
+                test = tuple((data_doc.get(key) for key in ('type',
+                                                            'host',
+                                                            'pax_version')))
+                if test in master_checksums:
+                    # If matched a master checksum location, return checksum
                     return data_doc['checksum']
 
-                # Warning: Host here needs to change if processed elsewhere
-                if data_doc['type'] == 'processed' and \
-                                data_doc['host'] == 'midway-login1' and \
-                                data_doc['pax_version'] == pax_version:
-                    return data_doc['checksum']
-
-        # self.log.info("Missing checksum within %d" % self.run_doc['number'])
-        return "not_set"
+        self.log.debug("Missing checksum within %d" % self.run_doc['number'])
+        return None
 
     def check(self,
               warn=True):
