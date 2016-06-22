@@ -81,7 +81,7 @@ def get_transfer_options(transfer_kind='upload', transfer_method=None):
 
     if transfer_method is not None:
         transfer_options = [to for to in transfer_options
-                            if get_config(to['host'])['receive'] == 'method']
+                            if get_config(to['host'])['method'] == 'method']
 
     return transfer_options
 
@@ -90,7 +90,7 @@ def get_pax_options(option_type='versions'):
     try:
         options = get_config(get_hostname())['pax_%s' % option_type]
     except LookupError as e:
-        logging.info("Unknown config host: %s", get_hostname())
+        logging.info("Unknown pax option Host: %s, Key: %s", get_hostname(), option_type)
         return []
 
     return options

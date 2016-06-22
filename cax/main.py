@@ -3,9 +3,9 @@ import logging
 import os.path
 import time
 
+from cax import __version__
 from cax.config import mongo_password, set_json, get_task_list, get_config
 from cax.tasks import checksum, clear, data_mover, process
-from cax import __version__
 
 def main():
     parser = argparse.ArgumentParser(
@@ -58,8 +58,8 @@ def main():
             set_json(args.config_file)
 
     tasks = [process.ProcessBatchQueue(),
-             data_mover.SCPPush(),
-             data_mover.SCPPull(),
+             data_mover.CopyPush(),
+             data_mover.CopyPull(),
              checksum.AddChecksum(),
              checksum.CompareChecksums(),
              clear.ClearDAQBuffer(),

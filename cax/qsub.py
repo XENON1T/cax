@@ -86,6 +86,7 @@ def get_queue(host):
 
     else:  # To be implemented for Stockholm
         logging.error("Host %s not implemented in get_queue()" % host)
+        return ''
 
     queue_list = queue.rstrip().decode('ascii')
     return queue_list

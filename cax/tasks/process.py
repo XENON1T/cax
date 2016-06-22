@@ -22,6 +22,8 @@ def get_pax_hash(pax_version, host):
     elif host == 'tegner-login-1':
         # Location of GitHub source code on Stockholm
         PAX_DEPLOY_DIR = "/afs/pdc.kth.se/projects/xenon/software/pax"
+    elif host == 'xe1t-datamanager':
+        PAX_DEPLOY_DIR="/home/xe1tdatamanager/deployHQ/pax"
 
     # Get hash of this pax version
     if pax_version == 'head':
@@ -214,6 +216,7 @@ mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
 
         # Get desired pax versions and corresponding output directories
         versions = config.get_pax_options('versions')
+        out_locations = config.get_pax_options('directories')
 
         have_processed = defaultdict(bool)
         have_raw = False
@@ -288,10 +291,10 @@ mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
             if self.run_doc['reader']['ini']['write_mode'] == 2:
 
                 self.log.info("Submitting %s with pax_%s (%s), output to %s",
-                              self.run_doc['name'], pax_version, pax_hash,
+                              self.run_doc['name'], version, pax_hash,
                               out_location)
 
-                self.submit(have_raw['location'], thishost, pax_version,
+                self.submit(have_raw['location'], thishost, version,
                             pax_hash, out_location, ncpus)
 
 
