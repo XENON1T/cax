@@ -60,7 +60,7 @@
     "username": "bobau",
     "download_options": ["midway-login1", "xenon1t-daq"],
     "pax_processing_versions": null
-  }
+  },
   {
     "name": "xe1t-datamanager",
     "hostname": "xe1t-datamanager.lngs.infn.it",
