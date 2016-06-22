@@ -3,7 +3,7 @@
 from setuptools import setup, find_packages
 
 PROJECT = 'cax'
-VERSION = '0.1.0'
+VERSION = '1.2.0'
 
 with open('README.rst') as readme_file:
     readme = readme_file.read()
@@ -35,7 +35,7 @@ setup(
     zip_safe=False,
     keywords='cax',
     classifiers=[
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 3 - Beta',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: ISC License (ISCL)',
         'Natural Language :: English',
@@ -49,8 +49,7 @@ setup(
     entry_points={
         'console_scripts': [
             'cax = cax.main:main',
-            'caxer = cax.main:main',
-            'cax-single = cax.main:single',     # Will be removed soon
+            'caxer = cax.main:main',  # For uniformity with paxer
             'cax-process = cax.tasks.process:main'
         ],
     },

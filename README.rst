@@ -65,22 +65,41 @@ First ensure cax/cax.json is the list of sites that you wish to work with.
 
 Then you can run a single instance with::
 
-  bin/./cax-single  # or just cax-single if commonly installed
+  bin/cax --once  # or just 'cax --once' if commonly installed
   
 or continuously running daemon:: 
 
-  bin/./cax  # or just cax if commonly installed
+  bin/cax  # or just cax if commonly installed
   
-This will perform the upload and downloads that are specified in cax.json and update the Runs DB accordingly
+This will perform the upload and downloads that are specified in cax.json and update the Runs DB accordingly. 
 
   https://xenon1t-daq.lngs.infn.it/runs
   
 For checksumming, cax must be run on the storage server whose IP must be whitelisted by LNGS (contact ctunnell@nikhef.nl for this).
 
-Features
---------
+Processing is currently implemented for only Midway and Stockholm.
 
-* TODO
+Customizing cax
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Customizing the behavior of cax is currently done in `cax/cax.json <https://github.com/XENON1T/cax/blob/master/cax/cax.json>`_, however you should be very careful when modifying this since the head version by default is being used by various sites to handle the XENON1T data flow and processing.
+
+You can feed in a custom cax.json into cax via::
+
+  cax --config <path to custom cax.json>
+
+For development and testing, in addition to the options already in cax.json, you may specify subset of tasks you wish to run, e.g.::
+
+  "task_list": ["ProcessBatchQueue", "AddChecksum"]
+
+corresponding to the tasks in `cax/main.py <https://github.com/XENON1T/cax/blob/master/cax/main.py#L51>`_.
+
+You may also specify a subset of datasets to operate on with, e.g.::
+
+  "dataset_list": ["160315_1432", "160315_1514"]
+  
+Beware that in most tasks are commands that modify the Runs DB live, so for development you should comment out these commands prior to testing. A development flag is currently being developed to make this easier.
+
 
 Credits
 ---------

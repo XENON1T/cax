@@ -1,56 +1,61 @@
 import argparse
 import logging
-import time
-import argparse
 import os.path
+import time
 
-from cax.config import mongo_password, set_json, get_task_list
+from cax import __version__
+from cax.config import mongo_password, set_json, get_task_list, get_config
 from cax.tasks import checksum, clear, data_mover, process
 
-def single():
-    raise RuntimeError("cax-single has been removed: use cax --once instead")
-
-
 def main():
-    parser = argparse.ArgumentParser(description="Copying All kinds of XENON1T data.")
+    parser = argparse.ArgumentParser(
+        description="Copying All kinds of XENON1T data.")
     parser.add_argument('--once', action='store_true',
                         help="Run all tasks just one, then exits")
-    parser.add_argument('--config', action='store', dest='config_file',
-                        help="Load a custom .json config file into cax")    
+    parser.add_argument('--config', action='store', type=str,
+                        dest='config_file',
+                        help="Load a custom .json config file into cax")
+    parser.add_argument('--log',  dest='log', type=str, default='info',
+                        help="Logging level e.g. debug")
 
     args = parser.parse_args()
+
+    log_level = getattr(logging, args.log.upper())
+    if not isinstance(log_level, int):
+        raise ValueError('Invalid log level: %s' % args.log)
 
     run_once = args.once
 
     # Check passwords and API keysspecified
     mongo_password()
 
-    # Get specified cax.json configuration file for cax:
-    caxjson_config = args.config_file
-    if caxjson_config:
-        if not os.path.isfile( caxjson_config ):
-            logging.error("Config file %s not found", caxjson_config)
-        else:
-            #logging.info("Using custom config file: %s", caxjson_config) # seems to kill rest of output...
-            set_json( caxjson_config )
-
     # Setup logging
+    cax_version = 'cax_v%s - ' % __version__
     logging.basicConfig(filename='cax.log',
-                        level=logging.INFO,
-                        format='%(asctime)s [%(levelname)s] %(message)s')
+                        level=log_level,
+                        format=cax_version + '%(asctime)s [%(levelname)s] %(message)s')
     logging.info('Daemon is starting')
 
     # define a Handler which writes INFO messages or higher to the sys.stderr
     console = logging.StreamHandler()
-
-    console.setLevel(logging.INFO)
+    console.setLevel(log_level)
 
     # set a format which is simpler for console use
+
     formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
     # tell the handler to use this format
     console.setFormatter(formatter)
     # add the handler to the root logger
     logging.getLogger('').addHandler(console)
+
+    # Get specified cax.json configuration file for cax:
+    if args.config_file:
+        if not os.path.isfile(args.config_file):
+            logging.error("Config file %s not found", args.config_file)
+        else:
+            logging.info("Using custom config file: %s",
+                         args.config_file)
+            set_json(args.config_file)
 
     tasks = [process.ProcessBatchQueue(),
              data_mover.CopyPush(),
@@ -61,6 +66,9 @@ def main():
              clear.RetryStalledTransfer(),
              clear.RetryBadChecksumTransfer(),
              ]
+
+    # Raises exception if unknown host
+    get_config()
 
     user_tasks = get_task_list()
 

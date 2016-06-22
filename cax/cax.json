@@ -1,112 +1,116 @@
 [
   {
-    "name": "eb0",
-    "hostname": "eb0",
-    "method": null,
-    "directory": "/data/xenon1t_data/",
-    "upload_options": ["xe1t-datamanager"],
-    "download_options": []
+    "name": "xenon1t-daq",
+    "hostname": "xenon1t-daq.lngs.infn.it",
+    "receive": null,
+    "dir_raw": "/data/xenon/raw/",
+    "dir_processed": null,
+    "upload_options": [],
+    "download_options": [],
+    "username": "transfer",
+    "pax_processing_versions": null
   },
+  {
+    "name": "lena",
+    "receive": "scp",
+    "hostname": "login.nikhef.nl",
+    "dir_raw": "/data/xenon/xenon1t/raw",
+    "dir_processed": "/data/xenon/xenon1t/processed",
+    "upload_options": [],
+    "username": "ctunnell",
+    "download_options": [
+      "midway-login1",
+      "xenon1t-daq"
+    ],
+    "pax_processing_versions": null
+  },
+  {
+    "name": "midway-login1",
+    "receive": "scp",
+    "hostname": "midway-login1.rcc.uchicago.edu",
+    "dir_raw": "/project/lgrandi/xenon1t/raw",
+    "dir_processed": "/project/lgrandi/xenon1t/processed",
+    "upload_options": [],
+    "username": "tunnell",
+    "download_options": [],
+    "pax_processing_versions": [
+      "v5.0.0"
+    ]
+  },
+  {
+    "name": "login",
+    "receive": "scp",
+    "hostname": "login.ci-connect.uchicago.edu",
+    "dir_raw": "/xenon/xenon1t_test",
+    "dir_processed": null,
+    "upload_options": [],
+    "username": "pdeperio",
+    "download_options": [
+      "midway-login1"
+    ],
+    "pax_processing_versions": null
+  },
+  {
+    "name": "tegner-login-1",
+    "receive": "scp",
+    "hostname": "tegner-login-1.pdc.kth.se",
+    "dir_raw": "/cfs/klemming/projects/xenon/xenon1t/raw",
+    "dir_processed": "/cfs/klemming/projects/xenon/xenon1t/processed",
+    "upload_options": [],
+    "username": "bobau",
+    "download_options": ["midway-login1", "xenon1t-daq"],
+    "pax_processing_versions": null
+  }
   {
     "name": "xe1t-datamanager",
     "hostname": "xe1t-datamanager.lngs.infn.it",
     "username": "xe1tdatamanager",
     "method": "scp",
-    "directory": "/archive/xenon1t/rawdata/runs",
+    "dir_raw": "/archive/xenon1t/rawdata/runs",
     "upload_options": ["midway-srm"],
-    "download_options": []
-  },
-  {
-    "name": "lena",
-    "method": "scp",
-    "hostname": "login.nikhef.nl",
-    "directory": "/data/xenon/xenon1t/",
-    "upload_options": [],
-    "username": "ctunnell",
-    "download_options": ["midway-login1"]
-  },
-  {
-    "name": "xe-grid01",
-    "method": "scp",
-    "hostname": "xe-grid01.lngs.infn.it",
-    "directory": "/xetemp/xenon1t/",
-    "upload_options": [],
-    "username": "tunnell",
-    "download_options": []
-  },
-  {
-    "name": "midway-login1",
-    "method": "scp",
-    "hostname": "midway-login1.rcc.uchicago.edu",
-    "directory": "/project/lgrandi/xenon1t/raw",
-    "upload_options": [],
-    "username": "tunnell",
     "download_options": [],
-    "pax_versions": ["v4.10.0"],
-    "pax_directories": ["/project/lgrandi/xenon1t/processed/pax_v4.10.0"]
-  },
-  {
-    "name": "login",
-    "method": "scp",
-    "hostname": "login.ci-connect.uchicago.edu",
-    "directory": "/xenon/xenon1t_test",
-    "upload_options": [],
-    "username": "pdeperio",
-    "download_options": []
-  },
-  {
-    "name": "tegner-login-1",
-    "method": "scp",
-    "hostname": "tegner-login-1.pdc.kth.se",
-    "directory": "/cfs/klemming/projects/xenon/xenon1t/data",
-    "upload_options": [],
-    "username": "bobau",
-    "download_options": ["midway-login1"]
+    "pax_processing_versions": null
   },
   {
     "name": "lfc",
     "method": "gfal-copy",
     "hostname": "lfn:",
-    "directory": "/grid/xenon.biggrid.nl/xenon1t/raw",
+    "dir_raw": "/grid/xenon.biggrid.nl/xenon1t/raw",
     "username": null
   },
   {
     "name": "osg-connect-srm",
     "method": "gfal-copy",
     "hostname": "srm://ceph-se.osgconnect.net:8443/srm/v2/server?SFN=",
-    "directory": "/cephfs/srm/xenon/xenon1t",
+    "dir_raw": "/cephfs/srm/xenon/xenon1t",
     "username": null
   },
   {
     "name": "midway-srm",
     "method": "gfal-copy",
     "hostname": "srm://srm1.rcc.uchicago.edu:8443/srm/v2/server?SFN=",
-    "directory": "/project/lgrandi/xenon1t/raw",
+    "dir_raw": "/project/lgrandi/xenon1t/raw",
     "username": null
   },
   {
     "name": "cnaf-srm",
     "method": "gfal-copy",
     "hostname": "srm://storm-fe-archive.cr.cnaf.infn.it:8444/srm/managerv2?SFN=",
-    "directory": "/xenon/xenon1t",
+    "dir_raw": "/xenon/xenon1t",
     "username": null
   },
   {
     "name": "nikhef-srm",
     "method": "gfal-copy",
     "hostname": "srm://tbn18.nikhef.nl:8446/srm/managerv2?SFN=",
-    "directory": "/dpm/nikhef.nl/home/xenon.biggrid.nl/xenon1t",
+    "dir_raw": "/dpm/nikhef.nl/home/xenon.biggrid.nl/xenon1t",
     "username": null
   },
   {
     "name": "wipp-srm",
     "method": "gfal-copy",
     "hostname": "srm://wipp-se.weizmann.ac.il",
-    "directory": "/xenon/xenon1t",
+    "dir_raw": "/xenon/xenon1t",
     "username": null
   }
-
-
-
-
 ]
