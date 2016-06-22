@@ -2,7 +2,7 @@
   {
     "name": "xenon1t-daq",
     "hostname": "xenon1t-daq.lngs.infn.it",
-    "receive": null,
+    "method": "scp",
     "dir_raw": "/data/xenon/raw/",
     "dir_processed": null,
     "upload_options": [],
@@ -12,7 +12,7 @@
   },
   {
     "name": "lena",
-    "receive": "scp",
+    "method": "scp",
     "hostname": "login.nikhef.nl",
     "dir_raw": "/data/xenon/xenon1t/raw",
     "dir_processed": "/data/xenon/xenon1t/processed",
@@ -26,20 +26,18 @@
   },
   {
     "name": "midway-login1",
-    "receive": "scp",
+    "method": "scp",
     "hostname": "midway-login1.rcc.uchicago.edu",
     "dir_raw": "/project/lgrandi/xenon1t/raw",
     "dir_processed": "/project/lgrandi/xenon1t/processed",
     "upload_options": [],
     "username": "tunnell",
-    "download_options": [],
-    "pax_processing_versions": [
-      "v5.0.0"
-    ]
+    "download_options": ["xenon1t-daq"],
+    "pax_processing_versions": ["v5.0.0"]
   },
   {
     "name": "login",
-    "receive": "scp",
+    "method": "scp",
     "hostname": "login.ci-connect.uchicago.edu",
     "dir_raw": "/xenon/xenon1t_test",
     "dir_processed": null,
@@ -52,7 +50,7 @@
   },
   {
     "name": "tegner-login-1",
-    "receive": "scp",
+    "method": "scp",
     "hostname": "tegner-login-1.pdc.kth.se",
     "dir_raw": "/cfs/klemming/projects/xenon/xenon1t/raw",
     "dir_processed": "/cfs/klemming/projects/xenon/xenon1t/processed",
