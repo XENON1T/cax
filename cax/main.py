@@ -67,8 +67,8 @@ def main():
     tasks = [
         purity.AddElectronLifetime(),
         process.ProcessBatchQueue(),
-        data_mover.SCPPull(),
-        data_mover.SCPPush(),
+        data_mover.CopyPull(),
+        data_mover.CopyPush(),
         checksum.CompareChecksums(),
         checksum.AddChecksum(),
         clear.RetryStalledTransfer(),

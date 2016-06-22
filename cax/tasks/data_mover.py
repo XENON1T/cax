@@ -50,8 +50,8 @@ class CopyBase(Task):
         # gfal-copy arguments:
         #   -f: overwrite 
         #   -r: recursive
-        #   -n: number of streams (8 for now, but should be tuned)
-        command = "time gfal-copy -v -f -r -p -n8 "
+        #   -n: number of streams (4 for now, but seems to not work)
+        command = "time gfal-copy -v -f -r -p -n 4 "
 
         status = -1
 
@@ -61,7 +61,9 @@ class CopyBase(Task):
 
             # Simultaneous LFC registration
             lfc_config = config.get_config("lfc")
-            lfc_address = lfc_config['hostname']+lfc_config['directory']
+
+            # Warning: Processed data dir not implemented for LFC here
+            lfc_address = lfc_config['hostname']+lfc_config['dir_'+datum_original['type']]
 
             full_command = command+ \
                            "file://"+datum_original['location']+" "+ \
@@ -225,7 +227,8 @@ class CopyBase(Task):
             self.log.info(datum)
             base_dir = os.path.join(base_dir, 'pax_%s' % datum['pax_version'])
 
-        if not os.path.exists(base_dir):
+        # Check directory existence on local host for download only
+        if option_type == 'download' and not os.path.exists(base_dir):
             if destination != config.get_hostname():
                 raise NotImplementedError("Cannot create directory on another "
                                           "machine.")
@@ -248,6 +251,7 @@ class CopyBase(Task):
 
         comparison_quers = [{"data.host" : {"$ne" : destination}},
                             {"data.type" : {"$ne" : datum['type']}}]
+
         if datum['type'] == 'processed':
             for variable in ('pax_version', 'pax_hash', 'creation_place'):
                 datum_new[variable] = datum.get(variable)
