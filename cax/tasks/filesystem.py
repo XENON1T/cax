@@ -158,10 +158,7 @@ class FindStrays(Task):
        self.check(config.get_processing_base_dir())
        
 class StatusSingle(Task):
-    """Status of a single file or directory
-
-    This notifies the run database.
-    """
+    """Run data base status of a processed file or data set"""
 
     def __init__(self, host__, status__, file__):
         # Save filesnames to use
@@ -173,18 +170,15 @@ class StatusSingle(Task):
         Task.__init__(self)
 
     def each_run(self):
-        #print(self.run_doc['data'])
-        
         # For each data location, see if this filename in it
         for data_doc in self.run_doc['data']:
                 
             if self.host == data_doc['host'] and self.status == data_doc['status'] and self.file == None:
-              #cax-status --disable_database_update --host tegner-login-1 --status verifying
               status_db = data_doc["status"]
               location_db = data_doc['location']
               logging.info("Ask for status %s at host %s: %s", self.host, status_db, location_db)
             
               
             if self.host == data_doc['host'] and self.status == None and self.file == data_doc['location']:
-              logging.info('Status of %s is: ', data_doc['location'], data_doc["status"] )  
-              #example: cax-status --file /cfs/klemming/projects/xenon/xenon1t/processed/pax_v4.10.0/160530_0505.root --disable_database_update --host #tegner-login-1
+              logging.info('Status of %s is: %s', data_doc['location'], data_doc["status"] )  
+              
