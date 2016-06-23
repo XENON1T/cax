@@ -2,6 +2,12 @@
 History
 =======
 
+3.0.0 (2016-06-23)
+------------------
+
+* Grid copy functionality
+* Use datamanager machine at LNGS.
+
 2.2.6 (2016-06-18)
 ------------------
 
