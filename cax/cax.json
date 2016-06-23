@@ -32,7 +32,7 @@
     "dir_processed": "/project/lgrandi/xenon1t/processed",
     "upload_options": [],
     "username": "tunnell",
-    "download_options": ["xenon1t-daq"],
+    "download_options": ["xe1t-datamanager"],
     "pax_processing_versions": ["v5.0.0"]
   },
   {
@@ -64,8 +64,8 @@
     "hostname": "xe1t-datamanager.lngs.infn.it",
     "username": "xe1tdatamanager",
     "method": "scp",
-    "dir_raw": "/archive/xenon1t/rawdata/runs",
-    "upload_options": ["midway-srm"],
+    "dir_raw": "/data/xenon/raw",
+    "upload_options": [],
     "download_options": [],
     "pax_processing_versions": null
   },
