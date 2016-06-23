@@ -65,7 +65,7 @@ class CompareChecksums(Task):
         """
 
         # These types of data and location provide master checksum
-        master_checksums = (('raw', 'eb0', None),
+        master_checksums = (('raw', 'xe1t-datamanager', None),
                             ('raw', 'xenon1t-daq', None),
                             ('processed', 'midway-login1', pax_version))
 
