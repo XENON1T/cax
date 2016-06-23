@@ -62,7 +62,7 @@
   {
     "name": "xe1t-datamanager",
     "hostname": "xe1t-datamanager.lngs.infn.it",
-    "username": "xe1tdatamanager",
+    "username": "xe1ttransfer",
     "method": "scp",
     "dir_raw": "/data/xenon/raw",
     "upload_options": [],
