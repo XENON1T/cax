@@ -25,7 +25,7 @@ class Task():
         # to avoid timeouts if a task takes too long.
         try:
             ids = [doc['_id'] for doc in self.collection.find({'detector': 'tpc',
-                                                               'number'  : {'$gt': 1070}},
+                                                               'number'  : {'$gt': 1068}},
                                                               projection=('_id'),
                                                               sort=(('start', 1),))]
         except pymongo.errors.CursorNotFound:
