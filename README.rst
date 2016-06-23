@@ -115,6 +115,43 @@ You may also specify a subset of datasets to operate on with, e.g.::
 Beware that in most tasks are commands that modify the Runs DB live, so for development you should comment out these commands prior to testing. A development flag is currently being developed to make this easier.
 
 
+Additional cax tools
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In the following there is a small overview given about a set of tools which is derived from cax
+
+cax-status
+^^^^^^^^^^
+
+This tool allows to check the data base entries for a certain status (e.g. error, transfered, processed...)
+  
+  cax-status --host <host> --status <status>
+  
+  <host>: tegner-login-1, midway-login1,... (see cax.json)
+  <status>: error, transferred, transferring, processed, verifying
+  
+  cax-status --host <host> --file <file>
+  
+  <host>: tegner-login-1, midway-login1,... (see cax.json)
+  <file>: The full path to a root file or data set.
+
+cax-process
+^^^^^^^^^^^
+
+Using cax to reprocess XENON1T data sets with pax in the background and register them in the run data base
+
+  cax-process:
+  
+  --in-location              Specify the location of the raw data
+  --name NAME                Specify the name
+  --host HOST                Specify the host
+  --pax-version              Specify the name
+  --pax-hash                 Specify the pax_hash (Not necessary to manual reprocessing)
+  --out-location             Specify the location for storing the root file
+  --cpus NCPUS               Specify the number of cpus
+  --disable_database_update  Disable the update function the run data base
+  
+  
 Credits
 ---------
 
