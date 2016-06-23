@@ -56,7 +56,7 @@
     "dir_processed": "/cfs/klemming/projects/xenon/xenon1t/processed",
     "upload_options": [],
     "username": "bobau",
-    "download_options": ["midway-login1", "xenon1t-daq"],
+    "download_options": ["midway-login1", "xenon1t-daq", "xe1t-datamanager"],
     "pax_processing_versions": null
   },
   {
