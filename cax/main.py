@@ -19,8 +19,12 @@ def main():
                         help="Logging level e.g. debug")
     parser.add_argument('--disable_database_update', action='store_true',
                         help="Disable the update function the run data base")
+    parser.add_argument('--run', type=int,
+                        help="Select a single run")
 
     args = parser.parse_args()
+
+    print(args.run)
 
     log_level = getattr(logging, args.log.upper())
     if not isinstance(log_level, int):
@@ -91,7 +95,7 @@ def main():
             logging.info("Executing %s." % name)
 
             try:
-                task.go()
+                task.go(args.run)
             except Exception as e:
                 logging.fatal("Exception caught from task %s" % name,
                               exc_info=True)

@@ -15,8 +15,12 @@ class Task():
         self.run_doc = None
         self.untriggered_data = None
 
-    def go(self):
+    def go(self, specify_run = None):
         """Run this periodically"""
+
+        query = {'detector': 'tpc'}
+        if specify_run is not None:
+            query['number'] = specify_run
 
         # Get user-specified list of datasets
         datasets = config.get_dataset_list()
@@ -24,8 +28,7 @@ class Task():
         # Collect all run document ids.  This has to be turned into a list
         # to avoid timeouts if a task takes too long.
         try:
-            ids = [doc['_id'] for doc in self.collection.find({'detector': 'tpc',
-                                                               'number'  : {'$gt': 1068}},
+            ids = [doc['_id'] for doc in self.collection.find(query,
                                                               projection=('_id'),
                                                               sort=(('start', 1),))]
         except pymongo.errors.CursorNotFound:
