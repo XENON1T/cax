@@ -2,6 +2,12 @@
 History
 =======
 
+3.0.2 (2016-06-23)
+------------------
+
+* Change all cax.json entries from xenon1t-daq to xe1t-datamanager
+
+
 3.0.1 (2016-06-23)
 ------------------
 
