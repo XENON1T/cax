@@ -1,16 +1,5 @@
 [
   {
-    "name": "xenon1t-daq",
-    "hostname": "xenon1t-daq.lngs.infn.it",
-    "method": "scp",
-    "dir_raw": "/data/xenon/raw/",
-    "dir_processed": null,
-    "upload_options": [],
-    "download_options": [],
-    "username": "transfer",
-    "pax_processing_versions": null
-  },
-  {
     "name": "lena",
     "method": "scp",
     "hostname": "login.nikhef.nl",
@@ -18,10 +7,7 @@
     "dir_processed": "/data/xenon/xenon1t/processed",
     "upload_options": [],
     "username": "ctunnell",
-    "download_options": [
-      "midway-login1",
-      "xenon1t-daq"
-    ],
+    "download_options": ["xe1t-datamanager","midway-login1"],
     "pax_processing_versions": null
   },
   {
@@ -56,7 +42,7 @@
     "dir_processed": "/cfs/klemming/projects/xenon/xenon1t/processed",
     "upload_options": [],
     "username": "bobau",
-    "download_options": ["midway-login1", "xenon1t-daq", "xe1t-datamanager"],
+    "download_options": ["xe1t-datamanager","midway-login1"],
     "pax_processing_versions": null
   },
   {
