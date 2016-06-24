@@ -18,6 +18,7 @@ class Task():
         """Run this periodically"""
 
         # Get user-specified list of datasets
+
         datasets = config.get_dataset_list()
 
         # Collect all run document ids.  This has to be turned into a list

@@ -60,7 +60,7 @@ def main():
 
     # Raises exception if unknown host
     get_config()
-
+ 
     user_tasks = get_task_list()
 
     while True:
@@ -72,6 +72,7 @@ def main():
 
             logging.info("Executing %s." % task.__class__.__name__)
             task.go()
+
 
         # Decide to continue or not
         if run_once:

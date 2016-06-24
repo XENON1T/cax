@@ -29,7 +29,7 @@ def which(program):
         raise Exception('The program %s is not available.' % program)
 
 
-def submit_job(script, name, extra=''):
+def submit_job(host,script, name, extra=''):
     """Submit a job
 
     :param script: contents of the script to run.
@@ -38,22 +38,38 @@ def submit_job(script, name, extra=''):
 
     """
 
-    which('sbatch')
     script_path, script_name = create_script(script, name)
 
-    # Effect of the arguments for sbatch:
-    # http://slurm.schedmd.com/sbatch.html
-    sbatch = ('sbatch -J {name} {extra} {script}'
-              .format(name=name, script=script_path,
-                      extra=extra))
+    #Different submit command for using OSG
+    if host == 'login':
+        which('condor_submit')
+        
+        # Effect of the arguments for condor_submit:                                                                                                            
+        # http://research.cs.wisc.edu/htcondor/manual/v7.6/condor_submit.html                                                                                   
+        submit_command = ('condor_submit {extra} {script}'
+                          .format(name=name, script=script_path,
+                                  extra=extra))
 
-    result = subprocess.check_output(sbatch,
+    else:
+        which('sbatch')
+        
+        # Effect of the arguments for sbatch:
+        # http://slurm.schedmd.com/sbatch.html
+        submit_command = ('sbatch -J {name} {extra} {script}'
+                          .format(name=name, script=script_path,
+                                  extra=extra))
+        
+        
+        
+
+    logging.info('submit job:\n %s' % submit_command)
+    result = subprocess.check_output(submit_command,
                                      stderr=subprocess.STDOUT,
                                      shell=True)
     logging.info(result)
-
-    delete_script(script_path)
-
+        
+#    delete_script(script_path)
+        
 
 def create_script(script, name):
     """Create script as temp file to be run on cluster"""

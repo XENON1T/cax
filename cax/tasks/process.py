@@ -22,6 +22,10 @@ def get_pax_hash(pax_version, host):
     elif host == 'tegner-login-1':
         # Location of GitHub source code on Stockholm
         PAX_DEPLOY_DIR = "/afs/pdc.kth.se/projects/xenon/software/pax"
+    elif host == 'login':
+        # Location of GitHub source code on CI-Connect                                                                                                          
+        PAX_DEPLOY_DIR = "/stash2/project/@xenon1t/deployHQ/pax_deploy"
+
 
     # Get hash of this pax version
     if pax_version == 'head':
@@ -75,12 +79,12 @@ def process(name, in_location, host, pax_version, pax_hash, out_location,
     if doc is not None:
         print("Already processed %s.  Clear first.  %s" % (name,
                                                            pax_version))
-        return 1
+        #return 1
 
     # Not processed this way already, so notify run DB we will
-    doc = collection.find_one_and_update({'detector': 'tpc', 'name': name},
-                                         {'$push': {'data': datum}},
-                                         return_document=ReturnDocument.AFTER)
+    #doc = collection.find_one_and_update({'detector': 'tpc', 'name': name},
+    #                                     {'$push': {'data': datum}},
+     #                                    return_document=ReturnDocument.AFTER)
 
     # Determine based on run DB what settings to use for processing.
     if doc['reader']['self_trigger']:
@@ -100,11 +104,11 @@ def process(name, in_location, host, pax_version, pax_hash, out_location,
     except Exception as exception:
         # Data processing failed.
         datum['status'] = 'error'
-        collection.update(query, {'$set': {'data.$': datum}})
+        #collection.update(query, {'$set': {'data.$': datum}})
         raise
 
     datum['status'] = 'verifying'
-    collection.update(query, {'$set': {'data.$': datum}})
+    #collection.update(query, {'$set': {'data.$': datum}})
 
     datum['checksum'] = checksumdir._filehash(datum['location'],
                                               hashlib.sha512)
@@ -112,7 +116,7 @@ def process(name, in_location, host, pax_version, pax_hash, out_location,
         datum['status'] = 'transferred'
     else:
         datum['status'] = 'failed'
-    collection.update(query, {'$set': {'data.$': datum}})
+    #collection.update(query, {'$set': {'data.$': datum}})
 
 
 class ProcessBatchQueue(Task):
@@ -171,12 +175,39 @@ export PROCESSING_DIR=/cfs/klemming/projects/xenon/xenon1t/processing/{name}_{pa
         """
         # ^ Hardcode warning for previous line: PROCESSING_DIR must be same as in #SBATCH --output and --error
 
+        # CI-connect specific script options
+        elif host == "login":
+            
+            script_template = """
+executable = /home/ershockley/caxOSG_testing/run_cax_dryrun.sh
+universe = vanilla
+
+Error = /home/ershockley/caxOSG_testing/log/err$(Cluster).$(Process)
+Output  = /home/ershockley/caxOSG_testing/log/out.$(Cluster).$(Process)
+Log     = /home/ershockley/caxOSG_testing/log/log.$(Cluster).$(Process)
+Requirements = (CVMFS_oasis_opensciencegrid_org_TIMESTAMP >= 1449684749) && (OpSysAndVer =?= "SL6") && \
+               (GLIDEIN_ResourceName =!= "BNL-ATLAS") && (GLIDEIN_ResourceName =!= "AGLT2")
+
+transfer_executable = True
+transfer_output_files = output
+when_to_transfer_output = ON_EXIT
+on_exit_hold = (ExitBySignal == True) || (ExitCode != 0)
+periodic_release =  (NumJobStarts < 5) && ((CurrentTime - EnteredCurrentStatus) > 600)
+
+arguments = {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
+
+queue 1
+"""
+
+
         else:
-            self.log.error("Host %s processing not implemented", host)
+            print("Host %s processing not implemented", host)
             return
 
-        # Script parts common to all sites
-        script_template += """mkdir -p ${{PROCESSING_DIR}} {out_location}
+
+        # Script parts common to Midway and Stockholm but NOT ci-connect
+        if host != "login":
+            script_template += """mkdir -p ${{PROCESSING_DIR}} {out_location}
 cd ${{PROCESSING_DIR}}
 rm -f pax_event_class*
 
@@ -194,7 +225,7 @@ mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
                                         out_location=out_location,
                                         ncpus=ncpus)
         self.log.info(script)
-        qsub.submit_job(script, name + "_" + pax_version)
+        qsub.submit_job(host, script, name + "_" + pax_version)
 
     def verify(self):
         """Verify processing worked"""
@@ -208,8 +239,8 @@ mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
         thishost = config.get_hostname()
 
         # Only process at Midway or Stockholm for now
-        if not thishost == "midway-login1" and not thishost == "tegner-login-1":
-            self.log.debug("Host %s processing not implemented", thishost)
+        if not thishost == "midway-login1" and not thishost == "tegner-login-1" and not thishost == "login":
+            self.log.debug("Host %s processing NOT implemented", thishost)
             return
 
         # Get desired pax versions and corresponding output directories
@@ -278,12 +309,12 @@ mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
                                pax_version)
                 continue
 
-            queue_list = qsub.get_queue(thishost)
-            if self.run_doc[
-                'name'] in queue_list:  # Should check pax_version here too
-                self.log.debug("Skipping %s currently in queue",
-                               self.run_doc['name'])
-                continue
+            #queue_list = qsub.get_queue(thishost)
+            #if self.run_doc[
+               # 'name'] in queue_list:  # Should check pax_version here too
+                #self.log.debug("Skipping %s currently in queue",
+                               #self.run_doc['name'])
+                #continue
 
             if self.run_doc['reader']['ini']['write_mode'] == 2:
 

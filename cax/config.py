@@ -12,6 +12,8 @@ import pymongo
 CAX_CONFIGURE = ''
 
 
+
+
 def mongo_password():
     """Fetch passsword for MongoDB
 
@@ -90,7 +92,7 @@ def get_pax_options(option_type='versions'):
     try:
         options = get_config(get_hostname())['pax_%s' % option_type]
     except LookupError as e:
-        logging.info("Unknown config host: %s", get_hostname())
+        logging.info("host %s has no specified pax '%s' options", get_hostname(), option_type)
         return []
 
     return options

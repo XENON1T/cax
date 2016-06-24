@@ -1,61 +1,5 @@
 [
   {
-    "name": "xenon1t-daq",
-    "hostname": "xenon1t-daq.lngs.infn.it",
-    "receive": null,
-    "directory": "/data/xenon/raw/",
-    "upload_options": [],
-    "download_options": [],
-    "username": "transfer"
-  },
-  {
-    "name": "eb0",
-    "hostname": "eb0",
-    "receive": null,
-    "directory": "/data/xenon1t_data/",
-    "upload_options": [
-      "midway-login1"
-    ],
-    "download_options": []
-  },
-  {
-    "name": "lena",
-    "receive": "scp",
-    "hostname": "login.nikhef.nl",
-    "directory": "/data/xenon/xenon1t/",
-    "upload_options": [],
-    "username": "ctunnell",
-    "download_options": [
-      "midway-login1",
-      "xenon1t-daq"
-    ]
-  },
-  {
-    "name": "xe-grid01",
-    "receive": "scp",
-    "hostname": "xe-grid01.lngs.infn.it",
-    "directory": "/xetemp/xenon1t/",
-    "upload_options": [
-      "xenon1t-daq"
-    ],
-    "username": "tunnell",
-    "download_options": []
-  },
-  {
-    "name": "midway-login1",
-    "receive": "scp",
-    "hostname": "midway-login1.rcc.uchicago.edu",
-    "directory": "/project/lgrandi/xenon1t",
-    "upload_options": [],
-    "username": "tunnell",
-    "download_options": [
-      "xenon1t-daq"
-    ],
-    "pax_versions": [
-      "v4.10.0"
-    ]
-  },
-  {
     "name": "login",
     "receive": "scp",
     "hostname": "login.ci-connect.uchicago.edu",
@@ -63,18 +7,11 @@
     "upload_options": [],
     "username": "pdeperio",
     "download_options": [
-      "midway-login1"
-    ]
-  },
-  {
-    "name": "tegner-login-1",
-    "receive": "scp",
-    "hostname": "tegner-login-1.pdc.kth.se",
-    "directory": "/cfs/klemming/projects/xenon/xenon1t/data",
-    "upload_options": [],
-    "username": "bobau",
-    "download_options": [
-      "midway-login1"
-    ]
+      "midway-login1"],
+    "task_list": ["ProcessBatchQueue"],
+    "dataset_list": ["160315_1425"],
+    "pax_versions": [
+			"v4.9.1"
+		    ]      
   }
 ]
