@@ -6,7 +6,8 @@ History
 ------------------
 
 * Switch to public nodes on Midway for next mass reprocessing
-
+* Increase 1 CPU processing threshold to 1000 events (https://github.com/XENON1T/pax/issues/390)
+  
 3.0.2 (2016-06-23)
 ------------------
 
