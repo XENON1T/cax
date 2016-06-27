@@ -5,6 +5,11 @@ History
 3.0.2 (2016-06-23)
 ------------------
 
+* Switch to public nodes on Midway for next mass reprocessing
+
+3.0.2 (2016-06-23)
+------------------
+
 * Change all cax.json  entries from xenon1t-daq to xe1t-datamanager
 
 
