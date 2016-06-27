@@ -185,7 +185,7 @@ class ProcessBatchQueue(Task):
             return
 
         # Specify number of cores for pax multiprocess
-        if events < 500:
+        if events < 1000:
             # Reduce to 1 CPU for small number of events (sometimes pax stalls
             # with too many CPU)
             ncpus = 1
