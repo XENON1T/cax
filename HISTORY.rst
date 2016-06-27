@@ -2,7 +2,7 @@
 History
 =======
 
-3.0.2 (2016-06-23)
+3.0.4 (2016-06-23)
 ------------------
 
 * Switch to public nodes on Midway for next mass reprocessing
