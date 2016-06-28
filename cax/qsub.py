@@ -82,11 +82,15 @@ def get_queue(host):
 
     if host == "midway-login1":
         partition='xenon1t'
+        user='tunnell'
     if host == "tegner-login-1":
         partition='main'
     
-    if host == "midway-login1" or host=="tegner-login-1":   
+    if host == "midway-login1":   
+        queue = subprocess.check_output("squeue --partition=" + partition + "--user=" + user + " -o \"\%.30j\"", shell=True)
+    elif host == "tegner-login-1":
         queue = subprocess.check_output("squeue --partition=" + partition + " -o \"\%.30j\"", shell=True)
+
     else:
         logging.error("Host %s not implemented in get_queue()" % host)
         return ''
