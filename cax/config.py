@@ -173,8 +173,6 @@ def processing_script(host):
 #SBATCH --output=/project/lgrandi/xenon1t/processing/logs/{name}_{pax_version}_%J.log
 #SBATCH --error=/project/lgrandi/xenon1t/processing/logs/{name}_{pax_version}_%J.log
 #SBATCH --account=pi-lgrandi
-#SBATCH --qos=xenon1t
-#SBATCH --partition=xenon1t
 #SBATCH --mail-user=pdeperio@astro.columbia.edu
 
 export PATH=/project/lgrandi/anaconda3/bin:$PATH
