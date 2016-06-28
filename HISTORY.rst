@@ -2,7 +2,12 @@
 History
 =======
 
-3.0.4 (2016-06-23)
+3.0.5 (2016-06-28)
+------------------
+
+* Switch queue check command for public nodes on Midway
+
+3.0.4 (2016-06-27)
 ------------------
 
 * Switch to public nodes on Midway for next mass reprocessing
