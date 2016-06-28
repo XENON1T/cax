@@ -69,6 +69,7 @@ def main():
             config.set_json(args.config_file)
 
     tasks = [
+        checksum.AddChecksum(),
         purity.AddElectronLifetime(),
         process.ProcessBatchQueue(),
         data_mover.CopyPull(),
