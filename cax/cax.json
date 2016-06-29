@@ -1,17 +1,16 @@
 [
   {
     "name": "login",
-    "receive": "scp",
+    "method": "scp",
     "hostname": "login.ci-connect.uchicago.edu",
-    "directory": "/xenon/xenon1t_test",
+    "dir_raw": "/xenon/xenon1t_test",
+    "dir_processed": "/home/ershockley/caxOSG_testing/output",
     "upload_options": [],
     "username": "pdeperio",
-    "download_options": [
-      "midway-login1"],
+    "download_options": [	
+          "midway-login1"],	
     "task_list": ["ProcessBatchQueue"],
     "dataset_list": ["160315_1425"],
-    "pax_versions": [
-			"v4.9.1"
-		    ]      
-  }
-]
+    "pax_processing_versions": ["v4.9.1"]
+     }
+]    

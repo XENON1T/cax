@@ -10,7 +10,13 @@ import pymongo
 
 # global variable to store the specified .json config file
 CAX_CONFIGURE = ''
+DATABASE_LOG = True
 
+PAX_DEPLOY_DIRS = {
+    'midway-login1' : '/project/lgrandi/deployHQ/pax',
+    'tegner-login-1': '/afs/pdc.kth.se/projects/xenon/software/pax',
+    'login': '/stash2/project/@xenon1t/deployHQ/pax_deploy'
+}
 
 
 
@@ -40,6 +46,13 @@ def set_json(config):
     """
     global CAX_CONFIGURE
     CAX_CONFIGURE = config
+
+
+def set_database_log(config):
+    """Set the database update
+    """
+    global DATABASE_LOG
+    DATABASE_LOG = config
 
 
 def load():
@@ -83,16 +96,17 @@ def get_transfer_options(transfer_kind='upload', transfer_method=None):
 
     if transfer_method is not None:
         transfer_options = [to for to in transfer_options
-                            if get_config(to['host'])['receive'] == 'method']
+                            if get_config(to['host'])['method'] == 'method']
 
     return transfer_options
 
 
 def get_pax_options(option_type='versions'):
     try:
+        print ("Getting pax options: ", 'pax_%s' % option_type)
         options = get_config(get_hostname())['pax_%s' % option_type]
     except LookupError as e:
-        logging.info("host %s has no specified pax '%s' options", get_hostname(), option_type)
+        logging.info("Pax versions not specified: %s", get_hostname())
         return []
 
     return options
@@ -118,20 +132,18 @@ def get_task_list():
     return options
 
 
-def mongo_collection():
+def mongo_collection(collection_name='runs_new'):
     # For the event builder to communicate with the gateway, we need to use the DAQ network address
     # Otherwise, use the internet to find the runs database
     if get_hostname().startswith('eb'):
-        c = pymongo.MongoClient(
-            'mongodb://eb:%s@gw:27017/run' % os.environ.get('MONGO_PASSWORD'))
+        c = pymongo.MongoClient('mongodb://eb:%s@gw:27017/run' % os.environ.get('MONGO_PASSWORD'))
     else:
-        uri = 'mongodb://eb:%s@xenon1t-daq.lngs.infn.it:27017,copslx50.fysik.su.se:27017/run'
+        uri = 'mongodb://eb:%s@xenon1t-daq.lngs.infn.it:27017,copslx50.fysik.su.se:27017,zenigata.uchicago.edu:27017/run'
         uri = uri % os.environ.get('MONGO_PASSWORD')
         c = pymongo.MongoClient(uri,
-                                replicaSet='runs',
-                                read_preference=pymongo.ReadPreference.PRIMARY_PREFERRED)
+                                replicaSet='runs')
     db = c['run']
-    collection = db['runs_new']
+    collection = db[collection_name]
     return collection
 
 
@@ -148,3 +160,102 @@ def data_availability(hostname=get_hostname()):
                 continue
             results.append(doc)
     return results
+
+
+def processing_script(host):
+    # Script parts common to all sites
+    script_template = """#!/bin/bash
+#SBATCH --job-name={name}_{pax_version}
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task={ncpus}
+#SBATCH --mem-per-cpu=2000
+#SBATCH --mail-type=ALL
+"""
+    # Midway-specific script options
+    if host == "midway-login1":
+        script_template += """
+#SBATCH --output=/project/lgrandi/xenon1t/processing/logs/{name}_{pax_version}_%J.log
+#SBATCH --error=/project/lgrandi/xenon1t/processing/logs/{name}_{pax_version}_%J.log
+#SBATCH --account=pi-lgrandi
+#SBATCH --qos=xenon1t
+#SBATCH --partition=xenon1t
+#SBATCH --mail-user=pdeperio@astro.columbia.edu
+
+export PATH=/project/lgrandi/anaconda3/bin:$PATH
+
+export PROCESSING_DIR=/project/lgrandi/xenon1t/processing/{name}_{pax_version}
+        """
+    elif host == "tegner-login-1": # Stockolm-specific script options
+        script_template = """
+#SBATCH --output=/cfs/klemming/projects/xenon/common/xenon1t/processing/logs/{name}_{pax_version}_%J.log
+#SBATCH --error=/cfs/klemming/projects/xenon/common/xenon1t/processing/logs/{name}_{pax_version}_%J.log
+#SBATCH --account=xenon
+#SBATCH --partition=main
+#SBATCH -t 72:00:00
+#SBATCH --mail-user=Boris.Bauermeister@fysik.su.se
+
+source /afs/pdc.kth.se/home/b/bobau/load_4.8.4.sh
+
+export PROCESSING_DIR=/cfs/klemming/projects/xenon/xenon1t/processing/{name}_{pax_version}
+# WARNING: Boris should check this directory and the one above for log/error output ^        
+#     multiple instances of pax should be run in separate directories to avoid clash of libraries     
+        """
+
+
+
+    elif host == "login": # OSG-Connect specific script options
+        script_template = """
+executable = /home/ershockley/caxOSG_testing/run_cax_dryrun.sh
+universe = vanilla
+Error = /home/ershockley/caxOSG_testing/log/err$(Cluster).$(Process)
+Output  = /home/ershockley/caxOSG_testing/log/out.$(Cluster).$(Process)
+Log     = /home/ershockley/caxOSG_testing/log/log.$(Cluster).$(Process)
+
+Requirements = (CVMFS_oasis_opensciencegrid_org_TIMESTAMP >= 1449684749) && (OpSysAndVer =?= "SL6") && (GLIDEIN_ResourceName =!= "BNL-ATLAS") && (GLIDEIN_ResourceName =!= "AGLT2")
+request_cpus = {ncpus}
+when_to_transfer_output = ON_EXIT 
+on_exit_hold = (ExitBySignal == True) || (ExitCode != 0)
+transfer_executable = True
+periodic_release =  (NumJobStarts < 5) && ((CurrentTime - EnteredCurrentStatus) > 600)
+arguments = {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
+queue 1                                                                                                  
+"""
+
+#  LocalWords:  ExitCode # not sure what this is
+
+    else:
+        raise NotImplementedError("Host %s processing not implemented",
+                                  host)
+
+    # Script parts common to Midway and Stockholm but NOT ci-connect
+    if host != "login":
+        script_template += """
+mkdir -p ${{PROCESSING_DIR}} {out_location}
+cd ${{PROCESSING_DIR}}
+rm -f pax_event_class*
+
+source activate pax_{pax_version}
+
+echo time cax-process {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
+time cax-process {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
+
+mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
+"""
+
+    return script_template
+
+def get_base_dir(category, host):
+    destination_config = get_config(host)
+
+    # Determine where data should be copied to
+    return destination_config['dir_%s' % category]
+
+def get_raw_base_dir(host=get_hostname()):
+    return get_base_dir('raw', host)
+
+def get_processing_base_dir(host=get_hostname()):
+    return get_base_dir('processed', host)
+
+def get_processing_dir(host, version):
+    return os.path.join(get_processing_base_dir(host),
+                        'pax_%s' % version)

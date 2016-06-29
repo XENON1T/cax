@@ -1,6 +1,7 @@
 import logging
 from json import loads
 
+import pymongo
 from bson.json_util import dumps
 
 from cax import config
@@ -23,13 +24,24 @@ class Task():
 
         # Collect all run document ids.  This has to be turned into a list
         # to avoid timeouts if a task takes too long.
-        ids = [doc['_id'] for doc in self.collection.find({'detector': 'tpc',
-                                                           'number'  : {'$gt': 0}})]
+        try:
+            ids = [doc['_id'] for doc in self.collection.find({'detector': 'tpc',
+                                                               'number'  : {'$gt': 0}},
+                                                              projection=('_id'),
+                                                              sort=(('start', 1),))]
+        except pymongo.errors.CursorNotFound:
+            self.log.warning("Curson not found exception.  Skipping")
+            return
 
         # Iterate over each run
         for id in ids:
             # Make sure up to date
-            self.run_doc = self.collection.find_one({'_id': id})
+            try:
+                self.run_doc = self.collection.find_one({'_id': id})
+            except pymongo.errors.AutoReconnect:
+                self.log.error("pymongo.errors.AutoReconnect, skipping...")
+                continue
+
 
             if 'data' not in self.run_doc:
                 continue
@@ -44,6 +56,8 @@ class Task():
                     continue
 
             self.each_run()
+
+        self.shutdown()
 
     def each_run(self):
         for data_doc in self.run_doc['data']:
@@ -83,3 +97,7 @@ class Task():
                 return True
         return False
 
+    def shutdown(self):
+        """Runs at end and can be overloaded by subclasses
+        """
+        pass
