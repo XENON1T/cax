@@ -11,6 +11,7 @@ import pymongo
 # global variable to store the specified .json config file
 CAX_CONFIGURE = ''
 DATABASE_LOG = True
+HOST = None
 
 PAX_DEPLOY_DIRS = {
     'midway-login1' : '/project/lgrandi/deployHQ/pax',
@@ -35,7 +36,10 @@ def mongo_password():
 def get_hostname():
     """Get hostname of the machine we're running on.
     """
-    return socket.gethostname().split('.')[0]
+    global HOST
+    if HOST is None:
+        HOST = socket.gethostname().split('.')[0]
+    return HOST
 
 
 def set_json(config):
@@ -206,8 +210,8 @@ rm -f pax_event_class*
 
 source activate pax_{pax_version}
 
-echo time cax-process {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
-time cax-process {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
+echo time {command} {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
+time {command} {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
 
 mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
 """

@@ -135,14 +135,15 @@ class ProcessBatchQueue(Task):
 
         script_template = config.processing_script(host)
 
-        script = script_template.format(name=name, in_location=in_location,
+        script = script_template.format(command='cax-process',
+                                        name=name, in_location=in_location,
                                         processing_dir=get_processing_base_dir(host),
                                         host=host, pax_version=pax_version,
                                         pax_hash=pax_hash,
                                         out_location=out_location,
                                         ncpus=ncpus)
         self.log.info(script)
-        print(script)
+
         qsub.submit_job(script, name + "_" + pax_version)
 
     def verify(self):
