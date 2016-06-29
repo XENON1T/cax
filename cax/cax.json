@@ -7,7 +7,7 @@
     "dir_processed": "/data/xenon/xenon1t/processed",
     "upload_options": [],
     "username": "ctunnell",
-    "download_options": ["xe1t-datamanager","midway-login1"],
+    "download_options": [],
     "pax_processing_versions": null
   },
   {
