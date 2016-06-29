@@ -21,10 +21,17 @@ def main():
                         help="Disable the update function the run data base")
     parser.add_argument('--run', type=int,
                         help="Select a single run")
+    parser.add_argument('--host', type=str,
+                        help="Host to pretend to be")
+
 
     args = parser.parse_args()
 
-    print(args.run)
+
+    if args.host:
+        config.HOST = args.host
+
+    print(args.run, config.get_hostname())
 
     log_level = getattr(logging, args.log.upper())
     if not isinstance(log_level, int):
