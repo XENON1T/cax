@@ -11,7 +11,7 @@ import pymongo
 # global variable to store the specified .json config file
 CAX_CONFIGURE = ''
 DATABASE_LOG = True
-HOST = None
+HOST = os.environ.get("HOSTNAME")
 
 PAX_DEPLOY_DIRS = {
     'midway-login1' : '/project/lgrandi/deployHQ/pax',
@@ -37,8 +37,6 @@ def get_hostname():
     """Get hostname of the machine we're running on.
     """
     global HOST
-    if HOST is None:
-        HOST = socket.gethostname().split('.')[0]
     return HOST
 
 
