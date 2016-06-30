@@ -214,7 +214,8 @@ mkdir -p ${{JOB_WORKING_DIR}}
 cd ${{JOB_WORKING_DIR}}
 rm -f pax_event_class*
 
-source activate pax_{pax_version}
+#source activate pax_{pax_version}
+source activate test_env
 
 HOSTNAME={host} {command}
 
