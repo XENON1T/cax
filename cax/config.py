@@ -167,7 +167,7 @@ def processing_script(host):
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task={ncpus}
 #SBATCH --mem-per-cpu=2000
-#SBATCH --mail-type=ALL
+#SBATCH --mail-type=FAIL
 """
     # Midway-specific script options
     if host == "midway-login1":
