@@ -140,7 +140,7 @@ def massive():
             
         print(script)
         qsub.submit_job(script)
-        break
+
 
 def move():
     parser = argparse.ArgumentParser(description="Move single file and notify"
