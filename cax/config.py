@@ -7,8 +7,6 @@ import os
 
 import pymongo
 
-from cax import config
-
 # global variable to store the specified .json config file
 CAX_CONFIGURE = ''
 DATABASE_LOG = True
@@ -164,7 +162,7 @@ def data_availability(hostname=get_hostname()):
 
 
 def processing_script(args):
-    host = config.get_hostname()
+    host = get_hostname()
     if host not in ('midway-login1', 'tegner-login-1'):
         raise ValueError
 
