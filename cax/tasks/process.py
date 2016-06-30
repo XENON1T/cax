@@ -126,25 +126,25 @@ def _process(name, in_location, host, pax_version, pax_hash, out_location, ncpus
 class ProcessBatchQueue(Task):
     "Create and submit job submission script."
 
-    def submit(self, in_location, host, pax_version, pax_hash, out_location,
-               ncpus):
-        '''Submission Script
-        '''
-
-        name = self.run_doc['name']
-
-        script_template = config.processing_script(host)
-
-        script = script_template.format(command='cax-process',
-                                        name=name, in_location=in_location,
-                                        processing_dir=get_processing_base_dir(host),
-                                        host=host, pax_version=pax_version,
-                                        pax_hash=pax_hash,
-                                        out_location=out_location,
-                                        ncpus=ncpus)
-        self.log.info(script)
-
-        qsub.submit_job(script, name + "_" + pax_version)
+    # def submit(self, in_location, host, pax_version, pax_hash, out_location,
+    #            ncpus):
+    #     '''Submission Script
+    #     '''
+    #
+    #     name = self.run_doc['name']
+    #
+    #     script_template = config.processing_script(host)
+    #
+    #     script = script_template.format(command='cax-process',
+    #                                     name=name, in_location=in_location,
+    #                                     processing_dir=get_processing_base_dir(host),
+    #                                     host=host, pax_version=pax_version,
+    #                                     pax_hash=pax_hash,
+    #                                     out_location=out_location,
+    #                                     ncpus=ncpus)
+    #     self.log.info(script)
+    #
+    #     qsub.submit_job(script, name + "_" + pax_version)
 
     def verify(self):
         """Verify processing worked"""
@@ -213,12 +213,14 @@ class ProcessBatchQueue(Task):
                                self.run_doc['name'])
                 continue
 
-            self.log.info("Submitting %s with pax_%s (%s), output to %s",
+            self.log.info("Processing %s with pax_%s (%s), output to %s",
                           self.run_doc['name'], version, pax_hash,
                           out_location)
 
-            self.submit(have_raw['location'], thishost, version,
-                        pax_hash, out_location, ncpus)
+
+            _process(self.run_doc['name'], have_raw['location'], thishost,
+                     version, pax_hash, out_location, ncpus)
+
 
     def local_data_finder(self, thishost, versions):
         have_processed = defaultdict(bool)
