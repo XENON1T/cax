@@ -77,23 +77,27 @@ def delete_script(script_path):
     os.remove(script_path)
 
 
+def get_number_in_queue(host):
+    return len(get_queue(host))
+
+
 def get_queue(host):
     """Get list of jobs in queue"""
 
+
     if host == "midway-login1":
-        partition='xenon1t'
-        user='tunnell'
-    if host == "tegner-login-1":
-        partition='main'
-    
-    if host == "midway-login1":   
-        queue = subprocess.check_output("squeue --partition=" + partition + "--user=" + user + " -o \"\%.30j\"", shell=True)
-    elif host == "tegner-login-1":
-        queue = subprocess.check_output("squeue --partition=" + partition + " -o \"\%.30j\"", shell=True)
-
+        args = {'partition': 'xenon1t',
+                'user' : 'tunnell'}
     else:
-        logging.error("Host %s not implemented in get_queue()" % host)
-        return ''
+        raise ValueError()
 
-    queue_list = queue.rstrip().decode('ascii')
-    return queue_list
+    command = 'squeue --partition={partition} --user={user} -o "%.30j"'.format(**args)
+    print(command)
+    queue = subprocess.check_output(command,
+                                    shell=True)
+
+    queue_list = queue.rstrip().decode('ascii').split()
+    if len(queue_list) > 1:
+        return queue_list[1:]
+    return []
+
