@@ -161,7 +161,7 @@ def data_availability(hostname=get_hostname()):
     return results
 
 
-def processing_script(args):
+def processing_script(args={}):
     host = get_hostname()
     if host not in ('midway-login1', 'tegner-login-1'):
         raise ValueError
@@ -179,7 +179,7 @@ def processing_script(args):
                         extra='#SBATCH --qos=xenon1t\nsource /afs/pdc.kth.se/home/b/bobau/load_4.8.4.sh' if midway else '',
                         anaconda='/project/lgrandi/anaconda3/bin')
 
-    default_args['command'] = 'cax --once --run %d' % args['number']
+    default_args['command'] = 'cax --once --run %d' % default_args['number']
 
     for key, value in default_args:
         if key not in args:
