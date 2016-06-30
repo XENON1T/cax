@@ -176,7 +176,7 @@ def processing_script(args={}):
                         base='/project/lgrandi/xenon1t' if midway else '/cfs/klemming/projects/xenon/xenon1t',
                         account='pi-lgrandi' if midway else 'xenon',
                         email='pdeperio@astro.columbia.edu' if midway else 'Boris.Bauermeister@fysik.su.se',
-                        extra='' if midway else '#SBATCH -t 72:00:00\nsource /afs/pdc.kth.se/home/b/bobau/load_4.8.4.sh',
+                        extra='' if midway else '',
                         anaconda='/project/lgrandi/anaconda3/bin')
 
 #    default_args['command'] = 'cax --once --run %d'
