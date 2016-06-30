@@ -167,7 +167,7 @@ def processing_script(args={}):
         raise ValueError
 
     midway = (host == 'midway-login1')
-    default_args = dict(host='midway-login1',
+    default_args = dict(host=host,
                         use='cax',
                         number=333,
                         ncpus=1,
@@ -199,6 +199,7 @@ def processing_script(args={}):
 #SBATCH --partition={partition}
 #SBATCH --mail-user={email}
 #SBATCH -t 72:00:00
+
 {extra}
 
 export PATH={anaconda}:$PATH
