@@ -118,6 +118,18 @@ def main():
             time.sleep(60)
 
 
+def massive():
+    parser = argparse.ArgumentParser(description="Submit cax tasks to batch queue.")
+    parser.add_argument('--delete', action='store_true',
+                        help="Delete strays (default: false)")
+
+    args = parser.parse_args()
+    config.mongo_password()
+
+    query = {'detector': 'tpc', 'number' : {'$gt': 798, '$lt' : 2000}}
+    for doc in config.mongo_collection().find(query):
+        print(doc['number'])
+
 def move():
     parser = argparse.ArgumentParser(description="Move single file and notify"
                                                  " the run database.")
