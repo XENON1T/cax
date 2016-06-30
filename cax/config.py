@@ -176,8 +176,8 @@ def processing_script(args={}):
                         base='/project/lgrandi/xenon1t' if midway else '/cfs/klemming/projects/xenon/xenon1t',
                         account='pi-lgrandi' if midway else 'xenon',
                         email='pdeperio@astro.columbia.edu' if midway else 'Boris.Bauermeister@fysik.su.se',
-                        extra='' if midway else '',
                         anaconda='/project/lgrandi/anaconda3/bin' if midway else '/afs/pdc.kth.se/projects/xenon/software/Anaconda3r5/bin')
+                        extra='' if midway else '#SBATCH -t 72:00:00')
 
 #    default_args['command'] = 'cax --once --run %d'
 
@@ -195,7 +195,6 @@ def processing_script(args={}):
 #SBATCH --job-name={use}_{number}_{pax_version}
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task={ncpus}
-#SBATCH --mem-per-cpu=2000
 #SBATCH --mail-type=ALL
 
 #SBATCH --output={base}/{use}/logs/{number}_{pax_version}_%J.log
