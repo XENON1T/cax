@@ -4,7 +4,7 @@ import os.path
 import time
 
 from cax import __version__
-from cax import config
+from cax import config, qsub
 from cax.tasks import checksum, clear, data_mover, process, filesystem, purity
 
 def main():
@@ -126,9 +126,18 @@ def massive():
     args = parser.parse_args()
     config.mongo_password()
 
-    query = {'detector': 'tpc', 'number' : {'$gt': 798, '$lt' : 2000}}
+    query = {'detector': 'tpc'}
     for doc in config.mongo_collection().find(query):
-        print(doc['number'])
+        job = dict(command='cax --once --run {number}',
+                    number=doc['number'])
+        script = config.processing_script(job)
+
+        while qsub.get_number_in_queue() > 100:
+            print("Speed break because %d in queue" % qsub.get_number_in_queue())
+            time.sleep(60)
+            
+        print(script)
+        qsub.submit_job(script)
 
 def move():
     parser = argparse.ArgumentParser(description="Move single file and notify"

@@ -12,7 +12,9 @@
 """
 import logging
 import os
+from cax import config
 import subprocess
+import tempfile
 from distutils.spawn import find_executable
 
 
@@ -29,7 +31,7 @@ def which(program):
         raise Exception('The program %s is not available.' % program)
 
 
-def submit_job(script, name, extra=''):
+def submit_job(script, extra=''):
     """Submit a job
 
     :param script: contents of the script to run.
@@ -39,12 +41,12 @@ def submit_job(script, name, extra=''):
     """
 
     which('sbatch')
-    script_path, script_name = create_script(script, name)
+    fileobj = create_script(script)
 
     # Effect of the arguments for sbatch:
     # http://slurm.schedmd.com/sbatch.html
-    sbatch = ('sbatch -J {name} {extra} {script}'
-              .format(name=name, script=script_path,
+    sbatch = ('sbatch {extra} {script}'
+              .format(script=fileobj.name,
                       extra=extra))
 
     result = subprocess.check_output(sbatch,
@@ -52,36 +54,35 @@ def submit_job(script, name, extra=''):
                                      shell=True)
     logging.info(result)
 
-    delete_script(script_path)
+    delete_script(fileobj)
 
 
-def create_script(script, name):
+def create_script(script):
     """Create script as temp file to be run on cluster"""
+    fileobj = tempfile.NamedTemporaryFile(delete=False,
+                                          suffix='.sh',
+                                          mode='wt',
+                                          buffering=1)
+    fileobj.write(script)
+    os.chmod(fileobj.name, 0o774)
 
-    script_name = 'batch_queue_job_{name}.sh'.format(name=name)
-    script_path = os.path.join('/tmp', script_name)
-
-    with open(script_path, 'w') as script_file:
-        script_file.write(script)
-    os.chmod(script_path, 0o774)
-
-    return script_path, script_name
+    return fileobj
 
 
-def delete_script(script_path):
+def delete_script(fileobj):
     """Delete script after submitting to cluster
 
     :param script_path: path to the script to be removed
 
     """
-    os.remove(script_path)
+    fileobj.close()
 
 
-def get_number_in_queue(host):
+def get_number_in_queue(host=config.get_hostname()):
     return len(get_queue(host))
 
 
-def get_queue(host):
+def get_queue(host=config.get_hostname()):
     """Get list of jobs in queue"""
 
 
@@ -92,7 +93,7 @@ def get_queue(host):
         raise ValueError()
 
     command = 'squeue --partition={partition} --user={user} -o "%.30j"'.format(**args)
-    print(command)
+    
     queue = subprocess.check_output(command,
                                     shell=True)
 

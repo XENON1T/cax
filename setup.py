@@ -50,6 +50,7 @@ setup(
     entry_points={
         'console_scripts': [
             'cax = cax.main:main',
+            'massive-cax = cax.main:massive',
             'caxer = cax.main:main',  # For uniformity with paxer
             'cax-process = cax.tasks.process:main',
             'cax-mv = cax.main:move',

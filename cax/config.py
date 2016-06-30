@@ -174,16 +174,21 @@ def processing_script(args={}):
                         pax_version='head',
                         partition='xenon1t' if midway else 'main',
                         base='/project/lgrandi/xenon1t' if midway else '/cfs/klemming/projects/xenon/common/xenon1t',
-                        accounts='pi-lgrandi' if midway else 'xenon',
+                        account='pi-lgrandi' if midway else 'xenon',
                         email='pdeperio@astro.columbia.edu' if midway else 'Boris.Bauermeister@fysik.su.se',
-                        extra='#SBATCH --qos=xenon1t\nsource /afs/pdc.kth.se/home/b/bobau/load_4.8.4.sh' if midway else '',
+                        extra='' if midway else 'source /afs/pdc.kth.se/home/b/bobau/load_4.8.4.sh\n#SBATCH -t 72:00:00',
                         anaconda='/project/lgrandi/anaconda3/bin')
 
-    default_args['command'] = 'cax --once --run %d' % default_args['number']
+#    default_args['command'] = 'cax --once --run %d'
 
     for key, value in default_args.items():
         if key not in args:
             args[key] = value
+   
+    # Evaluate {variables} within strings in the arguments.
+    args = {k:v.format(**args) if isinstance(v, str) else v for k,v in args.items()}
+
+    #args['command'] = args['command'].format(**default_args)
 
     # Script parts common to all sites
     script_template = """#!/bin/bash
@@ -198,7 +203,7 @@ def processing_script(args={}):
 #SBATCH --account={account}
 #SBATCH --partition={partition}
 #SBATCH --mail-user={email}
-#SBATCH -t 72:00:00
+
 {extra}
 
 export PATH={anaconda}:$PATH
@@ -215,7 +220,6 @@ HOSTNAME={host} {command}
 
 """.format(**args)
     return script_template
-
 
 def get_base_dir(category, host):
     destination_config = get_config(host)
