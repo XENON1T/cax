@@ -181,7 +181,7 @@ def processing_script(args={}):
 
     default_args['command'] = 'cax --once --run %d' % default_args['number']
 
-    for key, value in default_args:
+    for key, value in default_args.items():
         if key not in args:
             args[key] = value
 
