@@ -132,9 +132,14 @@ def massive():
                     number=doc['number'])
         script = config.processing_script(job)
 
+        if 'cax_%d_head' % doc['number'] in qsub.get_queue():
+            print("Skip if exists")
+            continue
+        
         while qsub.get_number_in_queue() > 100:
             print("Speed break because %d in queue" % qsub.get_number_in_queue())
             time.sleep(60)
+
             
         print(script)
         qsub.submit_job(script)
