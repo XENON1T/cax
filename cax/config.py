@@ -203,6 +203,7 @@ export PATH={anaconda}:$PATH
 export JOB_WORKING_DIR={base}/{use}/{number}_{pax_version}
 mkdir -p ${{JOB_WORKING_DIR}}
 cd ${{JOB_WORKING_DIR}}
+
 rm -f pax_event_class*
 #source activate pax_{pax_version}
 source activate test_env
