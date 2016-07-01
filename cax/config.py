@@ -194,7 +194,7 @@ def processing_script(args={}):
 #SBATCH --job-name={use}_{number}_{pax_version}
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task={ncpus}
-#SBATCH --mail-type=ALL
+#SBATCH --mail-type=FAIL
 #SBATCH --mail-user=xe-computing-status@lngs.infn.it
 
 #SBATCH --output={base}/{use}/logs/{number}_{pax_version}_%J.log
