@@ -91,7 +91,7 @@ def get_queue(host=config.get_hostname()):
                 'user' : 'tunnell'}
     elif host == 'tegner-login-1':
         args = {'partition': 'main',
-                'user' : 'tunnell'}
+                'user' : 'bobau'}
     else:
         raise ValueError()
 
