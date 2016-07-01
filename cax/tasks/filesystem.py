@@ -17,42 +17,41 @@ class SetPermission(Task):
     """Set the correct permissions at the PDC in Stockholm"""
 
     def __init__(self):
-        self.counter = 0
         self.chmod_file = '/cfs/klemming/projects/xenon/misc/basic_file'
-        self.chmod_foder = '/cfs/klemming/projects/xenon/misc/basic'
+        self.chmod_folder = '/cfs/klemming/projects/xenon/misc/basic'
 
         Task.__init__(self)
         self.destination_config = config.get_config(config.get_hostname())
+        self.set_rec = "-R"
 
-    def go(self):
+    def each_run(self):
         """Set ownership and permissons for files/folders"""
-        self.ChangePermisson()
+        for data_doc in self.run_doc['data']:
+            # Is not local, skip
+            if 'host' not in data_doc or \
+                            data_doc['host'] != config.get_hostname() or \
+                            data_doc['host'] != 'tegner-login-1':
+                continue
 
-    def ChangePermisson(self):
-        set_rec = "-R"
-
-        if config.get_hostname() == "tegner-login-1":
-            self.log.info("Set owner and group via chmod on host %s",
+            self.log.info("Set owner and group via chmod",
                           config.get_hostname())
-            subprocess.Popen(["chown", set_rec, "bobau:xenon-users",
-                              self.destination_config['dir_raw']],
-                             stdout=subprocess.PIPE)
-            subprocess.Popen(["chown", set_rec, "bobau:xenon-users",
-                              self.destination_config['dir_processed']],
+            subprocess.Popen(["chown", self.set_rec, "bobau:xenon-users",
+                              data_doc['location']],
                              stdout=subprocess.PIPE)
 
-            self.log.info("Set permissions via setfacl on host %s",
+            self.log.info("Set permissions via setfacl",
                           config.get_hostname())
-            subprocess.Popen(["setfacl", set_rec, "-M", self.chmod_foder,
-                              self.destination_config['dir_raw']],
-                             stdout=subprocess.PIPE)
-            subprocess.Popen(["setfacl", set_rec, "-M", self.chmod_foder,
-                              self.destination_config['dir_processed']],
-                             stdout=subprocess.PIPE)
 
-        else:
-            self.log.info("Host %s is not know for this permission setup",
-                          config.get_hostname())
+            if data_doc['type'] == 'raw':
+                subprocess.Popen(["setfacl", self.set_rec, "-M",
+                                  self.chmod_folder,
+                                  data_doc['location']],
+                                 stdout=subprocess.PIPE)
+            else:
+                subprocess.Popen(["setfacl", self.set_rec, "-M",
+                                  self.chmod_file,
+                                  data_doc['location']],
+                                 stdout=subprocess.PIPE)
 
 
 class RenameSingle(Task):
