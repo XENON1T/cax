@@ -192,8 +192,6 @@ def processing_script(args={}):
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task={ncpus}
 
-#SBATCH --mail-type=FAIL
-#SBATCH --mail-user=pdeperio@gmail.com,ctunnell@nikhef.nl,ershockley@uchicago.edu,Boris.Bauermeister@fysik.su.se
 #SBATCH --output={base}/{use}/logs/{number}_{pax_version}_%J.log
 #SBATCH --error={base}/{use}/logs/{number}_{pax_version}_%J.log
 #SBATCH --account={account}
