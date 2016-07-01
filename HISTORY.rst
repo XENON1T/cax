@@ -2,6 +2,11 @@
 History
 =======
 
+3.0.7 (2016-06-30)
+------------------
+
+* Only send email notifications for failed jobs 
+  
 3.0.6 (2016-06-29)
 ------------------
 

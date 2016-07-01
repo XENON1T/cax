@@ -175,11 +175,8 @@ def processing_script(args={}):
                         partition='xenon1t' if midway else 'main',
                         base='/project/lgrandi/xenon1t' if midway else '/cfs/klemming/projects/xenon/xenon1t',
                         account='pi-lgrandi' if midway else 'xenon',
-                        email='pdeperio@astro.columbia.edu' if midway else 'Boris.Bauermeister@fysik.su.se',
-                        extra='' if midway else '#SBATCH -t 72:00:00',
-                        anaconda='/project/lgrandi/anaconda3/bin' if midway else '/cfs/klemming/nobackup/b/bobau/ToolBox/TestEnv/Anaconda3/bin')
-
-#    default_args['command'] = 'cax --once --run %d'
+                        anaconda='/project/lgrandi/anaconda3/bin' if midway else '/afs/pdc.kth.se/projects/xenon/software/Anaconda3r5/bin',
+                        extra='' if midway else '#SBATCH -t 72:00:00')
 
     for key, value in default_args.items():
         if key not in args:
@@ -188,35 +185,28 @@ def processing_script(args={}):
     # Evaluate {variables} within strings in the arguments.
     args = {k:v.format(**args) if isinstance(v, str) else v for k,v in args.items()}
 
-    #args['command'] = args['command'].format(**default_args)
-
     # Script parts common to all sites
     script_template = """#!/bin/bash
 #SBATCH --job-name={use}_{number}_{pax_version}
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task={ncpus}
-#SBATCH --mail-type=ALL
-
+#SBATCH --mail-type=FAIL
+#SBATCH --mail-user=xe-computing-status@lngs.infn.it
 #SBATCH --output={base}/{use}/logs/{number}_{pax_version}_%J.log
 #SBATCH --error={base}/{use}/logs/{number}_{pax_version}_%J.log
 #SBATCH --account={account}
 #SBATCH --partition={partition}
-#SBATCH --mail-user={email}
 
 {extra}
 
 export PATH={anaconda}:$PATH
-
 export JOB_WORKING_DIR={base}/{use}/{number}_{pax_version}
-
 mkdir -p ${{JOB_WORKING_DIR}}
 cd ${{JOB_WORKING_DIR}}
 rm -f pax_event_class*
-
-source activate pax_{pax_version}
-
+#source activate pax_{pax_version}
+source activate test_env
 HOSTNAME={host} {command}
-
 """.format(**args)
     return script_template
 
