@@ -119,11 +119,8 @@ def main():
 
 
 def massive():
-    parser = argparse.ArgumentParser(description="Submit cax tasks to batch queue.")
-    parser.add_argument('--delete', action='store_true',
-                        help="Delete strays (default: false)")
+    argparse.ArgumentParser(description="Submit cax tasks to batch queue.")
 
-    args = parser.parse_args()
     config.mongo_password()
 
     query = {'detector': 'tpc'}

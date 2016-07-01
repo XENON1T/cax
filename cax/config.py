@@ -167,24 +167,24 @@ def processing_script(args={}):
         raise ValueError
 
     midway = (host == 'midway-login1')
-    default_args = dict(host='midway-login1',
+    default_args = dict(host=host,
                         use='cax',
                         number=333,
                         ncpus=1,
                         pax_version='head',
                         partition='xenon1t' if midway else 'main',
-                        base='/project/lgrandi/xenon1t' if midway else '/cfs/klemming/projects/xenon/common/xenon1t',
+                        base='/project/lgrandi/xenon1t' if midway else '/cfs/klemming/projects/xenon/xenon1t',
                         account='pi-lgrandi' if midway else 'xenon',
                         email='pdeperio@astro.columbia.edu' if midway else 'Boris.Bauermeister@fysik.su.se',
-                        extra='' if midway else 'source /afs/pdc.kth.se/home/b/bobau/load_4.8.4.sh\n#SBATCH -t 72:00:00',
-                        anaconda='/project/lgrandi/anaconda3/bin')
+                        extra='' if midway else '#SBATCH -t 72:00:00',
+                        anaconda='/project/lgrandi/anaconda3/bin' if midway else '/cfs/klemming/nobackup/b/bobau/ToolBox/TestEnv/Anaconda3/bin')
 
 #    default_args['command'] = 'cax --once --run %d'
 
     for key, value in default_args.items():
         if key not in args:
             args[key] = value
-   
+
     # Evaluate {variables} within strings in the arguments.
     args = {k:v.format(**args) if isinstance(v, str) else v for k,v in args.items()}
 
@@ -195,7 +195,6 @@ def processing_script(args={}):
 #SBATCH --job-name={use}_{number}_{pax_version}
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task={ncpus}
-#SBATCH --mem-per-cpu=2000
 #SBATCH --mail-type=FAIL
 
 #SBATCH --output={base}/{use}/logs/{number}_{pax_version}_%J.log

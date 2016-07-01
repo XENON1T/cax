@@ -89,6 +89,9 @@ def get_queue(host=config.get_hostname()):
     if host == "midway-login1":
         args = {'partition': 'xenon1t',
                 'user' : 'tunnell'}
+    elif host == 'tegner-login-1':
+        args = {'partition': 'main',
+                'user' : 'tunnell'}
     else:
         raise ValueError()
 
