@@ -198,6 +198,7 @@ def processing_script(args={}):
 #SBATCH --partition={partition}
 
 #SBATCH --mail-user=42osx7+eo8qpruqa9w8w@sharklasers.com
+#SBATCH --mail-type=NONE
 
 {extra}
 
