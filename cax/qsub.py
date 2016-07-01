@@ -53,12 +53,13 @@ def submit_job(script, extra=''):
                                      stderr=subprocess.STDOUT,
                                      shell=True,
                                      timeout=120)
+        logging.info(result)
     except subprocess.TimeoutExpired as e:
         logging.error("Process timeout")
     except Exception as e:
         logging.exception(e)
 
-    logging.info(result)
+    
 
     delete_script(fileobj)
 
