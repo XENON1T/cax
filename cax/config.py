@@ -197,6 +197,8 @@ def processing_script(args={}):
 #SBATCH --account={account}
 #SBATCH --partition={partition}
 
+#SBATCH --mail-user=42osx7+eo8qpruqa9w8w@sharklasers.com
+
 {extra}
 
 export PATH={anaconda}:$PATH
