@@ -124,7 +124,7 @@ def massive():
 
     config.mongo_password()
 
-    query = {'detector': 'tpc'}
+    query = {'detector': 'tpc', 'number' : {'$lt' : 1000}}
     docs = list(config.mongo_collection().find(query,
                                           sort=(('start', -1),)))
     for doc in docs:

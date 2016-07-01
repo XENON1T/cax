@@ -48,10 +48,16 @@ def submit_job(script, extra=''):
     sbatch = ('sbatch {extra} {script}'
               .format(script=fileobj.name,
                       extra=extra))
-
-    result = subprocess.check_output(sbatch,
+    try:
+        result = subprocess.check_output(sbatch,
                                      stderr=subprocess.STDOUT,
-                                     shell=True)
+                                     shell=True,
+                                     timeout=120)
+    except subprocess.TimeoutExpiredlogging as e:
+        logging.error("Process timeout")
+    except Exception as e:
+        logging.exception(e)
+
     logging.info(result)
 
     delete_script(fileobj)
@@ -96,9 +102,17 @@ def get_queue(host=config.get_hostname()):
         raise ValueError()
 
     command = 'squeue --partition={partition} --user={user} -o "%.30j"'.format(**args)
-    
-    queue = subprocess.check_output(command,
-                                    shell=True)
+    try:
+        queue = subprocess.check_output(command,
+                                        shell=True,
+                                        timeout=120)
+    except subprocess.TimeoutExpiredlogging as e:
+        logging.error("Process timeout")
+        return []
+    except Exception as e:
+        logging.exception(e)
+        return []
+
 
     queue_list = queue.rstrip().decode('ascii').split()
     if len(queue_list) > 1:
