@@ -198,7 +198,6 @@ def processing_script(args={}):
 #SBATCH --account={account}
 #SBATCH --partition={partition}
 
-
 {extra}
 
 export PATH={anaconda}:$PATH
