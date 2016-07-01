@@ -196,7 +196,7 @@ def processing_script(args={}):
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task={ncpus}
 #SBATCH --mem-per-cpu=2000
-#SBATCH --mail-type=ALL
+#SBATCH --mail-type=FAIL
 
 #SBATCH --output={base}/{use}/logs/{number}_{pax_version}_%J.log
 #SBATCH --error={base}/{use}/logs/{number}_{pax_version}_%J.log
