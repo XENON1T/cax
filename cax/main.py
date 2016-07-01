@@ -124,7 +124,9 @@ def massive():
     config.mongo_password()
 
     query = {'detector': 'tpc'}
-    for doc in config.mongo_collection().find(query):
+    docs = list(config.mongo_collection().find(query,
+                                          sort=(('start', -1),)))
+    for doc in docs:
         job = dict(command='cax --once --run {number}',
                     number=doc['number'])
         script = config.processing_script(job)
