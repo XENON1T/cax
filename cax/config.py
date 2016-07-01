@@ -4,13 +4,14 @@
 import json
 import logging
 import os
+import socket
 
 import pymongo
 
 # global variable to store the specified .json config file
 CAX_CONFIGURE = ''
 DATABASE_LOG = True
-HOST = os.environ.get("HOSTNAME")
+HOST = os.environ.get("HOSTNAME") if os.environ.get("HOSTNAME") else socket.gethostname().split('.')[0]
 
 PAX_DEPLOY_DIRS = {
     'midway-login1' : '/project/lgrandi/deployHQ/pax',
