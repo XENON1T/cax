@@ -53,12 +53,13 @@ def submit_job(script, extra=''):
                                      stderr=subprocess.STDOUT,
                                      shell=True,
                                      timeout=120)
-    except subprocess.TimeoutExpiredlogging as e:
+        logging.info(result)
+    except subprocess.TimeoutExpired as e:
         logging.error("Process timeout")
     except Exception as e:
         logging.exception(e)
 
-    logging.info(result)
+    
 
     delete_script(fileobj)
 
@@ -106,7 +107,7 @@ def get_queue(host=config.get_hostname()):
         queue = subprocess.check_output(command,
                                         shell=True,
                                         timeout=120)
-    except subprocess.TimeoutExpiredlogging as e:
+    except subprocess.TimeoutExpired as e:
         logging.error("Process timeout")
         return []
     except Exception as e:
