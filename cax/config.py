@@ -210,7 +210,7 @@ cd ${{JOB_WORKING_DIR}}
 
 rm -f pax_event_class*
 #source activate pax_{pax_version}
-source activate {test}
+source activate {env}
 HOSTNAME={host} {command}
 """.format(**args)
     return script_template

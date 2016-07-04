@@ -139,8 +139,9 @@ def massive():
     sort_key = (('start', -1),
                 ('number', -1),
                 ('detector', -1),
+                ('data.status', -1),
                 ('_id', -1))
-    collection.create_indexes(sort_key, name='cax')
+    collection.create_index(sort_key)
 
     # Grab latest run
     latest_run = None
@@ -148,14 +149,15 @@ def massive():
     t0 = datetime.datetime.now()
 
     while True: # yeah yeah
-        query = {'detector': 'tpc'}
+        query = {'detector': 'tpc',
+                 'data.status' : 'transferred'}
 
         t1 = datetime.datetime.now()
         if latest_run and t1 - t0 < datetime.timedelta(days=1):
-            print("Iterative mode")
+            logging.info("Iterative mode from %d" % latest_run)
             query['number'] = {'$gt' : latest_run}
         else:
-            print("Full mode")
+            logging.info("Full mode")
             t0 = t1
 
         docs = list(collection.find(query,
@@ -172,19 +174,21 @@ def massive():
             script = config.processing_script(job)
 
             if 'cax_%d_head' % doc['number'] in qsub.get_queue():
-                print("Skip if exists")
+                logging.info("Skip if exists")
                 continue
 
             while qsub.get_number_in_queue() > 100:
-                print("Speed break because %d in queue" % qsub.get_number_in_queue())
+                logging.info("Speed break 60s because %d in queue" % qsub.get_number_in_queue())
                 time.sleep(60)
 
 
             print(script)
             qsub.submit_job(script)
 
+            logging.debug("Pace by 1s")
             time.sleep(1)  # Pace 1s for batch queue
 
+        logging.info("Done, waiting 5 minutes")
         time.sleep(60*5) # Pace 5 minutes
 
 
