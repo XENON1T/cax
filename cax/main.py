@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os.path
+import datetime
 import time
 
 from cax import __version__
@@ -120,29 +121,73 @@ def main():
 
 
 def massive():
+    # Command line arguments setup
     argparse.ArgumentParser(description="Submit cax tasks to batch queue.")
 
+    # Setup logging
+    cax_version = 'cax_v%s - ' % __version__
+    logging.basicConfig(filename='massive_cax.log',
+                        level=logging.INFO,
+                        format=cax_version + '%(asctime)s [%(levelname)s] '
+                                             '%(message)s')
+
+    # Check Mongo connection
     config.mongo_password()
 
-    query = {'detector': 'tpc', 'number' : {'$lt' : 1000}}
-    docs = list(config.mongo_collection().find(query,
-                                          sort=(('start', -1),)))
-    for doc in docs:
-        job = dict(command='cax --once --run {number}',
-                    number=doc['number'])
-        script = config.processing_script(job)
+    # Establish mongo connection
+    collection = config.mongo_collection()
+    sort_key = (('start', -1),
+                ('number', -1),
+                ('detector', -1),
+                ('_id', -1))
+    collection.create_indexes(sort_key, name='cax')
 
-        if 'cax_%d_head' % doc['number'] in qsub.get_queue():
-            print("Skip if exists")
-            continue
-        
-        while qsub.get_number_in_queue() > 100:
-            print("Speed break because %d in queue" % qsub.get_number_in_queue())
-            time.sleep(60)
+    # Grab latest run
+    latest_run = None
 
-            
-        print(script)
-        qsub.submit_job(script)
+    t0 = datetime.datetime.now()
+
+    while True: # yeah yeah
+        query = {'detector': 'tpc'}
+
+        t1 = datetime.datetime.now()
+        if latest_run and t1 - t0 < datetime.timedelta(days=1):
+            print("Iterative mode")
+            query['number'] = {'$gt' : latest_run}
+        else:
+            print("Full mode")
+            t0 = t1
+
+        docs = list(collection.find(query,
+                                    sort=sort_key,
+                                    projection=['start', 'number',
+                                                'detector', '_id']))
+
+        for doc in docs:
+            if latest_run is None or doc['number'] > latest_run:
+                latest_run = doc['number']
+
+            job = dict(command='cax --once --run {number}',
+                        number=doc['number'])
+            script = config.processing_script(job)
+
+            if 'cax_%d_head' % doc['number'] in qsub.get_queue():
+                print("Skip if exists")
+                continue
+
+            while qsub.get_number_in_queue() > 100:
+                print("Speed break because %d in queue" % qsub.get_number_in_queue())
+                time.sleep(60)
+
+
+            print(script)
+            qsub.submit_job(script)
+
+            time.sleep(1)  # Pace 1s for batch queue
+
+        time.sleep(60*5) # Pace 5 minutes
+
+
 
 
 def move():

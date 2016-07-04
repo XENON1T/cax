@@ -177,7 +177,8 @@ def processing_script(args={}):
                         base='/project/lgrandi/xenon1t' if midway else '/cfs/klemming/projects/xenon/xenon1t',
                         account='pi-lgrandi' if midway else 'xenon',
                         anaconda='/project/lgrandi/anaconda3/bin' if midway else '/afs/pdc.kth.se/projects/xenon/software/Anaconda3r5/bin',
-                        extra='' if midway else '#SBATCH -t 72:00:00')
+                        extra='' if midway else '#SBATCH -t 72:00:00',
+                        env='test' if midway else 'test_env')
 
     for key, value in default_args.items():
         if key not in args:
