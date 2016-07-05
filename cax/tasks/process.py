@@ -43,7 +43,7 @@ def verify():
 def _process(name, in_location, host, pax_version, pax_hash, out_location, ncpus=1):
     """Called by another command.
     """
-    print('Welcome to cax-process')
+    print('Welcome to cax-process, OSG development')
 
     # Import pax so can process the data
     from pax import core
@@ -77,7 +77,7 @@ def _process(name, in_location, host, pax_version, pax_hash, out_location, ncpus
     if doc is not None:
         print("Already processed %s.  Clear first.  %s" % (name,
                                                            pax_version))
-        return 1
+        #return 1
 
     # Not processed this way already, so notify run DB we will
     #doc = collection.find_one_and_update({'detector': 'tpc', 'name': name},
@@ -121,7 +121,7 @@ def _process(name, in_location, host, pax_version, pax_hash, out_location, ncpus
 
     if config.DATABASE_LOG == True:
         print("Would update database...")
-        collection.update(query, {'$set': {'data.$': datum}})
+       # collection.update(query, {'$set': {'data.$': datum}})
 
 class ProcessBatchQueue(Task):
     "Create and submit job submission script."
