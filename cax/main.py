@@ -140,7 +140,7 @@ def massive():
                 ('number', -1),
                 ('detector', -1),
                 ('_id', -1))
-    collection.create_indexes(sort_key, name='cax')
+    #collection.create_indexes(sort_key, name='cax')
 
     t0 = datetime.datetime.now()
 
