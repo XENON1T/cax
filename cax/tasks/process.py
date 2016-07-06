@@ -43,7 +43,7 @@ def _process(name, in_location, host, pax_version, pax_hash, out_location, ncpus
     # New data location
     datum = {'host'          : host,
              'type'          : 'processed',
-             'pax_hash'      : "n/a",
+             'pax_hash'      : pax_hash,
              'pax_version'   : pax_version,
              'status'        : 'transferring',
              'location'      : output_fullname + '.root',
@@ -177,8 +177,7 @@ class ProcessBatchQueue(Task):
 
         # Process all specified versions
         for version in versions:
-            pax_hash = get_pax_hash(version,
-                                    thishost)
+            pax_hash = "n/a"
 
             out_location = config.get_processing_dir(thishost,
                                                      version)
