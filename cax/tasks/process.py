@@ -147,13 +147,12 @@ class ProcessBatchQueue(Task):
             return
 
         # Specify number of cores for pax multiprocess
-        #if events < 1000:
-        #    # Reduce to 1 CPU for small number of events (sometimes pax stalls
-        #    # with too many CPU)
-        #    ncpus = 1
-        #else:
-        #    ncpus = 4  # based on Figure 2 here https://xecluster.lngs.infn.it/dokuwiki/doku.php?id=xenon:xenon1t:shockley:performance#automatic_processing
-        ncpus = 1
+        if events < 1000:
+            # Reduce to 1 CPU for small number of events (sometimes pax stalls
+            # with too many CPU)
+            ncpus = 1
+        else:
+            ncpus = 4  # based on Figure 2 here https://xecluster.lngs.infn.it/dokuwiki/doku.php?id=xenon:xenon1t:shockley:performance#automatic_processing
 
         # Process all specified versions
         for version in versions:
