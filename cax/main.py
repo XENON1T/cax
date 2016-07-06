@@ -142,13 +142,15 @@ def massive():
                 ('_id', -1))
     #collection.create_indexes(sort_key, name='cax')
 
-    t0 = datetime.datetime.now()
+    dt = datetime.timedelta(days=1)
+    t0 = datetime.datetime.now() - 2*dt
+
 
     while True: # yeah yeah
         query = {'detector': 'tpc'}
 
         t1 = datetime.datetime.now()
-        if t1 - t0 < datetime.timedelta(days=1):
+        if t1 - t0 < dt:
             print("Iterative mode")
 
             # See if there is something to do
