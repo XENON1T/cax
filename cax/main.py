@@ -187,11 +187,11 @@ def massive():
                                     sort=sort_key,
                                     projection=['start', 'number',
                                                 'detector', '_id']))
-        #print(docs)
 
         for doc in docs:
             job = dict(command='cax --once --run {number}',
-                        number=doc['number'])
+                        number=doc['number'],
+                       )
             script = config.processing_script(job)
 
             if 'cax_%d_head' % doc['number'] in qsub.get_queue():

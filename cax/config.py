@@ -4,6 +4,7 @@
 import json
 import logging
 import os
+import pax
 import socket
 
 import pymongo
@@ -172,12 +173,12 @@ def processing_script(args={}):
                         use='cax',
                         number=333,
                         ncpus=1,
-                        pax_version='head',
+                        pax_version=pax.__version__,
                         partition='xenon1t' if midway else 'main',
                         base='/project/lgrandi/xenon1t' if midway else '/cfs/klemming/projects/xenon/xenon1t',
                         account='pi-lgrandi' if midway else 'xenon',
                         anaconda='/project/lgrandi/anaconda3/bin' if midway else '/afs/pdc.kth.se/projects/xenon/software/Anaconda3r5/bin',
-                        extra='' if midway else '#SBATCH -t 72:00:00',
+                        extra='#SBATCH --mem-per-cpu=2000' if midway else '#SBATCH -t 72:00:00',
                         env='test' if midway else 'test_env')
 
     for key, value in default_args.items():
@@ -211,6 +212,7 @@ cd ${{JOB_WORKING_DIR}}
 rm -f pax_event_class*
 #source activate pax_{pax_version}
 source activate {env}
+
 HOSTNAME={host} {command}
 """.format(**args)
     return script_template
