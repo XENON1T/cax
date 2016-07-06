@@ -18,21 +18,6 @@ from cax.config import PAX_DEPLOY_DIRS
 from cax.task import Task
 
 
-def get_pax_hash(pax_version, host):
-    """Obtain pax repository hash from git"""
-
-    # Get hash of this pax version
-    if pax_version == 'head':
-        git_args = "--git-dir=" + PAX_DEPLOY_DIRS[host] + "/.git rev-parse HEAD"
-    else:
-        git_args = "--git-dir=" + PAX_DEPLOY_DIRS[host] + "/.git rev-parse " + pax_version
-
-    git_out = subprocess.check_output("git " + git_args,
-                                      shell=True)
-    pax_hash = git_out.rstrip().decode('ascii')
-
-    return pax_hash
-
 
 def verify():
     """Verify the file
@@ -58,7 +43,7 @@ def _process(name, in_location, host, pax_version, pax_hash, out_location, ncpus
     # New data location
     datum = {'host'          : host,
              'type'          : 'processed',
-             'pax_hash'      : pax_hash,
+             'pax_hash'      : "n/a",
              'pax_version'   : pax_version,
              'status'        : 'transferring',
              'location'      : output_fullname + '.root',
