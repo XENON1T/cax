@@ -180,7 +180,7 @@ def massive():
 
             logging.info(query)
         else:
-            print("Full mode")
+            logging.info("Full mode")
             t0 = t1
 
         docs = list(collection.find(query,
@@ -195,19 +195,21 @@ def massive():
             script = config.processing_script(job)
 
             if 'cax_%d_head' % doc['number'] in qsub.get_queue():
-                print("Skip if exists")
+                logging.info("Skip if exists")
                 continue
 
             while qsub.get_number_in_queue() > 100:
-                print("Speed break because %d in queue" % qsub.get_number_in_queue())
+                logging.info("Speed break 60s because %d in queue" % qsub.get_number_in_queue())
                 time.sleep(60)
 
 
             print(script)
             qsub.submit_job(script)
 
+            logging.debug("Pace by 1s")
             time.sleep(1)  # Pace 1s for batch queue
 
+        logging.info("Done, waiting 5 minutes")
         time.sleep(60*5) # Pace 5 minutes
 
 
