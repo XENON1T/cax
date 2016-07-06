@@ -124,7 +124,7 @@ class ProcessBatchQueue(Task):
 
         thishost = config.get_hostname()
 
-        versions = [pax.__version__]
+        versions = ['v%s' % pax.__version__]
 
         have_processed, have_raw = self.local_data_finder(thishost,
                                                           versions)
