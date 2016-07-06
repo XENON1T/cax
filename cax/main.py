@@ -142,18 +142,43 @@ def massive():
                 ('_id', -1))
     collection.create_indexes(sort_key, name='cax')
 
-    # Grab latest run
-    latest_run = None
-
     t0 = datetime.datetime.now()
 
     while True: # yeah yeah
         query = {'detector': 'tpc'}
 
         t1 = datetime.datetime.now()
-        if latest_run and t1 - t0 < datetime.timedelta(days=1):
+        if t1 - t0 < datetime.timedelta(days=1):
             print("Iterative mode")
-            query['number'] = {'$gt' : latest_run}
+
+            # See if there is something to do
+            query['$and'] = [{'$or' : [{'data' : {'$not' : { "$elemMatch" : { 'host': config.get_hostname(),
+                                                                              'status' : 'transferred',
+                                                                              'type' : 'raw'}
+                                                             },
+                                                  "$elemMatch" : { 'host': 'xe1t-datamanager',
+                                                                   'status' : 'transferred',
+                                                                   'type' : 'raw'}
+
+                                                  }
+                                        },
+                                       {'$and' : [{'data' : {'$not' : { "$elemMatch" : { 'host': config.get_hostname(),
+                                                                                         'status' : 'transferred',
+                                                                                         'type' : 'processed'}},
+                                                             "$elemMatch" : { 'host': config.get_hostname(),
+                                                                              'status' : 'transferred',
+                                                                              'type' : 'raw'}}},
+                                                  {'tags' : {'$not':{ "$elemMatch" : { 'name': 'donotprocess'}
+                                                                      }
+                                                             }
+                                                   },
+                                                  ]
+                                        }
+                                       ]
+                              }
+                             ]
+
+            logging.info(query)
         else:
             print("Full mode")
             t0 = t1
@@ -162,11 +187,9 @@ def massive():
                                     sort=sort_key,
                                     projection=['start', 'number',
                                                 'detector', '_id']))
+        #print(docs)
 
         for doc in docs:
-            if latest_run is None or doc['number'] > latest_run:
-                latest_run = doc['number']
-
             job = dict(command='cax --once --run {number}',
                         number=doc['number'])
             script = config.processing_script(job)

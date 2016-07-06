@@ -9,12 +9,12 @@ import subprocess
 import sys
 from collections import defaultdict
 
+import pax
 import checksumdir
 from pymongo import ReturnDocument
 
 from cax import qsub, config
 from cax.config import PAX_DEPLOY_DIRS
-from cax.config import get_processing_base_dir
 from cax.task import Task
 
 
@@ -160,13 +160,10 @@ class ProcessBatchQueue(Task):
 
         thishost = config.get_hostname()
 
-        # Get desired pax versions and corresponding output directories
-        versions = config.get_pax_options('processing_versions')
-        if versions is None:
-            self.log.debug("No pax versions specified for processing")
-            return
+        versions = [pax.__version__]
 
-        have_processed, have_raw = self.local_data_finder(thishost, versions)
+        have_processed, have_raw = self.local_data_finder(thishost,
+                                                          versions)
 
         # Skip if no raw data
         if not have_raw:
@@ -177,11 +174,11 @@ class ProcessBatchQueue(Task):
         if self.run_doc['reader']['ini']['write_mode'] != 2:
             return
 
-        # Get number of events in data set
-        events = self.run_doc.get('trigger', {}).get('events_built', 0)
+        # Get number of events in data set (not set for early runs <1000)
+        events = self.run_doc.get('trigger', {}).get('events_built', -1)
 
         # Skip if 0 events in dataset
-        if events <= 0:
+        if events == 0:
             self.log.debug("Skipping %s with 0 events", self.run_doc['name'])
             return
 
@@ -195,10 +192,11 @@ class ProcessBatchQueue(Task):
 
         # Process all specified versions
         for version in versions:
-            version = version
-            pax_hash = get_pax_hash(version, thishost)
+            pax_hash = get_pax_hash(version,
+                                    thishost)
 
-            out_location = config.get_processing_dir(thishost, version)
+            out_location = config.get_processing_dir(thishost,
+                                                     version)
 
             if have_processed[version]:
                 self.log.debug("Skipping %s already processed with %s",
