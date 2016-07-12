@@ -8,6 +8,7 @@ import datetime
 import logging
 import os
 import time
+import shutil
 
 import scp
 from paramiko import SSHClient, util
@@ -48,7 +49,7 @@ class CopyBase(Task):
             raise NotImplementedError()
 
     def copyLCGCP(self, datum_original, datum_destination, server, option_type, nstreams):
-        """Copy data via GFAL function
+        """Copy data via LCG function
         WARNING: Only SRM<->Local implemented (not yet SRM<->SRM)
         """
         dataset = datum_original['location'].split('/').pop()
@@ -220,10 +221,15 @@ class CopyBase(Task):
             self.log.debug(remote_host)
 
             # Get transfer protocol
-            method = config.get_config(remote_host)['method'] 
-            if not method:
+            method = ""
+            methods = config.get_config(remote_host)['method'] 
+            if not methods:
                 print ("Must specify transfer protocol (method) for "+remote_host)
                 raise
+            else:
+                for method in methods:
+                    shutil.which(method) is not None
+                    break
 
             datum_here, datum_there = self.local_data_finder(data_type,
                                                              option_type,

@@ -93,7 +93,7 @@ def get_queue(host=config.get_hostname()):
     """Get list of jobs in queue"""
 
 
-    if host == "midway-login1":
+    if host == "midway":
         args = {'partition': 'xenon1t',
                 'user' : 'tunnell'}
     elif host == 'tegner-login-1':
