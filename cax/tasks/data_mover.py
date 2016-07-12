@@ -233,8 +233,8 @@ class CopyBase(Task):
                 raise
             else:
                 for method in methods:
-                    shutil.which(method) is not None
-                    break
+                    if shutil.which(method) is not None:
+                        break
 
             datum_here, datum_there = self.local_data_finder(data_type,
                                                              option_type,
