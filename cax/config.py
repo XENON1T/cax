@@ -172,7 +172,7 @@ def processing_script(args={}):
     default_args = dict(host=host,
                         use='cax',
                         number=333,
-                        ncpus=4,
+                        ncpus=4 if midway else 1,
                         pax_version=(('v%s' % pax.__version__) if midway else 'head'),
                         partition='xenon1t' if midway else 'main',
                         base='/project/lgrandi/xenon1t' if midway else '/cfs/klemming/projects/xenon/xenon1t',
