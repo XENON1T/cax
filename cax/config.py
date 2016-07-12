@@ -178,8 +178,7 @@ def processing_script(args={}):
                         base='/project/lgrandi/xenon1t' if midway else '/cfs/klemming/projects/xenon/xenon1t',
                         account='pi-lgrandi' if midway else 'xenon',
                         anaconda='/project/lgrandi/anaconda3/bin' if midway else '/afs/pdc.kth.se/projects/xenon/software/Anaconda3r5/bin',
-                        extra='#SBATCH --mem-per-cpu=2000\n#SBATCH --qos=xenon1t' if midway else '#SBATCH -t 72:00:00',
-                        env='test' if midway else 'test_env')
+                        extra='#SBATCH --mem-per-cpu=2000\n#SBATCH --qos=xenon1t' if midway else '#SBATCH -t 72:00:00')
 
     for key, value in default_args.items():
         if key not in args:
@@ -208,7 +207,6 @@ cd ${{JOB_WORKING_DIR}}
 
 rm -f pax_event_class*
 source activate pax_v{pax_version}
-#source activate {env}
 
 HOSTNAME={host} {command}
 """.format(**args)
