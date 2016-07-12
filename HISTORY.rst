@@ -2,6 +2,11 @@
 History
 =======
 
+4.0.1 (2016-07-12)
+------------------
+
+* Forgot to switch environment outside of test environment
+
 4.0.0 (2016-07-12)
 ------------------
 
