@@ -51,7 +51,7 @@
     "username": "xe1ttransfer",
     "method": ["scp"],
     "dir_raw": "/data/xenon/raw",
-    "upload_options": [],
+    "upload_options": ["midway"],
     "download_options": [],
     "pax_processing_versions": null
   },
