@@ -7,6 +7,7 @@ data between sites.  At present, it just does scp.
 import datetime
 import logging
 import os
+import time
 
 import scp
 from paramiko import SSHClient, util
@@ -30,18 +31,79 @@ class CopyBase(Task):
             server = config_original['hostname']
             username = config_original['username']
 
+        nstreams = 16
+
         # Determine method for remote site
         if method == 'scp':
             self.copySCP(datum_original, datum_destination, server, username, option_type)
 
         elif method == 'gfal-copy':
-            self.copyGFAL(datum_original, datum_destination, server, option_type)
+            self.copyGFAL(datum_original, datum_destination, server, option_type, nstreams)
+
+        elif method == 'lcg-cp':
+            self.copyLCGCP(datum_original, datum_destination, server, option_type, nstreams)
 
         else:
             print (method+" not implemented")
             raise NotImplementedError()
 
-    def copyGFAL(self, datum_original, datum_destination, server, option_type):
+    def copyLCGCP(self, datum_original, datum_destination, server, option_type, nstreams):
+        """Copy data via GFAL function
+        WARNING: Only SRM<->Local implemented (not yet SRM<->SRM)
+        """
+        dataset = datum_original['location'].split('/').pop()
+
+        # gfal-copy arguments:
+        #   -n: number of streams (4 for now, but doesn't work on xe1t-datamanager so use lcg-cp instead)
+        command_options = "-b -D srmv2 " # Currently for resolving Midway address, may not be needed for other sites
+        command_options += "-n %d " % (nstreams)
+        command = "time lcg-cr "+command_options
+
+        status = -1
+
+        if option_type == 'upload':
+            logging.info(option_type+": %s to %s" % (datum_original['location'],
+                                            server+datum_destination['location']))
+
+            # Simultaneous LFC registration
+            lfc_config = config.get_config("lfc")
+
+            if not os.path.isdir(datum_original['location']):
+                raise TypeError('{} is not a directory.'.format(datum_original['location']))
+
+            for root, dirs, files in os.walk(datum_original['location'], topdown=True):
+                for filename in files:
+                    
+                    # Warning: Processed data dir not implemented for LFC here
+                    lfc_address = lfc_config['hostname']+lfc_config['dir_'+datum_original['type']]
+
+                    full_command = command+ \
+                                   "-d "+server+datum_destination['location']+"/"+filename+" "+ \
+                                   "-l "+lfc_address+"/"+dataset+"/"+filename+" "+ \
+                                   "file://"+datum_original['location']+"/"+filename
+                    
+                    self.log.info(full_command)
+
+                    try:
+                        lcg_out = subprocess.check_output(full_command, stderr=subprocess.STDOUT, shell=True)
+
+                    except subprocess.CalledProcessError as lcg_exec:
+                        self.log.error(lcg_exec.output.rstrip().decode('ascii'))
+                        self.log.error("Error: lcg-cr status = %d\n" % lcg_exec.returncode)
+                        raise
+
+        else: # download
+            logging.info(option_type+": %s to %s" % (server+datum_original['location'],
+                                                     datum_destination['location']))
+            raise NotImplementedError()
+
+            #command = "time lcg-cp "+command_options 
+            #full_command = command+ \
+            #               server+datum_original['location']+" "+ \
+            #               "file://"+datum_destination['location']
+
+
+    def copyGFAL(self, datum_original, datum_destination, server, option_type, nstreams):
         """Copy data via GFAL function
         WARNING: Only SRM<->Local implemented (not yet SRM<->SRM)
         """
@@ -50,8 +112,8 @@ class CopyBase(Task):
         # gfal-copy arguments:
         #   -f: overwrite 
         #   -r: recursive
-        #   -n: number of streams (4 for now, but seems to not work)
-        command = "time gfal-copy -v -f -r -p -n 4 "
+        #   -n: number of streams (4 for now, but doesn't work on xe1t-datamanager so use lcg-cp instead)
+        command = "time gfal-copy -v -f -r -p -n %d " % nstreams
 
         status = -1
 
@@ -151,6 +213,8 @@ class CopyBase(Task):
         if options is None:
             return None, None
 
+        start = time.time()
+
         # For this run, where do we have transfer access?
         for remote_host in options:
             self.log.debug(remote_host)
@@ -175,6 +239,17 @@ class CopyBase(Task):
                 self.copy_handshake(datum_there, config.get_hostname(), method, option_type)
                 break
 
+        dataset = None
+        if datum_there is not None:
+            dataset = datum_there['location'].split('/').pop()
+        elif datum_here is not None:
+            dataset = datum_here['location'].split('/').pop()
+
+        if dataset is not None: # Not sure why it does this sometimes
+            end = time.time()
+            elapsed = end - start
+            self.log.info(method+" "+option_type+" dataset "+dataset+" took %d seconds" % elapsed) 
+     
     def local_data_finder(self, data_type, option_type, remote_host):
         datum_here = None  # Information about data here
         datum_there = None  # Information about data there
@@ -249,17 +324,12 @@ class CopyBase(Task):
                      'creation_time': datetime.datetime.utcnow(),
                      }
 
-        #comparison_query = [{"data.host" : {"$ne" : destination}},
-        #                    {"data.type" : {"$ne" : datum['type']}}]
-
         if datum['type'] == 'processed':
             for variable in ('pax_version', 'pax_hash', 'creation_place'):
                 datum_new[variable] = datum.get(variable)
-                #comparison_query.append({variable : {"$ne" : datum.get(variable)}})
 
         if config.DATABASE_LOG == True:
             result = self.collection.update_one({'_id': self.run_doc['_id'],
-                                                 #"$and" : comparison_query
                                                  },
                                    {'$push': {'data': datum_new}})
 

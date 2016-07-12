@@ -9,29 +9,13 @@ import subprocess
 import sys
 from collections import defaultdict
 
+import pax
 import checksumdir
 from pymongo import ReturnDocument
 
 from cax import qsub, config
-from cax.config import PAX_DEPLOY_DIRS
-from cax.config import get_processing_base_dir
 from cax.task import Task
 
-
-def get_pax_hash(pax_version, host):
-    """Obtain pax repository hash from git"""
-
-    # Get hash of this pax version
-    if pax_version == 'head':
-        git_args = "--git-dir=" + PAX_DEPLOY_DIRS[host] + "/.git rev-parse HEAD"
-    else:
-        git_args = "--git-dir=" + PAX_DEPLOY_DIRS[host] + "/.git rev-parse " + pax_version
-
-    git_out = subprocess.check_output("git " + git_args,
-                                      shell=True)
-    pax_hash = git_out.rstrip().decode('ascii')
-
-    return pax_hash
 
 
 def verify():
@@ -126,26 +110,6 @@ def _process(name, in_location, host, pax_version, pax_hash, out_location, ncpus
 class ProcessBatchQueue(Task):
     "Create and submit job submission script."
 
-    def submit(self, in_location, host, pax_version, pax_hash, out_location,
-               ncpus):
-        '''Submission Script
-        '''
-
-        name = self.run_doc['name']
-
-        script_template = config.processing_script(host)
-
-        script = script_template.format(command='cax-process',
-                                        name=name, in_location=in_location,
-                                        processing_dir=get_processing_base_dir(host),
-                                        host=host, pax_version=pax_version,
-                                        pax_hash=pax_hash,
-                                        out_location=out_location,
-                                        ncpus=ncpus)
-        self.log.info(script)
-
-        qsub.submit_job(script, name + "_" + pax_version)
-
     def verify(self):
         """Verify processing worked"""
         return True  # yeah... TODO.
@@ -160,13 +124,10 @@ class ProcessBatchQueue(Task):
 
         thishost = config.get_hostname()
 
-        # Get desired pax versions and corresponding output directories
-        versions = config.get_pax_options('processing_versions')
-        if versions is None:
-            self.log.debug("No pax versions specified for processing")
-            return
+        versions = ['v%s' % pax.__version__]
 
-        have_processed, have_raw = self.local_data_finder(thishost, versions)
+        have_processed, have_raw = self.local_data_finder(thishost,
+                                                          versions)
 
         # Skip if no raw data
         if not have_raw:
@@ -177,11 +138,11 @@ class ProcessBatchQueue(Task):
         if self.run_doc['reader']['ini']['write_mode'] != 2:
             return
 
-        # Get number of events in data set
-        events = self.run_doc.get('trigger', {}).get('events_built', 0)
+        # Get number of events in data set (not set for early runs <1000)
+        events = self.run_doc.get('trigger', {}).get('events_built', -1)
 
         # Skip if 0 events in dataset
-        if events <= 0:
+        if events == 0:
             self.log.debug("Skipping %s with 0 events", self.run_doc['name'])
             return
 
@@ -195,10 +156,10 @@ class ProcessBatchQueue(Task):
 
         # Process all specified versions
         for version in versions:
-            version = version
-            pax_hash = get_pax_hash(version, thishost)
+            pax_hash = "n/a"
 
-            out_location = config.get_processing_dir(thishost, version)
+            out_location = config.get_processing_dir(thishost,
+                                                     version)
 
             if have_processed[version]:
                 self.log.debug("Skipping %s already processed with %s",
@@ -213,12 +174,14 @@ class ProcessBatchQueue(Task):
                                self.run_doc['name'])
                 continue
 
-            self.log.info("Submitting %s with pax_%s (%s), output to %s",
+            self.log.info("Processing %s with pax_%s (%s), output to %s",
                           self.run_doc['name'], version, pax_hash,
                           out_location)
 
-            self.submit(have_raw['location'], thishost, version,
-                        pax_hash, out_location, ncpus)
+
+            _process(self.run_doc['name'], have_raw['location'], thishost,
+                     version, pax_hash, out_location, ncpus)
+
 
     def local_data_finder(self, thishost, versions):
         have_processed = defaultdict(bool)

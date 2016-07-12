@@ -1,10 +1,11 @@
 import argparse
 import logging
 import os.path
+import datetime
 import time
 
 from cax import __version__
-from cax import config
+from cax import config, qsub
 from cax.tasks import checksum, clear, data_mover, process, filesystem, purity
 
 def main():
@@ -84,7 +85,8 @@ def main():
         checksum.CompareChecksums(),
         checksum.AddChecksum(),
         clear.RetryStalledTransfer(),
-        clear.RetryBadChecksumTransfer()
+        clear.RetryBadChecksumTransfer(),
+        filesystem.SetPermission()
     ]
 
     # Raises exception if unknown host
@@ -116,6 +118,103 @@ def main():
         else:
             logging.info('Sleeping.')
             time.sleep(60)
+
+
+def massive():
+    # Command line arguments setup
+    argparse.ArgumentParser(description="Submit cax tasks to batch queue.")
+
+    # Setup logging
+    cax_version = 'cax_v%s - ' % __version__
+    logging.basicConfig(filename='massive_cax.log',
+                        level=logging.INFO,
+                        format=cax_version + '%(asctime)s [%(levelname)s] '
+                                             '%(message)s')
+
+    # Check Mongo connection
+    config.mongo_password()
+
+    # Establish mongo connection
+    collection = config.mongo_collection()
+    sort_key = (('start', -1),
+                ('number', -1),
+                ('detector', -1),
+                ('_id', -1))
+    #collection.create_indexes(sort_key, name='cax')
+
+    dt = datetime.timedelta(days=1)
+    t0 = datetime.datetime.now() - 2*dt
+
+
+    while True: # yeah yeah
+        query = {'detector': 'tpc'}
+
+        t1 = datetime.datetime.now()
+        if t1 - t0 < dt:
+            print("Iterative mode")
+
+            # See if there is something to do
+            query['$and'] = [{'$or' : [{'data' : {'$not' : { "$elemMatch" : { 'host': config.get_hostname(),
+                                                                              'status' : 'transferred',
+                                                                              'type' : 'raw'}
+                                                             },
+                                                  "$elemMatch" : { 'host': 'xe1t-datamanager',
+                                                                   'status' : 'transferred',
+                                                                   'type' : 'raw'}
+
+                                                  }
+                                        },
+                                       {'$and' : [{'data' : {'$not' : { "$elemMatch" : { 'host': config.get_hostname(),
+                                                                                         'status' : 'transferred',
+                                                                                         'type' : 'processed'}},
+                                                             "$elemMatch" : { 'host': config.get_hostname(),
+                                                                              'status' : 'transferred',
+                                                                              'type' : 'raw'}}},
+                                                  {'tags' : {'$not':{ "$elemMatch" : { 'name': 'donotprocess'}
+                                                                      }
+                                                             }
+                                                   },
+                                                  ]
+                                        }
+                                       ]
+                              }
+                             ]
+
+            logging.info(query)
+        else:
+            logging.info("Full mode")
+            t0 = t1
+
+        docs = list(collection.find(query,
+                                    sort=sort_key,
+                                    projection=['start', 'number',
+                                                'detector', '_id']))
+
+        for doc in docs:
+            job = dict(command='cax --once --run {number}',
+                        number=doc['number'],
+                       )
+            script = config.processing_script(job)
+
+            if 'cax_%d_head' % doc['number'] in qsub.get_queue():
+                logging.info("Skip if exists")
+                continue
+
+            while qsub.get_number_in_queue() > 100:
+                logging.info("Speed break 60s because %d in queue" % qsub.get_number_in_queue())
+                time.sleep(60)
+
+
+            print(script)
+            qsub.submit_job(script)
+
+            logging.debug("Pace by 1s")
+            time.sleep(1)  # Pace 1s for batch queue
+
+        logging.info("Done, waiting 5 minutes")
+        time.sleep(60*5) # Pace 5 minutes
+
+
 
 
 def move():

@@ -36,8 +36,8 @@ setup(
     zip_safe=False,
     keywords='cax',
     classifiers=[
-        'Development Status :: 3 - Beta',
-        'Intended Audience :: Developers',
+        'Intended Audience :: System Administrators',
+        'Development Status :: 5 - Production/Stable'
         'License :: OSI Approved :: ISC License (ISCL)',
         'Natural Language :: English',
         'Programming Language :: Python :: 3',
@@ -50,6 +50,7 @@ setup(
     entry_points={
         'console_scripts': [
             'cax = cax.main:main',
+            'massive-cax = cax.main:massive',
             'caxer = cax.main:main',  # For uniformity with paxer
             'cax-process = cax.tasks.process:main',
             'cax-mv = cax.main:move',
