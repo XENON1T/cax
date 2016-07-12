@@ -57,42 +57,42 @@
   },
   {
     "name": "lfc",
-    "method": "gfal-copy",
+    "method": "lcg-cp",
     "hostname": "lfn:",
     "dir_raw": "/grid/xenon.biggrid.nl/xenon1t/raw",
     "username": null
   },
   {
     "name": "osg-connect-srm",
-    "method": "gfal-copy",
+    "method": "lcg-cp",
     "hostname": "srm://ceph-se.osgconnect.net:8443/srm/v2/server?SFN=",
     "dir_raw": "/cephfs/srm/xenon/xenon1t",
     "username": null
   },
   {
     "name": "midway-srm",
-    "method": "gfal-copy",
+    "method": "lcg-cp",
     "hostname": "srm://srm1.rcc.uchicago.edu:8443/srm/v2/server?SFN=",
     "dir_raw": "/project/lgrandi/xenon1t/raw",
     "username": null
   },
   {
     "name": "cnaf-srm",
-    "method": "gfal-copy",
+    "method": "lcg-cp",
     "hostname": "srm://storm-fe-archive.cr.cnaf.infn.it:8444/srm/managerv2?SFN=",
     "dir_raw": "/xenon/xenon1t",
     "username": null
   },
   {
     "name": "nikhef-srm",
-    "method": "gfal-copy",
+    "method": "lcg-cp",
     "hostname": "srm://tbn18.nikhef.nl:8446/srm/managerv2?SFN=",
     "dir_raw": "/dpm/nikhef.nl/home/xenon.biggrid.nl/xenon1t",
     "username": null
   },
   {
     "name": "wipp-srm",
-    "method": "gfal-copy",
+    "method": "lcg-cp",
     "hostname": "srm://wipp-se.weizmann.ac.il",
     "dir_raw": "/xenon/xenon1t",
     "username": null

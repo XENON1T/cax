@@ -4,6 +4,7 @@
 import json
 import logging
 import os
+import pax
 import socket
 
 import pymongo
@@ -11,12 +12,13 @@ import pymongo
 # global variable to store the specified .json config file
 CAX_CONFIGURE = ''
 DATABASE_LOG = True
-HOST = os.environ.get("HOSTNAME")
+HOST = os.environ.get("HOSTNAME") if os.environ.get("HOSTNAME") else socket.gethostname().split('.')[0]
 
 PAX_DEPLOY_DIRS = {
     'midway-login1' : '/project/lgrandi/deployHQ/pax',
     'tegner-login-1': '/afs/pdc.kth.se/projects/xenon/software/pax'
 }
+
 
 def mongo_password():
     """Fetch passsword for MongoDB
@@ -134,7 +136,8 @@ def mongo_collection(collection_name='runs_new'):
     # For the event builder to communicate with the gateway, we need to use the DAQ network address
     # Otherwise, use the internet to find the runs database
     if get_hostname().startswith('eb'):
-        c = pymongo.MongoClient('mongodb://eb:%s@gw:27017/run' % os.environ.get('MONGO_PASSWORD'))
+        c = pymongo.MongoClient(
+            'mongodb://eb:%s@gw:27017/run' % os.environ.get('MONGO_PASSWORD'))
     else:
         uri = 'mongodb://eb:%s@xenon1t-daq.lngs.infn.it:27017,copslx50.fysik.su.se:27017,zenigata.uchicago.edu:27017/run'
         uri = uri % os.environ.get('MONGO_PASSWORD')
@@ -160,59 +163,55 @@ def data_availability(hostname=get_hostname()):
     return results
 
 
-def processing_script(host):
+def processing_script(args={}):
+    host = get_hostname()
+    if host not in ('midway-login1', 'tegner-login-1'):
+        raise ValueError
+
+    midway = (host == 'midway-login1')
+    default_args = dict(host=host,
+                        use='cax',
+                        number=333,
+                        ncpus=4,
+                        pax_version=pax.__version__,
+                        partition='xenon1t' if midway else 'main',
+                        base='/project/lgrandi/xenon1t' if midway else '/cfs/klemming/projects/xenon/xenon1t',
+                        account='pi-lgrandi' if midway else 'xenon',
+                        anaconda='/project/lgrandi/anaconda3/bin' if midway else '/afs/pdc.kth.se/projects/xenon/software/Anaconda3r5/bin',
+                        extra='#SBATCH --mem-per-cpu=2000\n#SBATCH --qos=xenon1t' if midway else '#SBATCH -t 72:00:00',
+                        env='test' if midway else 'test_env')
+
+    for key, value in default_args.items():
+        if key not in args:
+            args[key] = value
+
+    # Evaluate {variables} within strings in the arguments.
+    args = {k:v.format(**args) if isinstance(v, str) else v for k,v in args.items()}
+
     # Script parts common to all sites
     script_template = """#!/bin/bash
-#SBATCH --job-name={name}_{pax_version}
+#SBATCH --job-name={use}_{number}_{pax_version}
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task={ncpus}
-#SBATCH --mem-per-cpu=2000
-#SBATCH --mail-type=FAIL
-"""
-    # Midway-specific script options
-    if host == "midway-login1":
-        script_template += """
-#SBATCH --output=/project/lgrandi/xenon1t/processing/logs/{name}_{pax_version}_%J.log
-#SBATCH --error=/project/lgrandi/xenon1t/processing/logs/{name}_{pax_version}_%J.log
-#SBATCH --account=pi-lgrandi
-#SBATCH --mail-user=pdeperio@astro.columbia.edu
 
-export PATH=/project/lgrandi/anaconda3/bin:$PATH
+#SBATCH --output={base}/{use}/logs/{number}_{pax_version}_%J.log
+#SBATCH --error={base}/{use}/logs/{number}_{pax_version}_%J.log
+#SBATCH --account={account}
+#SBATCH --partition={partition}
 
-export PROCESSING_DIR=/project/lgrandi/xenon1t/processing/{name}_{pax_version}
-        """
-    elif host == "tegner-login-1": # Stockolm-specific script options
-        script_template = """
-#SBATCH --output=/cfs/klemming/projects/xenon/common/xenon1t/processing/logs/{name}_{pax_version}_%J.log
-#SBATCH --error=/cfs/klemming/projects/xenon/common/xenon1t/processing/logs/{name}_{pax_version}_%J.log
-#SBATCH --account=xenon
-#SBATCH --partition=main
-#SBATCH -t 72:00:00
-#SBATCH --mail-user=Boris.Bauermeister@fysik.su.se
+{extra}
 
-source /afs/pdc.kth.se/home/b/bobau/load_4.8.4.sh
+export PATH={anaconda}:$PATH
+export JOB_WORKING_DIR={base}/{use}/{number}_{pax_version}
+mkdir -p ${{JOB_WORKING_DIR}}
+cd ${{JOB_WORKING_DIR}}
 
-export PROCESSING_DIR=/cfs/klemming/projects/xenon/xenon1t/processing/{name}_{pax_version}
-# WARNING: Boris should check this directory and the one above for log/error output ^        
-#     multiple instances of pax should be run in separate directories to avoid clash of libraries     
-        """
-    else:
-        raise NotImplementedError("Host %s processing not implemented",
-                                  host)
-
-    # Script parts common to all sites
-    script_template += """
-mkdir -p ${{PROCESSING_DIR}} {out_location}
-cd ${{PROCESSING_DIR}}
 rm -f pax_event_class*
+source activate pax_v{pax_version}
+#source activate {env}
 
-source activate pax_{pax_version}
-
-echo time {command} {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
-time {command} {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
-
-mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
-"""
+HOSTNAME={host} {command}
+""".format(**args)
     return script_template
 
 def get_base_dir(category, host):
@@ -221,11 +220,14 @@ def get_base_dir(category, host):
     # Determine where data should be copied to
     return destination_config['dir_%s' % category]
 
+
 def get_raw_base_dir(host=get_hostname()):
     return get_base_dir('raw', host)
 
+
 def get_processing_base_dir(host=get_hostname()):
     return get_base_dir('processed', host)
+
 
 def get_processing_dir(host, version):
     return os.path.join(get_processing_base_dir(host),
