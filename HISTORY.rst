@@ -2,6 +2,11 @@
 History
 =======
 
+4.0.0 (2016-07-12)
+------------------
+
+* cax now operates by sending jobs to the batch queue for every run (See PR #30).
+
 3.0.7 (2016-06-30)
 ------------------
 
