@@ -22,14 +22,19 @@ class CopyBase(Task):
 
     def copy(self, datum_original, datum_destination, method, option_type):
 
+        if method == 'scp':
+            site_tag = 'hostname'
+        else:
+            site_tag = 'srmname'
+
         if option_type == 'upload':
             config_destination = config.get_config(datum_destination['host'])
-            server = config_destination['hostname']
+            server = config_destination[site_tag]
             username = config_destination['username']
 
         else:
             config_original = config.get_config(datum_original['host'])
-            server = config_original['hostname']
+            server = config_original[site_tag]
             username = config_original['username']
 
         nstreams = 16

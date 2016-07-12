@@ -25,6 +25,7 @@ class AddChecksum(Task):
 
         # Data must be here locally
         if data_doc['host'] != config.get_hostname():
+            return
 
         # This status is given after checksumming
         status = 'transferred'

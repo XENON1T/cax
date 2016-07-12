@@ -12,7 +12,7 @@
   },
   {
     "name": "midway",
-    "method": [["lcg-cp"], "scp"],
+    "method": ["lcg-cp", "scp"],
     "hostname": "midway-login1.rcc.uchicago.edu",
     "srmname": "srm://srm1.rcc.uchicago.edu:8443/srm/v2/server?SFN=",
     "dir_raw": "/project/lgrandi/xenon1t/raw",
