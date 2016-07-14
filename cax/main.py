@@ -200,7 +200,7 @@ def massive():
                 logging.info("Skip if exists")
                 continue
 
-            while qsub.get_number_in_queue() > (100 if config.get_hostname() == 'midway-login1' else 30):
+            while qsub.get_number_in_queue() > (100 if config.get_hostname() == 'midway' else 30):
                 logging.info("Speed break 60s because %d in queue" % qsub.get_number_in_queue())
                 time.sleep(60)
 

@@ -25,11 +25,7 @@ class AddChecksum(Task):
 
         # Data must be here locally
         if data_doc['host'] != config.get_hostname():
-
-            # Special case of midway-srm accessible via POSIX on midway-login1
-            if not (data_doc['host']  == "midway-srm" and config.get_hostname() == "midway-login1"):
-                self.log.debug('Location not here')
-                return
+            return
 
         # This status is given after checksumming
         status = 'transferred'
@@ -67,7 +63,7 @@ class CompareChecksums(Task):
         # These types of data and location provide master checksum
         master_checksums = (('raw', 'xe1t-datamanager', None),
                             ('raw', 'xenon1t-daq', None),
-                            ('processed', 'midway-login1', pax_version))
+                            ('processed', 'midway', pax_version))
 
         for data_doc in self.run_doc['data']:
 
@@ -101,9 +97,7 @@ class CompareChecksums(Task):
             # Grab main checksum.
             if data_doc['checksum'] != self.get_main_checksum(**data_doc):
 
-                # Special case of midway-srm accessible via POSIX on midway-login1
-                if data_doc['host'] == config.get_hostname() \
-                   or (data_doc['host'] == "midway-srm" and config.get_hostname() == "midway-login1"):
+                if data_doc['host'] == config.get_hostname():
                     error = "Local checksum error " \
                             "run %d" % self.run_doc['number']
                     if warn:

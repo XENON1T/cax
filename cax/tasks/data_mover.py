@@ -8,6 +8,7 @@ import datetime
 import logging
 import os
 import time
+import shutil
 
 import scp
 from paramiko import SSHClient, util
@@ -21,14 +22,19 @@ class CopyBase(Task):
 
     def copy(self, datum_original, datum_destination, method, option_type):
 
+        if method == 'scp':
+            site_tag = 'hostname'
+        else:
+            site_tag = 'srmname'
+
         if option_type == 'upload':
             config_destination = config.get_config(datum_destination['host'])
-            server = config_destination['hostname']
+            server = config_destination[site_tag]
             username = config_destination['username']
 
         else:
             config_original = config.get_config(datum_original['host'])
-            server = config_original['hostname']
+            server = config_original[site_tag]
             username = config_original['username']
 
         nstreams = 16
@@ -48,7 +54,7 @@ class CopyBase(Task):
             raise NotImplementedError()
 
     def copyLCGCP(self, datum_original, datum_destination, server, option_type, nstreams):
-        """Copy data via GFAL function
+        """Copy data via LCG function
         WARNING: Only SRM<->Local implemented (not yet SRM<->SRM)
         """
         dataset = datum_original['location'].split('/').pop()
@@ -220,10 +226,15 @@ class CopyBase(Task):
             self.log.debug(remote_host)
 
             # Get transfer protocol
-            method = config.get_config(remote_host)['method'] 
-            if not method:
+            method = ""
+            methods = config.get_config(remote_host)['method'] 
+            if not methods:
                 print ("Must specify transfer protocol (method) for "+remote_host)
                 raise
+            else:
+                for method in methods:
+                    if shutil.which(method) is not None:
+                        break
 
             datum_here, datum_there = self.local_data_finder(data_type,
                                                              option_type,

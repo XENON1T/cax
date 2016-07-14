@@ -15,7 +15,7 @@ DATABASE_LOG = True
 HOST = os.environ.get("HOSTNAME") if os.environ.get("HOSTNAME") else socket.gethostname().split('.')[0]
 
 PAX_DEPLOY_DIRS = {
-    'midway-login1' : '/project/lgrandi/deployHQ/pax',
+    'midway' : '/project/lgrandi/deployHQ/pax',
     'tegner-login-1': '/afs/pdc.kth.se/projects/xenon/software/pax'
 }
 
@@ -165,10 +165,10 @@ def data_availability(hostname=get_hostname()):
 
 def processing_script(args={}):
     host = get_hostname()
-    if host not in ('midway-login1', 'tegner-login-1'):
+    if host not in ('midway', 'tegner-login-1'):
         raise ValueError
 
-    midway = (host == 'midway-login1')
+    midway = (host == 'midway')
     default_args = dict(host=host,
                         use='cax',
                         number=333,
@@ -188,14 +188,16 @@ def processing_script(args={}):
     # Evaluate {variables} within strings in the arguments.
     args = {k:v.format(**args) if isinstance(v, str) else v for k,v in args.items()}
 
+    os.makedirs(args['base']+"/"+args['use']+"/"+args['number']+"_"+args['pax_version'], exist_ok=True)
+
     # Script parts common to all sites
     script_template = """#!/bin/bash
 #SBATCH --job-name={use}_{number}_{pax_version}
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task={ncpus}
 
-#SBATCH --output={base}/{use}/logs/{number}_{pax_version}_%J.log
-#SBATCH --error={base}/{use}/logs/{number}_{pax_version}_%J.log
+#SBATCH --output={base}/{use}/{number}_{pax_version}/{number}_{pax_version}_%J.log
+#SBATCH --error={base}/{use}/{number}_{pax_version}/{number}_{pax_version}_%J.log
 #SBATCH --account={account}
 #SBATCH --partition={partition}
 
