@@ -33,13 +33,13 @@ class SetPermission(Task):
                             data_doc['host'] != 'tegner-login-1':
                 continue
 
-            self.log.info("Set owner and group via chmod",
+            self.log.info("Set owner and group via chmod %s",
                           config.get_hostname())
             subprocess.Popen(["chown", self.set_rec, "bobau:xenon-users",
                               data_doc['location']],
                              stdout=subprocess.PIPE)
 
-            self.log.info("Set permissions via setfacl",
+            self.log.info("Set permissions via setfacl %s",
                           config.get_hostname())
 
             if data_doc['type'] == 'raw':
