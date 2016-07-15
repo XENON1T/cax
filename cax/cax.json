@@ -5,9 +5,9 @@
     "hostname": "login.nikhef.nl",
     "dir_raw": "/data/xenon/xenon1t/raw",
     "dir_processed": "/data/xenon/xenon1t/processed",
-    "upload_options": [],
+    "upload_options": null,
     "username": "ctunnell",
-    "download_options": [],
+    "download_options": null,
     "pax_processing_versions": null
   },
   {
@@ -16,10 +16,10 @@
     "hostname": "midway-login1.rcc.uchicago.edu",
     "dir_raw": "/project/lgrandi/xenon1t/raw",
     "dir_processed": "/project/lgrandi/xenon1t/processed",
-    "upload_options": [],
+    "upload_options": null,
     "username": "tunnell",
     "download_options": ["xe1t-datamanager"],
-    "pax_processing_versions": ["v5.0.0"]
+    "pax_processing_versions": ["v5.2.1"]
   },
   {
     "name": "login",
@@ -27,7 +27,7 @@
     "hostname": "login.ci-connect.uchicago.edu",
     "dir_raw": "/xenon/xenon1t_test",
     "dir_processed": null,
-    "upload_options": [],
+    "upload_options": null,
     "username": "pdeperio",
     "download_options": [
       "midway-login1"
@@ -40,7 +40,7 @@
     "hostname": "tegner-login-1.pdc.kth.se",
     "dir_raw": "/cfs/klemming/projects/xenon/xenon1t/raw",
     "dir_processed": "/cfs/klemming/projects/xenon/xenon1t/processed",
-    "upload_options": [],
+    "upload_options": null,
     "username": "bobau",
     "download_options": ["xe1t-datamanager","midway-login1"],
     "pax_processing_versions": null
@@ -51,8 +51,8 @@
     "username": "xe1ttransfer",
     "method": "scp",
     "dir_raw": "/data/xenon/raw",
-    "upload_options": [],
-    "download_options": [],
+    "upload_options": null,
+    "download_options": null,
     "pax_processing_versions": null
   },
   {
