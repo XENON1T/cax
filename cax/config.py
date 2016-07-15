@@ -188,14 +188,16 @@ def processing_script(args={}):
     # Evaluate {variables} within strings in the arguments.
     args = {k:v.format(**args) if isinstance(v, str) else v for k,v in args.items()}
 
+    os.makedirs(args['base']+"/"+args['use']+("/%d"%args['number'])+"_"+args['pax_version'], exist_ok=True)
+
     # Script parts common to all sites
     script_template = """#!/bin/bash
 #SBATCH --job-name={use}_{number}_{pax_version}
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task={ncpus}
 
-#SBATCH --output={base}/{use}/logs/{number}_{pax_version}_%J.log
-#SBATCH --error={base}/{use}/logs/{number}_{pax_version}_%J.log
+#SBATCH --output={base}/{use}/{number}_{pax_version}/{number}_{pax_version}_%J.log
+#SBATCH --error={base}/{use}/{number}_{pax_version}/{number}_{pax_version}_%J.log
 #SBATCH --account={account}
 #SBATCH --partition={partition}
 
