@@ -188,7 +188,7 @@ def processing_script(args={}):
     # Evaluate {variables} within strings in the arguments.
     args = {k:v.format(**args) if isinstance(v, str) else v for k,v in args.items()}
 
-    os.makedirs(args['base']+"/"+args['use']+"/"+args['number']+"_"+args['pax_version'], exist_ok=True)
+    os.makedirs(args['base']+"/"+args['use']+("/%d"%args['number'])+"_"+args['pax_version'], exist_ok=True)
 
     # Script parts common to all sites
     script_template = """#!/bin/bash
