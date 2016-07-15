@@ -4,7 +4,7 @@ History
 
 4.0.4 (2016-07-15)
 ------------------
-
+ 
 * Create and use run sub-directory for logs
 * Fix bug where "[]" in cax.json is not treated as "None"
   
