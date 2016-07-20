@@ -7,6 +7,7 @@ import datetime
 import hashlib
 import subprocess
 import sys
+import os
 from collections import defaultdict
 
 import pax
@@ -39,6 +40,8 @@ def _process(name, in_location, host, pax_version, pax_hash,
     collection = config.mongo_collection()
 
     output_fullname = out_location + '/' + name
+
+    os.makedirs(out_location, exist_ok=True)
 
     # New data location
     datum = {'host'          : host,
