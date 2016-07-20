@@ -1,20 +1,22 @@
 """Add electron lifetime
 """
 import sympy
-from sympy.parsing.sympy_parser import parse_expr
+from hax import slow_control
 from pax import configuration, units
+from sympy.parsing.sympy_parser import parse_expr
+
 from cax import config
 from cax.task import Task
 
-from hax import slow_control
-
 PAX_CONFIG = configuration.load_configuration('XENON1T')
+
 
 class CorrectionBase(Task):
     "Derive correction"
 
     def __init__(self):
-        self.collection = config.mongo_collection(self.collection_name)
+        self.correction_collection = config.mongo_collection(
+            self.collection_name)
         Task.__init__(self)
 
     def evaluate(self):
@@ -31,8 +33,8 @@ class CorrectionBase(Task):
             return
 
         # Fetch the latest electron lifetime fit
-        doc = self.collection.find_one(sort=(('calculation_time',
-                                                     -1),))
+        doc = self.correction_collection.find_one(sort=(('calculation_time',
+                                                         -1),))
 
         print(doc.keys(), doc)
         # Get fit function
@@ -42,9 +44,10 @@ class CorrectionBase(Task):
             return
 
         # Update run database
-        self.collection.find_and_modify({'_id': self.run_doc['_id'],
-                                         self.key : {'$exists' : False}},
+        self.collection.find_and_modify({'_id'   : self.run_doc['_id'],
+                                         self.key: {'$exists': False}},
                                         {'$set': {self.key: self.evaluate()}})
+
 
 class AddElectronLifetime(CorrectionBase):
     """Copy data to here
@@ -57,13 +60,15 @@ class AddElectronLifetime(CorrectionBase):
 
     def evaluate(self):
         # Compute lifetime from this function on this dataset
-        lifetime = self.function.evalf(subs={"t" : self.run_doc['start'].timestamp()})
+        lifetime = self.function.evalf(
+            subs={"t": self.run_doc['start'].timestamp()})
         lifetime = float(lifetime)  # Convert away from Sympy type.
 
         run_number = self.run_doc['number']
         self.log.info("Run %d: calculated lifetime of %d us" % (run_number,
                                                                 lifetime))
         return lifetime * self.correction_units
+
 
 class AddGains(CorrectionBase):
     """Copy data to here
@@ -72,7 +77,7 @@ class AddGains(CorrectionBase):
     """
     collection_name = 'gains'
     key = 'processor.DEFAULT.gains'
-    correction_units = units.V # should be 1
+    correction_units = units.V  # should be 1
 
     n_channels = 248
 
@@ -103,7 +108,7 @@ class AddGains(CorrectionBase):
         V = sympy.symbols('V')
         pmt = sympy.symbols('pmt', integer=True)
         self.log.info(voltages.median())
-        result = self.function.evalf(subs={V: voltages.median(),
-                                           pmt : pmt_location})
+        result = self.function.evalf(subs={V  : voltages.median(),
+                                           pmt: pmt_location})
         self.log.info(result)
         return float(result) * self.correction_units
