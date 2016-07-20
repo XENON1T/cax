@@ -1,6 +1,7 @@
 """Add electron lifetime
 """
 import sympy
+import datetime
 from hax import slow_control
 from pax import configuration, units
 from sympy.parsing.sympy_parser import parse_expr
@@ -98,6 +99,15 @@ class AddGains(CorrectionBase):
         """
         self.log.debug("Grabbing HV for PMT %d" % pmt_location)
 
+        datetime.datetime()
+        if self.run_doc['end'] < datetime.datetime(2016, 7, 19):
+            dt = datetime.timedelta(minutes=30)
+        else:
+            dt = datetime.timedelta(minutes=3)
+
+        time_range = (self.run_doc['start'] - dt,
+                      self.run_doc['end'] + dt)
+
         voltages = None
 
         # Name of the slow-control variable
@@ -107,8 +117,7 @@ class AddGains(CorrectionBase):
 
             # Fetch from slow control
             voltages = slow_control.get_series(name,
-                                               time_range=(self.run_doc['start'],
-                                                           self.run_doc['end']))
+                                               time_range=time_range)
 
         # If no values found, use default gain.
         if voltages is None or voltages.count() == 0:
