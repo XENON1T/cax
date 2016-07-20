@@ -102,8 +102,8 @@ class AddGains(CorrectionBase):
 
         # Name of the slow-control variable
         key = 'pmt_%03d_bias_V' % pmt_location
-        if key in slow_control.VARIABLES:
-            name = ['pmts'][key]
+        if key in slow_control.VARIABLES['pmts']:
+            name = slow_control.VARIABLES['pmts'][key]
 
             # Fetch from slow control
             voltages = slow_control.get_series(name,
