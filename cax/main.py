@@ -6,7 +6,10 @@ import time
 
 from cax import __version__
 from cax import config, qsub
-from cax.tasks import checksum, clear, data_mover, process, filesystem, purity
+
+from cax.tasks import checksum, clear, data_mover, process, filesystem
+from cax.tasks import corrections
+
 
 def main():
     parser = argparse.ArgumentParser(description="Copying All kinds of XENON1T "
@@ -78,7 +81,8 @@ def main():
 
     tasks = [
         checksum.AddChecksum(),
-        purity.AddElectronLifetime(),
+        corrections.AddElectronLifetime(),
+        corrections.AddGains(),
         process.ProcessBatchQueue(),
         data_mover.CopyPull(),
         data_mover.CopyPush(),
