@@ -84,7 +84,10 @@ class AddGains(CorrectionBase):
     def evaluate(self):
         """Make an array of all PMT gains."""
         n_channels = len(PAX_CONFIG['DEFAULT']['pmts'])
-        return [float(self.get_gain(i)) for i in range(n_channels)]
+        gains = [float(self.get_gain(i)) for i in range(n_channels)]
+        self.log.info("Run %d: gains of:" % self.run_doc['number'])
+        self.log.info(gains)
+        return gains
 
     def get_gain(self, pmt_location):
         """Grab a derived gain.
@@ -93,6 +96,8 @@ class AddGains(CorrectionBase):
 
         The variables fed in can be used for making a gain decision.
         """
+        self.log.debug("Grabbing HV for PMT %d" % pmt_location)
+
         # Name of the slow-control variable
         name = slow_control.VARIABLES['pmts']['pmt_%03d_bias_V' % pmt_location]
 
@@ -105,10 +110,9 @@ class AddGains(CorrectionBase):
         if voltages.count() == 0:
             return 2e6
 
+        self.log.debug("Deriving HV for PMT %d" % pmt_location)
         V = sympy.symbols('V')
         pmt = sympy.symbols('pmt', integer=True)
-        self.log.info(voltages.median())
         result = self.function.evalf(subs={V  : voltages.median(),
                                            pmt: pmt_location})
-        self.log.info(result)
         return float(result) * self.correction_units
