@@ -34,6 +34,7 @@ class CorrectionBase(Task):
         doc = self.collection.find_one(sort=(('calculation_time',
                                                      -1),))
 
+        print(doc.keys(), doc)
         # Get fit function
         self.function = parse_expr(doc['function'])
 
