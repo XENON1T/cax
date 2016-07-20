@@ -14,7 +14,7 @@ class CorrectionBase(Task):
     "Derive correction"
 
     def __init__(self):
-        self.collection_purity = config.mongo_collection('purity')
+        self.collection = config.mongo_collection(self.collection_name)
         Task.__init__(self)
 
     def evaluate(self):
@@ -31,7 +31,7 @@ class CorrectionBase(Task):
             return
 
         # Fetch the latest electron lifetime fit
-        doc = self.collection_purity.find_one(sort=(('calculation_time',
+        doc = self.collection.find_one(sort=(('calculation_time',
                                                      -1),))
 
         # Get fit function
@@ -50,7 +50,7 @@ class AddElectronLifetime(CorrectionBase):
 
     If data exists at a reachable host but not here, pull it.
     """
-    collection = 'purity'
+    collection_name = 'purity'
     key = 'processor.DEFAULT.electron_lifetime_liquid'
     correction_units = units.us
 
@@ -69,7 +69,7 @@ class AddGains(CorrectionBase):
 
     If data exists at a reachable host but not here, pull it.
     """
-    collection = 'gains'
+    collection_name = 'gains'
     key = 'processor.DEFAULT.gains'
     correction_units = units.V # should be 1
 
