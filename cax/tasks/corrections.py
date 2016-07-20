@@ -99,8 +99,7 @@ class AddGains(CorrectionBase):
         """
         self.log.debug("Grabbing HV for PMT %d" % pmt_location)
 
-        datetime.datetime()
-        if self.run_doc['end'] < datetime.datetime(2016, 7, 19):
+        if self.run_doc['end'] < datetime.datetime(2016, 7, 20):
             dt = datetime.timedelta(minutes=30)
         else:
             dt = datetime.timedelta(minutes=3)
