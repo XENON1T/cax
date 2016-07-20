@@ -101,7 +101,8 @@ class AddGains(CorrectionBase):
 
         V = sympy.symbols('V')
         pmt = sympy.symbols('pmt', integer=True)
-
+        self.info(voltages.median())
         result = self.function.evalf(subs={V: voltages.median(),
                                            pmt : pmt_location})
+        self.info(result)
         return float(result) * self.correction_units
