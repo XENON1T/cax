@@ -98,17 +98,21 @@ class AddGains(CorrectionBase):
         """
         self.log.debug("Grabbing HV for PMT %d" % pmt_location)
 
-        # Name of the slow-control variable
-        name = slow_control.VARIABLES['pmts']['pmt_%03d_bias_V' % pmt_location]
+        voltages = None
 
-        # Fetch from slow control
-        voltages = slow_control.get_series(name,
-                                           time_range=(self.run_doc['start'],
-                                                       self.run_doc['end']))
+        # Name of the slow-control variable
+        key = 'pmt_%03d_bias_V' % pmt_location
+        if key in slow_control.VARIABLES:
+            name = ['pmts'][key]
+
+            # Fetch from slow control
+            voltages = slow_control.get_series(name,
+                                               time_range=(self.run_doc['start'],
+                                                           self.run_doc['end']))
 
         # If no values found, use default gain.
-        if voltages.count() == 0:
-            return 2e6
+        if voltages is None or voltages.count() == 0:
+            return float(2e6)
 
         self.log.debug("Deriving HV for PMT %d" % pmt_location)
         V = sympy.symbols('V')
