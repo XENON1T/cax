@@ -26,7 +26,8 @@ def verify():
     return True
 
 
-def _process(name, in_location, host, pax_version, pax_hash, out_location, ncpus=1):
+def _process(name, in_location, host, pax_version, pax_hash,
+             out_location, ncpus=1):
     """Called by another command.
     """
     print('Welcome to cax-process')
@@ -119,7 +120,13 @@ class ProcessBatchQueue(Task):
             self.log.debug("Do not process tag found")
             return
 
-        if 'processor' not in self.run_doc:
+        if 'processor' not in self.run_doc or \
+                'DEFAULT' not in self.run_doc['processor']:
+            return
+
+        processing_parameters = self.run_doc['processor']['DEFAULT']
+        if 'gains' not in processing_parameters or \
+            'electron_lifetime_liquid' not in processing_parameters:
             return
 
         thishost = config.get_hostname()
