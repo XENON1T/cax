@@ -2,6 +2,12 @@
 History
 =======
 
+
+4.1.1 (2016-07-20)
+------------------
+
+* Create output directory prior to pax processing
+  
 4.1.0 (2016-07-20)
 ------------------
 
