@@ -120,6 +120,8 @@ class AddGains(CorrectionBase):
 
         # If no values found, use default gain.
         if voltages is None or voltages.count() == 0:
+            self.log.error("Default gain for run %d!" % self.run_doc['number'])
+            self.log.error(time_range)
             return float(2e6)
 
         self.log.debug("Deriving HV for PMT %d" % pmt_location)
