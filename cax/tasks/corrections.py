@@ -18,6 +18,8 @@ PAX_CONFIG = configuration.load_configuration('XENON1T')
 class CorrectionBase(Task):
     "Derive correction"
 
+    collection_name = 'purity'
+
     def __init__(self):
         self.correction_collection = config.mongo_collection(self.collection_name)
         Task.__init__(self)
@@ -70,7 +72,6 @@ class AddElectronLifetime(CorrectionBase):
 
     If data exists at a reachable host but not here, pull it.
     """
-    collection_name = 'purity'
     key = 'processor.DEFAULT.electron_lifetime_liquid'
     correction_units = units.us
 
