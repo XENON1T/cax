@@ -83,6 +83,7 @@ def main():
         checksum.AddChecksum(),
         corrections.AddElectronLifetime(),
         corrections.AddGains(),
+        corrections.AddSlowControlInformation(),
         process.ProcessBatchQueue(),
         data_mover.CopyPull(),
         data_mover.CopyPush(),
