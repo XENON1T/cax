@@ -2,6 +2,11 @@
 History
 =======
 
+4.2.0 (2016-07-25)
+------------------
+
+* Slow control variables defined in hax added to rundoc.
+
 4.1.3 (2016-07-21)
 ------------------
 
