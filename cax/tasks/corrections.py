@@ -1,11 +1,12 @@
 """Add electron lifetime
 """
-import sympy
 import datetime
-from hax import slow_control
-import numpy as np
-from pax import configuration, units
 from collections import defaultdict
+
+import numpy as np
+import sympy
+from hax import slow_control
+from pax import configuration, units
 from sympy.parsing.sympy_parser import parse_expr
 
 from cax import config
