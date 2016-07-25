@@ -3,7 +3,9 @@
 import sympy
 import datetime
 from hax import slow_control
+import numpy as np
 from pax import configuration, units
+from collections import defaultdict
 from sympy.parsing.sympy_parser import parse_expr
 
 from cax import config
@@ -16,30 +18,26 @@ class CorrectionBase(Task):
     "Derive correction"
 
     def __init__(self):
-        self.correction_collection = config.mongo_collection(
-            self.collection_name)
+        self.correction_collection = config.mongo_collection(self.collection_name)
         Task.__init__(self)
 
     def evaluate(self):
         raise NotImplementedError()
 
     def each_run(self):
-        short_key = self.key.split('.')[-1]
-        if 'processor' in self.run_doc and \
-                        'DEFAULT' in self.run_doc['processor'] and \
-                        short_key in self.run_doc['processor']['DEFAULT']:
+        if self.key == 'slow_control' and 'slow_control' in self.run_doc:
             return
+        else:
+            short_key = self.key.split('.')[-1]
+            if 'processor' in self.run_doc and \
+                  'DEFAULT' in self.run_doc['processor'] and \
+                   short_key in self.run_doc['processor']['DEFAULT']:
+                return
 
         if 'end' not in self.run_doc:
             return
 
-        # Fetch the latest electron lifetime fit
-        doc = self.correction_collection.find_one(sort=(('calculation_time',
-                                                         -1),))
-
-        print(doc.keys(), doc)
-        # Get fit function
-        self.function = parse_expr(doc['function'])
+        self.get_correction()
 
         if not config.DATABASE_LOG:
             return
@@ -48,6 +46,22 @@ class CorrectionBase(Task):
         self.collection.find_and_modify({'_id'   : self.run_doc['_id'],
                                          self.key: {'$exists': False}},
                                         {'$set': {self.key: self.evaluate()}})
+
+    def get_correction(self):
+        # Fetch the latest electron lifetime fit
+        doc = self.correction_collection.find_one(sort=(('calculation_time',
+                                                         -1),))
+        # Get fit function
+        self.function = parse_expr(doc['function'])
+
+    def get_time_range(self):
+        if self.run_doc['end'] < datetime.datetime(2016, 7, 20):
+            dt = datetime.timedelta(minutes=30)
+        else:
+            dt = datetime.timedelta(minutes=3)
+
+        return (self.run_doc['start'] - dt,
+                self.run_doc['end'] + dt)
 
 
 class AddElectronLifetime(CorrectionBase):
@@ -61,14 +75,38 @@ class AddElectronLifetime(CorrectionBase):
 
     def evaluate(self):
         # Compute lifetime from this function on this dataset
-        lifetime = self.function.evalf(
-            subs={"t": self.run_doc['start'].timestamp()})
+        subs = {"t": self.run_doc['start'].timestamp()}
+        lifetime = self.function.evalf(subs=subs)
         lifetime = float(lifetime)  # Convert away from Sympy type.
 
         run_number = self.run_doc['number']
         self.log.info("Run %d: calculated lifetime of %d us" % (run_number,
                                                                 lifetime))
         return lifetime * self.correction_units
+
+
+class AddSlowControlInformation(CorrectionBase):
+    """Add all slow control highlight information to run db
+    """
+    key = 'slow_control'
+    correction_units = 1
+
+    def get_correction(self):
+        pass
+
+    def evaluate(self):
+        time_range = self.get_time_range()
+
+        data = defaultdict(dict)
+        for key1, value1 in slow_control.VARIABLES.items():
+            for key2, value2 in value1.items():
+                series = slow_control.get_series(value2, time_range)
+                if len(series):
+                    data[key1][key2] = float(series.iloc[0])
+                else:
+                    data[key1][key2] = np.nan
+
+        return data
 
 
 class AddGains(CorrectionBase):
@@ -99,13 +137,7 @@ class AddGains(CorrectionBase):
         """
         self.log.debug("Grabbing HV for PMT %d" % pmt_location)
 
-        if self.run_doc['end'] < datetime.datetime(2016, 7, 20):
-            dt = datetime.timedelta(minutes=30)
-        else:
-            dt = datetime.timedelta(minutes=3)
-
-        time_range = (self.run_doc['start'] - dt,
-                      self.run_doc['end'] + dt)
+        time_range = self.get_time_range()
 
         voltages = None
 
