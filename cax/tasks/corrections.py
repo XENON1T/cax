@@ -173,7 +173,7 @@ class AddGains(CorrectionBase):
             time.sleep(10)
             return self.get_voltages(time)
 
-        self.log.debug(r.text)
+        self.log.info(r.text)
         pmts = slow_control.VARIABLES['pmts']
         mapping = {v: int(k.split('_')[1]) for k,v in pmts.items()}
 
