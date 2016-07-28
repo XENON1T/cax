@@ -134,8 +134,10 @@ class AddGains(CorrectionBase):
         start = self.run_doc['start']
         timestamp = start.replace(tzinfo=pytz.utc).timestamp()
 
+        self.log.info("Run %d: gains computing" % self.run_doc['number'])
         gains = self.get_gains(timestamp)
-        self.log.info("Run %d: gains of:" % self.run_doc['number'])
+
+        self.log.info("Run %d: gains:" % self.run_doc['number'])
         self.log.info(gains)
         return gains
 
