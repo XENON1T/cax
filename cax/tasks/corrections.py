@@ -160,7 +160,7 @@ class AddGains(CorrectionBase):
     def get_voltages(self, time):
         try:
             r = requests.post('https://172.16.2.105:4040/WebService.asmx/getLastMeasuredPMTValues',
-                          data = {'EndDateUnix' : time,
+                          data = {'EndDateUnix' : int(time),
                                   'username':'slowcontrolwebserver',
                                   'api_key' : os.environ.get('api_key'),
                               },
