@@ -173,6 +173,7 @@ class AddGains(CorrectionBase):
             time.sleep(10)
             return self.get_voltages(time)
 
+        self.log.info(time)
         self.log.info(r.url)
         self.log.info(r.text)
         pmts = slow_control.VARIABLES['pmts']
