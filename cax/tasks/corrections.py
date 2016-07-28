@@ -4,7 +4,10 @@ import datetime
 from collections import defaultdict
 
 import numpy as np
+import os
 import sympy
+import pytz
+import requests
 from hax import slow_control
 from pax import configuration, units
 from sympy.parsing.sympy_parser import parse_expr
@@ -120,47 +123,63 @@ class AddGains(CorrectionBase):
     key = 'processor.DEFAULT.gains'
     correction_units = units.V  # should be 1
 
-    n_channels = 248
+    def each_run(self):
+        """Only run on data manager at LNGS
+        """
+        if config.get_hostname() == 'xe1t-datamanager':
+            CorrectionBase.each_run(self)
 
     def evaluate(self):
         """Make an array of all PMT gains."""
-        n_channels = len(PAX_CONFIG['DEFAULT']['pmts'])
-        gains = [float(self.get_gain(i)) for i in range(n_channels)]
+        start = self.run_doc['start']
+        timestamp = start.replace(tzinfo=pytz.utc).timestamp()
+
+        gains = self.get_gains(timestamp)
         self.log.info("Run %d: gains of:" % self.run_doc['number'])
         self.log.info(gains)
         return gains
 
-    def get_gain(self, pmt_location):
-        """Grab a derived gain.
-
-        pmt_location is the PMT number.  t0 and t1 are datetime objects.
-
-        The variables fed in can be used for making a gain decision.
+    def get_gains(self, timestamp):
+        """Timestamp is a UNIX timestamp in UTC
         """
-        self.log.debug("Grabbing HV for PMT %d" % pmt_location)
-
-        time_range = self.get_time_range()
-
-        voltages = None
-
-        # Name of the slow-control variable
-        key = 'pmt_%03d_bias_V' % pmt_location
-        if key in slow_control.VARIABLES['pmts']:
-            name = slow_control.VARIABLES['pmts'][key]
-
-            # Fetch from slow control
-            voltages = slow_control.get_series(name,
-                                               time_range=time_range)
-
-        # If no values found, use default gain.
-        if voltages is None or voltages.count() == 0:
-            self.log.error("Default gain for run %d!" % self.run_doc['number'])
-            self.log.error(time_range)
-            return float(2e6)
-
-        self.log.debug("Deriving HV for PMT %d" % pmt_location)
         V = sympy.symbols('V')
         pmt = sympy.symbols('pmt', integer=True)
-        result = self.function.evalf(subs={V  : voltages.median(),
-                                           pmt: pmt_location})
-        return float(result) * self.correction_units
+
+        voltages = self.get_voltages(timestamp)
+        gains = []
+        for i, voltage in enumerate(voltages):
+            self.log.debug("Deriving HV for PMT %d" % i)
+            gain = self.function.evalf(subs={V  : voltage,
+                                              pmt: i})
+            gains.append(float(gain) * self.correction_units)
+
+        return gains
+
+    def get_voltages(self, time):
+        try:
+            r = requests.post('https://172.16.2.105:4040/WebService.asmx/getLastMeasuredPMTValues',
+                          data = {'EndDateUnix' : time,
+                                  'username':'slowcontrolwebserver',
+                                  'api_key' : os.environ.get('api_key'),
+                              },
+                          verify=False)
+
+            r.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            self.log.exception(e)
+            self.log.info("Sleeping 10 seconds, then retrying")
+            time.sleep(10)
+            return self.get_voltages(time)
+
+        pmts = slow_control.VARIABLES['pmts']
+        mapping = {v: int(k.split('_')[1]) for k,v in pmts.items()}
+
+        voltages = len(PAX_CONFIG['DEFAULT']['pmts'])*[0]
+
+        print(r.text)
+        for doc in r.json():
+            if doc['tagname'] in mapping.keys():
+                voltages[mapping[doc['tagname']]] = doc['value']
+
+        return voltages
+
