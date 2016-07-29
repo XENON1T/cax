@@ -152,7 +152,7 @@ class AddGains(CorrectionBase):
         voltages = self.get_voltages(timestamp)
 
         number_important = len(slow_control.VARIABLES['pmts'])
-        if None in voltages[0:number_important]:
+        if -1 in voltages[0:number_important]:
             raise ValueError("Missing SC variable")
 
         gains = []
@@ -186,7 +186,7 @@ class AddGains(CorrectionBase):
         pmts = slow_control.VARIABLES['pmts']
         mapping = {v: int(k.split('_')[1]) for k,v in pmts.items()}
 
-        voltages = len(PAX_CONFIG['DEFAULT']['pmts'])*[None]
+        voltages = len(PAX_CONFIG['DEFAULT']['pmts'])*[-1]
 
         for doc in r.json():
             if doc['tagname'] in mapping.keys():
