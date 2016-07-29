@@ -148,9 +148,11 @@ class AddGains(CorrectionBase):
         pmt = sympy.symbols('pmt', integer=True)
 
         # Grab voltages from SC
+        self.log.info("Getting voltages at %d" % timestamp)
         voltages = self.get_voltages(timestamp)
 
-        if None in voltages:
+        number_important = len(slow_control.VARIABLES['pmts'])
+        if None in voltages[0:number_important]:
             raise ValueError("Missing SC variable")
 
         gains = []
@@ -178,9 +180,9 @@ class AddGains(CorrectionBase):
             time.sleep(10)
             return self.get_voltages(time)
 
-        self.log.info(time)
-        self.log.info(r.url)
-        self.log.info(r.text)
+        #self.log.info(time)
+        #self.log.info(r.url)
+        #self.log.info(r.text)
         pmts = slow_control.VARIABLES['pmts']
         mapping = {v: int(k.split('_')[1]) for k,v in pmts.items()}
 
