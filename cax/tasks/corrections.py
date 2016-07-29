@@ -147,7 +147,12 @@ class AddGains(CorrectionBase):
         V = sympy.symbols('V')
         pmt = sympy.symbols('pmt', integer=True)
 
+        # Grab voltages from SC
         voltages = self.get_voltages(timestamp)
+
+        if None in voltages:
+            raise ValueError("Missing SC variable")
+
         gains = []
         for i, voltage in enumerate(voltages):
             self.log.debug("Deriving HV for PMT %d" % i)
@@ -179,7 +184,7 @@ class AddGains(CorrectionBase):
         pmts = slow_control.VARIABLES['pmts']
         mapping = {v: int(k.split('_')[1]) for k,v in pmts.items()}
 
-        voltages = len(PAX_CONFIG['DEFAULT']['pmts'])*[0]
+        voltages = len(PAX_CONFIG['DEFAULT']['pmts'])*[None]
 
         for doc in r.json():
             if doc['tagname'] in mapping.keys():
