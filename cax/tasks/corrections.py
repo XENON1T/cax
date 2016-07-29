@@ -164,10 +164,10 @@ class AddGains(CorrectionBase):
 
         return gains
 
-    def get_voltages(self, time):
+    def get_voltages(self, timestamp):
         try:
             r = requests.post('https://172.16.2.105:4040/WebService.asmx/getLastMeasuredPMTValues',
-                          data = {'EndDateUnix' : int(time),
+                          data = {'EndDateUnix' : int(timestamp),
                                   'username':'slowcontrolwebserver',
                                   'api_key' : os.environ.get('api_key'),
                               },
@@ -178,9 +178,9 @@ class AddGains(CorrectionBase):
             self.log.exception(e)
             self.log.info("Sleeping 10 seconds, then retrying")
             time.sleep(10)
-            return self.get_voltages(time)
+            return self.get_voltages(timestamp)
 
-        #self.log.info(time)
+        #self.log.info(timestamp)
         #self.log.info(r.url)
         #self.log.info(r.text)
         pmts = slow_control.VARIABLES['pmts']
