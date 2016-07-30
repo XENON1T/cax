@@ -156,8 +156,9 @@ class AddGains(CorrectionBase):
             missing_pmts = np.where(voltages[0:number_important] == -1)[0]
             names = [slow_control.VARIABLES['pmts']['pmt_%03d_bias_V' % mp]
                      for mp in missing_pmts]
-            self.log.error("SCfail %d %s" % (timestamp,
-                                             " ".join(names)))
+            self.log.error("SCfail %d %d %s" % (self.run_doc['number'],
+                                                timestamp,
+                                                " ".join(names)))
             raise RuntimeError("Missing SC variable")
 
         gains = []
