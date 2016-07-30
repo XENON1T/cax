@@ -158,8 +158,6 @@ class AddGains(CorrectionBase):
                      for mp in missing_pmts]
             self.log.error("SCfail %d %s" % (timestamp,
                                              " ".join(names)))
-
-            self.log.error(voltages[0:number_important])
             raise RuntimeError("Missing SC variable")
 
         gains = []
