@@ -149,18 +149,22 @@ class AddGains(CorrectionBase):
 
         # Grab voltages from SC
         self.log.info("Getting voltages at %d" % timestamp)
-        voltages = self.get_voltages(timestamp)
+        voltages = np.array(self.get_voltages(timestamp))
 
         number_important = len(slow_control.VARIABLES['pmts'])
         if -1 in voltages[0:number_important]:
-            self.log.error("SCfail %d" % timestamp)
+            missing_pmts = np.where(voltages[0:number_important] == -1)
+            names = [slow_control.VARIABLES['pmts']['pmt_%03d_bias_V' % mp]
+                     for mp in missing_pmts]
+            self.log.error("SCfail %d %s" % (timestamp, " ".join(names)))
+
             self.log.error(voltages[0:number_important])
             raise RuntimeError("Missing SC variable")
 
         gains = []
         for i, voltage in enumerate(voltages):
             self.log.debug("Deriving HV for PMT %d" % i)
-            gain = self.function.evalf(subs={V  : voltage,
+            gain = self.function.evalf(subs={V  : float(voltage),
                                               pmt: i})
             gains.append(float(gain) * self.correction_units)
 
