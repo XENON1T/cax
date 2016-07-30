@@ -191,7 +191,12 @@ class AddGains(CorrectionBase):
 
         voltages = len(PAX_CONFIG['DEFAULT']['pmts'])*[-1]
 
-        for doc in r.json():
+        json_value = r.json()
+
+        if not isinstance(json_value, list):
+            raise RuntimeError(str(json_value))
+
+        for doc in json_value:
             if doc['tagname'] in mapping.keys():
                 voltages[mapping[doc['tagname']]] = doc['value']
 
