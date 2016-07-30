@@ -153,7 +153,7 @@ class AddGains(CorrectionBase):
 
         number_important = len(slow_control.VARIABLES['pmts'])
         if -1 in voltages[0:number_important]:
-            self.log.error(timestamp)
+            self.log.error("SCfail %d" % timestamp)
             self.log.error(voltages[0:number_important])
             raise RuntimeError("Missing SC variable")
 
