@@ -50,9 +50,12 @@ class CorrectionBase(Task):
             return
 
         # Update run database
-        self.collection.find_and_modify({'_id'   : self.run_doc['_id'],
-                                         self.key: {'$exists': False}},
-                                        {'$set': {self.key: self.evaluate()}})
+        try:
+            self.collection.find_and_modify({'_id'   : self.run_doc['_id'],
+                                             self.key: {'$exists': False}},
+                                            {'$set': {self.key: self.evaluate()}})
+        except RuntimeError as e:
+            self.log.exception(e)
 
     def get_correction(self):
         # Fetch the latest electron lifetime fit
@@ -136,11 +139,7 @@ class AddGains(CorrectionBase):
         timestamp = start.replace(tzinfo=pytz.utc).timestamp()
 
         self.log.info("Run %d: gains computing" % self.run_doc['number'])
-        gains = self.get_gains(timestamp)
-
-        self.log.info("Run %d: gains:" % self.run_doc['number'])
-        self.log.info(gains)
-        return gains
+        return self.get_gains(timestamp)
 
     def get_gains(self, timestamp):
         """Timestamp is a UNIX timestamp in UTC
@@ -154,7 +153,9 @@ class AddGains(CorrectionBase):
 
         number_important = len(slow_control.VARIABLES['pmts'])
         if -1 in voltages[0:number_important]:
-            raise ValueError("Missing SC variable")
+            self.log.error(timestamp)
+            self.log.error(voltages[0:number_important])
+            raise RuntimeError("Missing SC variable")
 
         gains = []
         for i, voltage in enumerate(voltages):
