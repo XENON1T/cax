@@ -82,7 +82,7 @@ def main():
     tasks = [
         checksum.AddChecksum(),
         corrections.AddElectronLifetime(),
-        #corrections.AddGains(),
+        corrections.AddGains(),
         corrections.AddSlowControlInformation(),
         process.ProcessBatchQueue(),
         data_mover.CopyPull(),
