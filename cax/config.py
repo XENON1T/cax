@@ -214,8 +214,6 @@ source activate pax_{pax_version}
 
 HOSTNAME={host} {command}
 
-sacct -j $SLURM_JOB_ID --format="JobID,Elapsed,AllocCPUS,CPUTime,MaxRSS"
-
 {stats}
 """.format(**args)
     return script_template
