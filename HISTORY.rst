@@ -2,6 +2,12 @@
 History
 =======
 
+4.3.2 (2016-08-02)
+------------------
+
+* Forgot to remove line about batch queue statistics that only works at Midway.
+
+
 4.3.1 (2016-08-02)
 ------------------
 
