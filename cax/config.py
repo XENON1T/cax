@@ -136,8 +136,7 @@ def mongo_collection(collection_name='runs_new'):
     # For the event builder to communicate with the gateway, we need to use the DAQ network address
     # Otherwise, use the internet to find the runs database
     if get_hostname().startswith('eb'):
-        c = pymongo.MongoClient(
-            'mongodb://eb:%s@gw:27017/run' % os.environ.get('MONGO_PASSWORD'))
+        c = pymongo.MongoClient('mongodb://eb:%s@gw:27017/run' % os.environ.get('MONGO_PASSWORD'))
     else:
         uri = 'mongodb://eb:%s@xenon1t-daq.lngs.infn.it:27017,copslx50.fysik.su.se:27017,zenigata.uchicago.edu:27017/run'
         uri = uri % os.environ.get('MONGO_PASSWORD')
@@ -179,7 +178,8 @@ def processing_script(args={}):
                         base='/project/lgrandi/xenon1t' if midway else '/cfs/klemming/projects/xenon/xenon1t',
                         account='pi-lgrandi' if midway else 'xenon',
                         anaconda='/project/lgrandi/anaconda3/bin' if midway else '/cfs/klemming/nobackup/b/bobau/ToolBox/TestEnv/Anaconda3/bin',
-                        extra='#SBATCH --mem-per-cpu=2000\n#SBATCH --qos=xenon1t' if midway else '#SBATCH -t 72:00:00'
+                        extra='#SBATCH --mem-per-cpu=2000\n#SBATCH --qos=xenon1t' if midway else '#SBATCH -t 72:00:00',
+                        stats='sacct -j $SLURM_JOB_ID --format="JobID,Elapsed,AllocCPUS,CPUTime,MaxRSS"' if midway else '',
                         )
 
     for key, value in default_args.items():
@@ -213,6 +213,10 @@ rm -f pax_event_class*
 source activate pax_{pax_version}
 
 HOSTNAME={host} {command}
+
+sacct -j $SLURM_JOB_ID --format="JobID,Elapsed,AllocCPUS,CPUTime,MaxRSS"
+
+{stats}
 """.format(**args)
     return script_template
 

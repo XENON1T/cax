@@ -82,7 +82,7 @@ def main():
     tasks = [
         checksum.AddChecksum(),
         corrections.AddElectronLifetime(),
-        #corrections.AddGains(),
+        corrections.AddGains(),
         corrections.AddSlowControlInformation(),
         process.ProcessBatchQueue(),
         data_mover.CopyPull(),
@@ -148,42 +148,18 @@ def massive():
     #collection.create_indexes(sort_key, name='cax')
 
     dt = datetime.timedelta(days=1)
-    t0 = datetime.datetime.now() - 2*dt
+    t0 = datetime.datetime.utcnow() - 2*dt
 
 
     while True: # yeah yeah
         query = {'detector': 'tpc'}
 
-        t1 = datetime.datetime.now()
+        t1 = datetime.datetime.utcnow()
         if t1 - t0 < dt:
             print("Iterative mode")
 
             # See if there is something to do
-            query['$and'] = [{'$or' : [{'data' : {'$not' : { "$elemMatch" : { 'host': config.get_hostname(),
-                                                                              'status' : 'transferred',
-                                                                              'type' : 'raw'}
-                                                             },
-                                                  "$elemMatch" : { 'host': 'xe1t-datamanager',
-                                                                   'status' : 'transferred',
-                                                                   'type' : 'raw'}
-
-                                                  }
-                                        },
-                                       {'$and' : [{'data' : {'$not' : { "$elemMatch" : { 'host': config.get_hostname(),
-                                                                                         'status' : 'transferred',
-                                                                                         'type' : 'processed'}},
-                                                             "$elemMatch" : { 'host': config.get_hostname(),
-                                                                              'status' : 'transferred',
-                                                                              'type' : 'raw'}}},
-                                                  {'tags' : {'$not':{ "$elemMatch" : { 'name': 'donotprocess'}
-                                                                      }
-                                                             }
-                                                   },
-                                                  ]
-                                        }
-                                       ]
-                              }
-                             ]
+            query['start'] = {'$gt' : t0}
 
             logging.info(query)
         else:
@@ -205,7 +181,7 @@ def massive():
                 logging.info("Skip if exists")
                 continue
 
-            while qsub.get_number_in_queue() > (1000 if config.get_hostname() == 'midway-login1' else 30):
+            while qsub.get_number_in_queue() > (10000 if config.get_hostname() == 'midway-login1' else 30):
                 logging.info("Speed break 60s because %d in queue" % qsub.get_number_in_queue())
                 time.sleep(60)
 
@@ -216,8 +192,9 @@ def massive():
             logging.debug("Pace by 1s")
             time.sleep(1)  # Pace 1s for batch queue
 
-        logging.info("Done, waiting 5 minutes")
-        time.sleep(60*5) # Pace 5 minutes
+        pace = 5
+        logging.info("Done, waiting %d minutes" % pace)
+        time.sleep(60*pace) # Pace 5 minutes
 
 
 
