@@ -30,7 +30,7 @@ class Task():
         try:
             ids = [doc['_id'] for doc in self.collection.find(query,
                                                               projection=('_id'),
-                                                              sort=(('start', 1),))]
+                                                              sort=(('start', -1),))]
         except pymongo.errors.CursorNotFound:
             self.log.warning("Curson not found exception.  Skipping")
             return
