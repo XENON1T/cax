@@ -142,7 +142,8 @@ def mongo_collection(collection_name='runs_new'):
         uri = 'mongodb://eb:%s@xenon1t-daq.lngs.infn.it:27017,copslx50.fysik.su.se:27017,zenigata.uchicago.edu:27017/run'
         uri = uri % os.environ.get('MONGO_PASSWORD')
         c = pymongo.MongoClient(uri,
-                                replicaSet='runs')
+                                replicaSet='runs',
+                                readPreference=pymongo.SECONDARY_PREFERRED)
     db = c['run']
     collection = db[collection_name]
     return collection
