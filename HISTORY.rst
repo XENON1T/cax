@@ -2,7 +2,7 @@
 History
 =======
 
-4.2.0 (2016-07-25)
+4.3.0 (2016-08-02)
 ------------------
 
 * Gains derived from HV measurements using HTTP interface (#34).
