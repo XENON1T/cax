@@ -5,6 +5,13 @@ History
 4.2.0 (2016-07-25)
 ------------------
 
+* Gains derived from HV measurements using HTTP interface (#34).
+* Statistics at end of job on usage.
+
+
+4.2.0 (2016-07-25)
+------------------
+
 * Slow control variables defined in hax added to rundoc.
 
 4.1.3 (2016-07-21)
