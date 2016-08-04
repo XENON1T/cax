@@ -13,6 +13,8 @@ import pymongo
 CAX_CONFIGURE = ''
 DATABASE_LOG = True
 HOST = os.environ.get("HOSTNAME") if os.environ.get("HOSTNAME") else socket.gethostname().split('.')[0]
+DATA_USER_PDC = 'bobau'
+DATA_GROUP_PDC = 'xenon-users'
 
 PAX_DEPLOY_DIRS = {
     'midway-login1' : '/project/lgrandi/deployHQ/pax',
@@ -236,3 +238,17 @@ def get_processing_base_dir(host=get_hostname()):
 def get_processing_dir(host, version):
     return os.path.join(get_processing_base_dir(host),
                         'pax_%s' % version)
+
+def adjust_permission_base_dir(base_dir, destination):
+    """Set ownership and permissons for basic folder of processed data (pax_vX)"""
+
+    if destination=="tegner-login-1":
+      #Change group and set permissions for PDC Stockholm
+      user_group = DATA_USER_PDC + ":" + DATA_GROUP_PDC
+      
+      subprocess.Popen( ["chown", "-R", user_group, base_dir],
+                        stdout=subprocess.PIPE )
+                             
+
+      subprocess.Popen( ["setfacl", "-R", "-M", "/cfs/klemming/projects/xenon/misc/basic", base_dir],
+                        stdout=subprocess.PIPE )
