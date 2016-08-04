@@ -310,6 +310,8 @@ class CopyBase(Task):
 
             # Recursively make directories
             os.makedirs(base_dir)
+            # Adjust permissions via config.py
+            config.adjust_permission_base_dir(base_dir, destination)
 
         # Directory or filename to be copied
         filename = datum['location'].split('/')[-1]
