@@ -12,7 +12,7 @@ class api():
             "api_key": config.api_key(),
             "detector": config.DETECTOR
         }
-        self.next_run = None
+        self.next_run = "init"
 
         # Runs DB writing parameters
         self.data_set_headers = {
@@ -25,9 +25,9 @@ class api():
     def get_next_run(query):
 
         ret = None
-        if self.next_run == "null":
+        if self.next_run == None:
             return ret
-        if self.next_run is None:
+        if self.next_run is "init":
             # Prepare query parameters
             params = self.get_params
             if 'detector' in params and params['detector'] == 'all':
@@ -45,10 +45,11 @@ class api():
 
         # Keep track of the next run so we can iterate. 
         if ret is not None:
-            self.next_run = ret['next']           
+            self.next_run = ret['next']
             return ret['doc']
-        return None
 
+        return None
+    
     def add_location(uuid, parameters):
         # Adds a new data location to the list
 
