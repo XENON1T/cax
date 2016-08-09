@@ -138,8 +138,14 @@ class AddGains(CorrectionBase):
         start = self.run_doc['start']
         timestamp = start.replace(tzinfo=pytz.utc).timestamp()
 
-        self.log.info("Run %d: gains computing" % self.run_doc['number'])
-        return self.get_gains(timestamp)
+        if self.run_doc['reader']['self_trigger']:
+            self.log.info("Run %d: gains computing" % self.run_doc['number'])
+            gains = self.get_gains(timestamp)
+        else:
+            self.log.info("Run %d: using 1 as gain for LED" % self.run_doc['number'])
+            gains = len(PAX_CONFIG['DEFAULT']['pmts'])*[1]
+
+        return gains
 
     def get_gains(self, timestamp):
         """Timestamp is a UNIX timestamp in UTC
