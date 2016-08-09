@@ -5,7 +5,7 @@ History
 4.3.4 (2016-08-09)
 ------------------
 
-* Have LED mode have gains equal to 1.
+* Have LED mode have gains equal to 1, which is the same as XENON1T_LED.ini.
 
 4.3.3 (2016-08-04)
 ------------------
