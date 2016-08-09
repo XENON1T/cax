@@ -88,10 +88,9 @@ class RenameSingle(Task):
 
             # Notify run database
             if config.DATABASE_LOG is True:
-                self.collection.update({'_id' : self.run_doc['_id'],
-                                        'data': {'$elemMatch': data_doc}},
-                                       {'$set': {
-                                           'data.$.location': self.output}})
+                self.api.update_location(self.run_doc['_id'],
+                                         data_doc, self.output)
+
             break
 
 
@@ -121,8 +120,7 @@ class RemoveSingle(Task):
 
             # Notify run database
             if config.DATABASE_LOG is True:
-                self.collection.update({'_id': self.run_doc['_id']},
-                                       {'$pull': {'data': data_doc}})
+                self.api.remove_location(self.run_doc['_id'], data_doc)
 
             # Perform operation
             self.log.info("Removing %s" % (self.location))
