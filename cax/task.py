@@ -1,5 +1,6 @@
 import logging
 from json import dumps, loads
+from bson import json_util
 
 from cax import api
 from cax import config
@@ -71,7 +72,7 @@ class Task():
         This calls peoples and issues a wide range of alarms, so use wisely.
         """
         santized_run_doc = self.run_doc.copy()
-        santized_run_doc = loads(dumps(santized_run_doc))
+        santized_run_doc = loads(json_util.dumps(santized_run_doc))
 
         self.log.error(message)
 

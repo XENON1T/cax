@@ -8,7 +8,7 @@ import checksumdir
 
 from cax import config
 from ..task import Task
-
+import copy
 
 class AddChecksum(Task):
     "Perform a checksum on accessible data."
@@ -51,10 +51,14 @@ class AddChecksum(Task):
             self.log.info("Adding a checksum to run "
                           "%d %s" % (self.run_doc['number'],
                                      data_doc['type']))
-            self.collection.update({'_id' : self.run_doc['_id'],
-                                    'data': {'$elemMatch': data_doc}},
-                                   {'$set': {'data.$.status'  : status,
-                                             'data.$.checksum': value}})
+            update_doc = copy.deepcopy(data_doc)
+            update_doc['status'] = status
+            update_doc['checksum'] = value
+            self.api.update_location(self.run_doc['_id'], data_doc, update_doc)            
+            #self.collection.update({'_id' : self.run_doc['_id'],
+            #                        'data': {'$elemMatch': data_doc}},
+            #                       {'$set': {'data.$.status'  : status,
+            #                                 'data.$.checksum': value}})
 
 
 class CompareChecksums(Task):

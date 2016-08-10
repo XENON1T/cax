@@ -16,6 +16,7 @@ from cax import config
 from cax.task import Task
 
 import subprocess
+import copy
 
 class CopyBase(Task):
 
@@ -317,14 +318,14 @@ class CopyBase(Task):
         filename = datum['location'].split('/')[-1]
 
         self.log.debug("Notifying run database")
-        datum_new = {'type'         : datum['type'],
-                     'host'         : destination,
-                     'status'       : 'transferring',
-                     'location'     : os.path.join(base_dir,
-                                                   filename),
-                     'checksum'     : None,
-                     'creation_time': datetime.datetime.utcnow(),
-                     }
+        datum_new = {
+            'type'         : datum['type'],
+            'host'         : destination,
+            'status'       : 'transferring',
+            'location'     : os.path.join(base_dir,
+                                          filename),
+            'checksum'     : None,            
+        }
 
         if datum['type'] == 'processed':
             for variable in ('pax_version', 'pax_hash', 'creation_place'):
@@ -362,7 +363,7 @@ class CopyBase(Task):
         self.log.debug(method+" done, telling run database")
 
         if config.DATABASE_LOG:
-            update_datum = datum_new
+            update_datum = copy.deepcopy(datum_new)
             update_datum['status'] = status
             self.api.update_location(self.run_doc['_id'], datum_new, update_datum)
             #self.collection.update({'_id' : self.run_doc['_id'],

@@ -1,7 +1,7 @@
 import requests
 import logging
-from json import dumps, loads
-
+from json import dumps
+from bson import json_util
 from cax import config
 
 class api():
@@ -39,17 +39,19 @@ class api():
             params['limit']=1
             params['offset']=0
             
-            ret = requests.get(self.api_url, params = params).json()
+            ret = json_util.loads(requests.get(self.api_url,
+                                               params = params).text)
             
         else:
-            ret = requests.get(self.next_run).json()
+            ret = json_util.loads(requests.get(self.next_run).text)
 
         # Keep track of the next run so we can iterate. 
         if ret is not None:
             self.next_run = ret['meta']['next']
             if len(ret['objects'])==0:
                 return None
-            return ret['objects'][0]['doc']
+            
+            return json_util.loads(ret['objects'][0]['doc'])
 
         return None
     
@@ -61,14 +63,17 @@ class api():
         if not all(key in parameters for key in required):
             raise NameError("attempt to update location without required keys")
 
-        url = self.api_url + uuid + "/"
-        print(url)
-        print(parameters)
+        url = self.api_url + str(uuid) + "/"
+
+        # BSON/JSON confusion. Get rid of date field.
+        if 'creation_time' in parameters:
+            parameters.pop('creation_time')
+        parameters=dumps(parameters)
         ret = requests.put(url, data=parameters,
                            headers=self.data_set_headers)
         
     def remove_location(self, uuid, parameters):    
-        # Removes a data location from the list
+        # Removes a data location from the list        
         parameters['status'] = "remove"
         self.add_location(uuid, parameters)
         
