@@ -1,7 +1,7 @@
 import logging
 from json import dumps, loads
 
-from api import api
+from cax import api
 from cax import config
 
 
@@ -11,7 +11,7 @@ class Task():
         self.log = logging.getLogger(self.__class__.__name__)
         self.run_doc = None
         self.untriggered_data = None
-        self.api = api()
+        self.api = api.api()
         
     def go(self, specify_run = None):
         """Run this periodically"""

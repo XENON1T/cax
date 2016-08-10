@@ -1,4 +1,5 @@
 import requests
+import logging
 from json import dumps, loads
 
 from cax import config
@@ -22,7 +23,7 @@ class api():
         
         self.logging = logging.getLogger(self.__class__.__name__)
 
-    def get_next_run(query):
+    def get_next_run(self, query):
 
         ret = None
         if self.next_run == None:
@@ -38,19 +39,21 @@ class api():
             params['limit']=1
             params['offset']=0
             
-            ret = requests.get(self.api_url, params = params)
+            ret = requests.get(self.api_url, params = params).json()
             
         else:
-            ret = requests.get(self.next_run)
+            ret = requests.get(self.next_run).json()
 
         # Keep track of the next run so we can iterate. 
         if ret is not None:
-            self.next_run = ret['next']
-            return ret['doc']
+            self.next_run = ret['meta']['next']
+            if len(ret['objects'])==0:
+                return None
+            return ret['objects'][0]['doc']
 
         return None
     
-    def add_location(uuid, parameters):
+    def add_location(self, uuid, parameters):
         # Adds a new data location to the list
 
         # Parameters must contain certain keys.
@@ -59,15 +62,17 @@ class api():
             raise NameError("attempt to update location without required keys")
 
         url = self.api_url + uuid + "/"
+        print(url)
+        print(parameters)
         ret = requests.put(url, data=parameters,
                            headers=self.data_set_headers)
         
-    def remove_location(uuid, parameters):    
+    def remove_location(self, uuid, parameters):    
         # Removes a data location from the list
         parameters['status'] = "remove"
         self.add_location(uuid, parameters)
         
-    def update_location(uuid, remove_parameters, add_parameters):
+    def update_location(self, uuid, remove_parameters, add_parameters):
         # Removes location from the list then adds a new one
         self.remove_location(uuid, remove_parameters)
         self.add_location(uuid, add_parameters)
