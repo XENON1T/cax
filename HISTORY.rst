@@ -2,6 +2,11 @@
 History
 =======
 
+4.3.6 (2016-08-12)
+------------------
+
+* Change path to Anaconda Installation at PDC
+
 4.3.5 (2016-08-10)
 ------------------
 
