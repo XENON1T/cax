@@ -2,6 +2,11 @@
 History
 =======
 
+4.3.7 (2016-08-17)
+------------------
+
+* Reduce allowed number of jobs in queue to 500 (since we only have 28*16=448 cores)
+
 4.3.6 (2016-08-12)
 ------------------
 
