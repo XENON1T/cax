@@ -178,7 +178,7 @@ def massive():
                        )
             script = config.processing_script(job)
 
-            if 'cax_%d_head' % doc['number'] in qsub.get_queue():
+            if 'cax_%d_v%s' % (doc['number'], __version__) in qsub.get_queue():
                 logging.info("Skip if exists")
                 continue
 
