@@ -2,6 +2,11 @@
 History
 =======
 
+4.3.8 (2016-08-17)
+------------------
+
+* Bug fix: check for actual version number in queue list instead of "head"
+
 4.3.7 (2016-08-17)
 ------------------
 
