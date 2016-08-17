@@ -2,7 +2,12 @@
 History
 =======
 
-4.3.9 (2016-08-17)
+4.3.11 (2016-08-17)
+------------------
+
+* Bug fix: Job name should have pax version, not cax version
+
+4.3.10 (2016-08-17)
 ------------------
 
 * Temporarily disable 'sacct' call (seems to be broken on Midway after restart) 
