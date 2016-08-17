@@ -2,6 +2,11 @@
 History
 =======
 
+4.3.9 (2016-08-17)
+------------------
+
+* Temporarily disable 'sacct' call (seems to be broken on Midway after restart)
+
 4.3.8 (2016-08-17)
 ------------------
 
