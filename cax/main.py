@@ -7,6 +7,8 @@ import time
 from cax import __version__
 from cax import config, qsub
 
+import pax
+
 from cax.tasks import checksum, clear, data_mover, process, filesystem
 from cax.tasks import corrections
 
@@ -178,8 +180,8 @@ def massive():
                        )
             script = config.processing_script(job)
 
-            if 'cax_%d_v%s' % (doc['number'], __version__) in qsub.get_queue():
-                logging.info("Skip if exists")
+            if 'cax_%d_v%s' % (doc['number'], pax.__version__) in qsub.get_queue():
+                logging.debug('Skip: cax_%d_v%s job exists' % (doc['number'], pax.__version__))
                 continue
 
             while qsub.get_number_in_queue() > (500 if config.get_hostname() == 'midway-login1' else 30):
