@@ -6,6 +6,12 @@ from cax import config
 
 class api():
     def __init__(self):
+
+
+        if ( config.API_URL is None or config.api_user() is None
+             or config.api_key() is None or config.DETECTOR is None ):
+            raise NameError("API connectivity options not found")
+        
         # Runs DB Query Parameters
         self.api_url = config.API_URL
         self.get_params = {
@@ -24,7 +30,6 @@ class api():
         self.logging = logging.getLogger(self.__class__.__name__)
 
     def get_next_run(self, query):
-
         ret = None
         if self.next_run == None:
             return ret
@@ -51,7 +56,7 @@ class api():
             if len(ret['objects'])==0:
                 return None
             
-            return json_util.loads(ret['objects'][0]['doc'])
+            return ret['objects'][0]['doc']
 
         return None
     

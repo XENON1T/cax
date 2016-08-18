@@ -332,11 +332,9 @@ class CopyBase(Task):
                 datum_new[variable] = datum.get(variable)
 
         if config.DATABASE_LOG == True:
-            result = self.api.add_location(self.run_doc['_id'], datum_new)
-            #result = self.collection.update_one({'_id': self.run_doc['_id'],
-            #                                     },
-            #                       {'$push': {'data': datum_new}})
+            self.api.add_location(self.run_doc['_id'], datum_new)
 
+            # Note! Should we account for this race condition?
             #if result.matched_count == 0:
             #    self.log.error("Race condition!  Could not copy because another "
             #                   "process seemed to already start.")
@@ -366,11 +364,7 @@ class CopyBase(Task):
             update_datum = copy.deepcopy(datum_new)
             update_datum['status'] = status
             self.api.update_location(self.run_doc['_id'], datum_new, update_datum)
-            #self.collection.update({'_id' : self.run_doc['_id'],
-            #                        'data': {
-            #                            '$elemMatch': datum_new}},
-            #                       {'$set': {'data.$.status': status}})
-
+            
         self.log.debug(method+" done, telling run database")
 
         self.log.info("End of "+option_type+"\n")
