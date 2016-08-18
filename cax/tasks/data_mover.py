@@ -163,6 +163,7 @@ class CopyBase(Task):
     def copySCP(self, datum_original, datum_destination, server, username, option_type):
         """Copy data via SCP function
         """
+
         util.log_to_file('ssh.log')
         ssh = SSHClient()
         ssh.load_system_host_keys()

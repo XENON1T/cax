@@ -44,7 +44,7 @@ class RetryStalledTransfer(checksum.CompareChecksums):
         except FileNotFoundError:
             time_modified = 0
         time_modified = datetime.datetime.fromtimestamp(time_modified)
-        time_made = datetime.datetime.strptime(data_doc['creation_time'][:-7],
+        time_made = datetime.datetime.strptime(data_doc['creation_time'][0][:-7],
                                                "%Y-%m-%dT%H:%M:%S")
         difference = datetime.datetime.utcnow() - max(time_modified,
                                                       time_made)
