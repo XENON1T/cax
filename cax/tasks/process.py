@@ -49,7 +49,7 @@ def _process(name, in_location, host, pax_version, pax_hash, out_location, ncpus
     from pax import core
 
     # Grab the Run DB so we can query it
-    collection = config.mongo_collection()
+    #collection = config.mongo_collection()
 
     output_fullname = out_location + '/' + name
 
@@ -73,16 +73,26 @@ def _process(name, in_location, host, pax_version, pax_hash, out_location, ncpus
              'data'    : {'$elemMatch': {'host'       : host,
                                          'type'       : 'processed',
                                          'pax_version': pax_version}}}
-    doc = collection.find_one(query)  # Query DB
+
+    doc = self.api.get_next_run(query)
     if doc is not None:
+        print("Run name " + name + " not found")
+        return 1
+
+    # Sorry
+    if any( ( d['host'] == host and d['type'] == 'processed' and
+              d['pax_version'] == pax_version ) for d in doc['data'] ):
         print("Already processed %s.  Clear first.  %s" % (name,
                                                            pax_version))
-        #return 1
+        return 1
 
     # Not processed this way already, so notify run DB we will
-    #doc = collection.find_one_and_update({'detector': 'tpc', 'name': name},
-    #                                     {'$push': {'data': datum}},
-     #                                    return_document=ReturnDocument.AFTER)
+    self.api.add_location(doc['_id'], datum)
+    doc = self.api.get_next_run(query)
+
+    if doc is None:
+        print("Error finding doc after update")
+        return 1
 
     # Determine based on run DB what settings to use for processing.
     if doc['reader']['self_trigger']:
@@ -104,13 +114,13 @@ def _process(name, in_location, host, pax_version, pax_hash, out_location, ncpus
         datum['status'] = 'error'
         if config.DATABASE_LOG == True:
             print("Would update database...")
-        #    collection.update(query, {'$set': {'data.$': datum}})
+            #self.api.update_location(doc['_id'], datum)
         raise
 
     datum['status'] = 'verifying'
     if config.DATABASE_LOG == True:
         print("Would update database...")
-       # collection.update(query, {'$set': {'data.$': datum}})
+        #self.api.update_location(doc['_id'], datum)
 
     datum['checksum'] = checksumdir._filehash(datum['location'],
                                               hashlib.sha512)
@@ -121,7 +131,7 @@ def _process(name, in_location, host, pax_version, pax_hash, out_location, ncpus
 
     if config.DATABASE_LOG == True:
         print("Would update database...")
-       # collection.update(query, {'$set': {'data.$': datum}})
+        #self.api.update_location(doc['_id'], datum)
 
 class ProcessBatchQueue(Task):
     "Create and submit job submission script."
