@@ -5,7 +5,7 @@ History
 4.3.12 (2016-08-31)
 ------------------
 
-* Add command line options --once and --config for massive-cax
+*  Add command line options --once and --config for massive-cax
  
 4.3.11 (2016-08-17)
 ------------------
