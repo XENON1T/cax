@@ -130,7 +130,25 @@ def main():
 
 def massive():
     # Command line arguments setup
-    argparse.ArgumentParser(description="Submit cax tasks to batch queue.")
+    parser = argparse.ArgumentParser(description="Submit cax tasks to batch queue.")
+    parser.add_argument('--once', action='store_true',
+                        help="Run all tasks just one, then exits")
+    parser.add_argument('--config', action='store', type=str,
+                        dest='config_file',
+                        help="Load a custom .json config file into cax")
+
+    args = parser.parse_args()
+
+    run_once = args.once
+
+    config_arg = ''
+    if args.config_file:
+        if not os.path.isfile(args.config_file):
+            logging.error("Config file %s not found", args.config_file)
+        else:
+            logging.info("Using custom config file: %s",
+                         args.config_file)
+            config_arg = '--config '+args.config_file
 
     # Setup logging
     cax_version = 'cax_v%s - ' % __version__
@@ -175,7 +193,8 @@ def massive():
                                                 'detector', '_id']))
 
         for doc in docs:
-            job = dict(command='cax --once --run {number}',
+         
+            job = dict(command='cax --once --run {number} '+config_arg,
                         number=doc['number'],
                        )
             script = config.processing_script(job)
@@ -184,7 +203,7 @@ def massive():
                 logging.debug('Skip: cax_%d_v%s job exists' % (doc['number'], pax.__version__))
                 continue
 
-            while qsub.get_number_in_queue() > (500 if config.get_hostname() == 'midway-login1' else 30):
+            while qsub.get_number_in_queue() > (15 if config.get_hostname() == 'midway-login1' else 30):
                 logging.info("Speed break 60s because %d in queue" % qsub.get_number_in_queue())
                 time.sleep(60)
 
@@ -195,11 +214,12 @@ def massive():
             logging.debug("Pace by 1s")
             time.sleep(1)  # Pace 1s for batch queue
 
-        pace = 5
-        logging.info("Done, waiting %d minutes" % pace)
-        time.sleep(60*pace) # Pace 5 minutes
-
-
+        if run_once:
+            break
+        else:
+            pace = 5
+            logging.info("Done, waiting %d minutes" % pace)
+            time.sleep(60*pace) # Pace 5 minutes
 
 
 def move():
