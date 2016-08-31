@@ -13,17 +13,15 @@ import checksumdir
 from pymongo import ReturnDocument
 
 from cax import qsub, config
-from cax.config import PAX_DEPLOY_DIRS
-from cax.config import get_processing_base_dir
 from cax.task import Task
-
+from cax.api import api
 
 def get_pax_hash(pax_version, host):
     # Get hash of this pax version
     if pax_version == 'head':
-        git_args = "--git-dir=" + PAX_DEPLOY_DIRS[host] + "/.git rev-parse HEAD"
+        git_args = "--git-dir=" + config.PAX_DEPLOY_DIRS[host] + "/.git rev-parse HEAD"
     else:
-        git_args = "--git-dir=" + PAX_DEPLOY_DIRS[host] + "/.git rev-parse " + pax_version
+        git_args = "--git-dir=" + config.PAX_DEPLOY_DIRS[host] + "/.git rev-parse v" + pax_version
 
     git_out = subprocess.check_output("git " + git_args,
                                       shell=True)
@@ -44,6 +42,9 @@ def _process(name, in_location, host, pax_version, pax_hash, out_location, ncpus
     """Called by another command.
     """
     print('Welcome to cax-process, OSG development')
+
+    if pax_version[0] != 'v':
+        pax_version = 'v' + pax_version
 
     # Import pax so can process the data
     from pax import core
@@ -67,29 +68,39 @@ def _process(name, in_location, host, pax_version, pax_hash, out_location, ncpus
     # This query is used to find if this run has already processed this data
     # in the same way.  If so, quit.
     query = {'detector': 'tpc',
-             'name'    : name,
-
-             # This 'data' gets deleted later and only used for checking
-             'data'    : {'$elemMatch': {'host'       : host,
-                                         'type'       : 'processed',
-                                         'pax_version': pax_version}}}
-
-    doc = self.api.get_next_run(query)
-    if doc is not None:
+             'name'    : name
+             }
+    
+    API = api()
+    doc = API.get_next_run(query)
+    print(query)
+    
+    if doc is None:
         print("Run name " + name + " not found")
         return 1
 
+    for d in doc['data']:
+        if 'pax_version' in d.keys():
+            print(d['pax_version'])
+    
     # Sorry
     if any( ( d['host'] == host and d['type'] == 'processed' and
               d['pax_version'] == pax_version ) for d in doc['data'] ):
         print("Already processed %s.  Clear first.  %s" % (name,
                                                            pax_version))
+        print('removing...')
+        API.remove_location(doc['_id'],datum)
+        print('done')
         return 1
-
     # Not processed this way already, so notify run DB we will
-    self.api.add_location(doc['_id'], datum)
-    doc = self.api.get_next_run(query)
 
+    print('Not processed yet, adding to database')
+    API.add_location(doc['_id'], datum)
+
+    API = api()
+    doc = API.get_next_run(query)
+    print(query)
+    
     if doc is None:
         print("Error finding doc after update")
         return 1
@@ -114,13 +125,13 @@ def _process(name, in_location, host, pax_version, pax_hash, out_location, ncpus
         datum['status'] = 'error'
         if config.DATABASE_LOG == True:
             print("Would update database...")
-            #self.api.update_location(doc['_id'], datum)
+            # API.update_location(doc['_id'], datum)
         raise
 
     datum['status'] = 'verifying'
     if config.DATABASE_LOG == True:
         print("Would update database...")
-        #self.api.update_location(doc['_id'], datum)
+        # API.update_location(doc['_id'], datum)
 
     datum['checksum'] = checksumdir._filehash(datum['location'],
                                               hashlib.sha512)
@@ -131,8 +142,8 @@ def _process(name, in_location, host, pax_version, pax_hash, out_location, ncpus
 
     if config.DATABASE_LOG == True:
         print("Would update database...")
-        #self.api.update_location(doc['_id'], datum)
-
+        # API.update_location(doc['_id'], datum)
+        
 class ProcessBatchQueue(Task):
     "Create and submit job submission script."
 
@@ -146,7 +157,7 @@ class ProcessBatchQueue(Task):
         script_template = config.processing_script(host)
         
         script = script_template.format(name=name, in_location=in_location,
-                                        processing_dir=get_processing_base_dir(host),
+                                        processing_dir=config.get_processing_base_dir(host),
                                         host=host, pax_version=pax_version,
                                         pax_hash=pax_hash,
                                         out_location=out_location,

@@ -10,7 +10,7 @@ import pymongo
 
 # global variable to store the specified .json config file
 CAX_CONFIGURE = ''
-DATABASE_LOG = True
+DATABASE_LOG = False
 
 PAX_DEPLOY_DIRS = {
     'midway-login1' : '/project/lgrandi/deployHQ/pax',
@@ -18,7 +18,8 @@ PAX_DEPLOY_DIRS = {
     'login': '/stash2/project/@xenon1t/deployHQ/pax_deploy'
 }
 
-
+DETECTOR = "tpc"
+API_URL = "https://xenon1t-daq.lngs.infn.it/runs_api/runs/runs/"
 
 def mongo_password():
     """Fetch passsword for MongoDB
@@ -74,6 +75,7 @@ def get_config(hostname=get_hostname()):
     """Returns the cax configuration for a particular hostname
     NB this currently reloads the cax.json file every time it is called!!
     """
+    
     for doc in load():
         if doc['name'] == hostname:
             return doc
@@ -131,6 +133,11 @@ def get_task_list():
 
     return options
 
+def api_user():
+    return os.environ.get("API_USER")
+
+def api_key():
+    return os.environ.get("API_KEY")
 
 def mongo_collection(collection_name='runs_new'):
     # For the event builder to communicate with the gateway, we need to use the DAQ network address
@@ -164,26 +171,25 @@ def data_availability(hostname=get_hostname()):
 
 def processing_script(host):
     # Script parts common to all sites
+    
     script_template = """#!/bin/bash
 #SBATCH --job-name={name}_{pax_version}
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task={ncpus}
 #SBATCH --mem-per-cpu=2000
-#SBATCH --mail-type=ALL
 """
     # Midway-specific script options
     if host == "midway-login1":
         script_template += """
-#SBATCH --output=/project/lgrandi/xenon1t/processing/logs/{name}_{pax_version}_%J.log
-#SBATCH --error=/project/lgrandi/xenon1t/processing/logs/{name}_{pax_version}_%J.log
+#SBATCH --output=/home/ershockley/caxOSG_testing/logs/{name}_{pax_version}.log
+#SBATCH --error=/home/ershockley/caxOSG_testing/logs/{name}_{pax_version}.log
 #SBATCH --account=pi-lgrandi
 #SBATCH --qos=xenon1t
 #SBATCH --partition=xenon1t
-#SBATCH --mail-user=pdeperio@astro.columbia.edu
 
 export PATH=/project/lgrandi/anaconda3/bin:$PATH
 
-export PROCESSING_DIR=/project/lgrandi/xenon1t/processing/{name}_{pax_version}
+export PROCESSING_DIR=/home/ershockley/caxOSG_testing/processing/{name}_{pax_version}
         """
     elif host == "tegner-login-1": # Stockolm-specific script options
         script_template = """
@@ -234,12 +240,11 @@ mkdir -p ${{PROCESSING_DIR}} {out_location}
 cd ${{PROCESSING_DIR}}
 rm -f pax_event_class*
 
-source activate pax_{pax_version}
+source activate pax_v{pax_version}
 
-echo time cax-process {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
-time cax-process {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
+echo time python ~/cax/cax/tasks/process.py {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
+time python ~/cax/cax/tasks/process.py {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
 
-mv ${{PROCESSING_DIR}}/../logs/{name}_*.log ${{PROCESSING_DIR}}/.
 """
 
     return script_template

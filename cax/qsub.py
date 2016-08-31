@@ -1,5 +1,5 @@
 """ Access the cluster.
-
+1;2c
     Easy to use functions to make use of the cluster facilities.
     This checks the available slots on the requested queue, creates the
     scripts to submit, submits the jobs, and cleans up afterwards.
@@ -63,12 +63,12 @@ def submit_job(host,script, name, extra=''):
         
 
     logging.info('submit job:\n %s' % submit_command)
-    #result = subprocess.check_output(submit_command,
-    #                                 stderr=subprocess.STDOUT,
-    #                                 shell=True)
-    #logging.info(result)
+    result = subprocess.check_output(submit_command,
+                                     stderr=subprocess.STDOUT,
+                                     shell=True)
+    logging.info(result)
         
-#    delete_script(script_path)
+    delete_script(script_path)
         
 
 def create_script(script, name):
