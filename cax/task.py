@@ -18,7 +18,7 @@ class Task():
     def go(self, specify_run = None):
         """Run this periodically"""
 
-        query = {'detector': 'tpc'}
+        query = {} # was {'detector': 'tpc'}
         if specify_run is not None:
             query['number'] = specify_run
 
