@@ -1,9 +1,9 @@
 [
     {
-    "name": "midway-login1",
+    "name": "login",
     "method": "scp",
-    "hostname": "midway-login1.rcc.uchicago.edu",
-    "dir_raw": "/project/lgrandi/xenon1t",
+    "hostname": "login.ci-connect.uchicago.edu",
+    "dir_raw": "/xenon/xenon1t_test",
     "dir_processed": "/home/ershockley/caxOSG_testing/output",
     "upload_options": [],
     "username": "pdeperio",
@@ -11,6 +11,6 @@
           "midway-login1"],	
     "task_list": ["ProcessBatchQueue"],
     "dataset_list": ["160315_1425"],
-      "pax_processing_versions": ["v4.9.1"]
+      "pax_processing_versions": ["v4.11.0"]
      }
 ]    
