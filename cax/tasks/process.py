@@ -77,6 +77,8 @@ def _process(name, in_location, host, pax_version, pax_hash,
     # Determine based on run DB what settings to use for processing.
     if doc['reader']['self_trigger']:
         pax_config = 'XENON1T'
+    elif doc['detector'] == 'muon_veto':
+        pax_config = 'XENON1T_MV'
     else:
         pax_config = 'XENON1T_LED'
 
