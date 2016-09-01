@@ -33,7 +33,6 @@ class api():
     def get_next_run(self, query):
         ret = None
         if self.next_run == None:
-            print("self.next_run = None")
             return ret
         if self.next_run is "init":
             # Prepare query parameters
@@ -56,12 +55,10 @@ class api():
         if ret is not None:
             self.next_run = ret['meta']['next']
             if len(ret['objects'])==0:
-                print("len(ret['objects']) = 0")
                 return None
             
             return ret['objects'][0]['doc']
 
-        print("got to end")
         return None
     
     def add_location(self, uuid, parameters):

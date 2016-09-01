@@ -10,7 +10,7 @@ import pymongo
 
 # global variable to store the specified .json config file
 CAX_CONFIGURE = ''
-DATABASE_LOG = False
+DATABASE_LOG = True
 
 PAX_DEPLOY_DIRS = {
     'midway-login1' : '/project/lgrandi/deployHQ/pax',
@@ -242,8 +242,8 @@ rm -f pax_event_class*
 
 source activate pax_v{pax_version}
 
-echo time python ~/cax/cax/tasks/process.py {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
-time python ~/cax/cax/tasks/process.py {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
+echo time  ~/cax/bin/cax-process {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
+time ~/cax/bin/cax-process {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
 
 """
 

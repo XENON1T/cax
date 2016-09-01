@@ -49,9 +49,6 @@ def _process(name, in_location, host, pax_version, pax_hash, out_location, ncpus
     # Import pax so can process the data
     from pax import core
 
-    # Grab the Run DB so we can query it
-    #collection = config.mongo_collection()
-
     output_fullname = out_location + '/' + name
 
     # New data location
@@ -65,46 +62,46 @@ def _process(name, in_location, host, pax_version, pax_hash, out_location, ncpus
              'creation_time' : datetime.datetime.utcnow(),
              'creation_place': host}
 
+    # need an updated datum dict for api.update_location()
+    updatum = datum.copy()
+    
     # This query is used to find if this run has already processed this data
     # in the same way.  If so, quit.
     query = {'detector': 'tpc',
              'name'    : name
              }
-    
+
+    # initialize instance of api class
     API = api()
+    
     doc = API.get_next_run(query)
     print(query)
     
     if doc is None:
         print("Run name " + name + " not found")
         return 1
-
-    for d in doc['data']:
-        if 'pax_version' in d.keys():
-            print(d['pax_version'])
-    
+   
     # Sorry
     if any( ( d['host'] == host and d['type'] == 'processed' and
               d['pax_version'] == pax_version ) for d in doc['data'] ):
         print("Already processed %s.  Clear first.  %s" % (name,
                                                            pax_version))
-        print('removing...')
-        API.remove_location(doc['_id'],datum)
-        print('done')
+        #API.remove_location(doc['_id'], datum)
+        #print('location removed')
         return 1
+    
     # Not processed this way already, so notify run DB we will
-
     print('Not processed yet, adding to database')
     API.add_location(doc['_id'], datum)
 
     API = api()
     doc = API.get_next_run(query)
-    print(query)
     
     if doc is None:
         print("Error finding doc after update")
         return 1
 
+    
     # Determine based on run DB what settings to use for processing.
     if doc['reader']['self_trigger']:
         pax_config = 'XENON1T'
@@ -117,32 +114,35 @@ def _process(name, in_location, host, pax_version, pax_hash, out_location, ncpus
         p = core.Processor(config_names=pax_config,
                            config_dict={'pax': {'input_name' : in_location,
                                                 'output_name': output_fullname,
-                                                'n_cpus'     : ncpus}})
+                                                'n_cpus'     : ncpus,
+                                                'stop_after' : 10,
+                                                # need this for runs prior to file format change (which run?)
+                                                'decoder_plugin' : 'BSON.DecodeZBSON'}})
         p.run()
 
     except Exception as exception:
         # Data processing failed.
-        datum['status'] = 'error'
+        updatum['status'] = 'error'
         if config.DATABASE_LOG == True:
-            print("Would update database...")
-            # API.update_location(doc['_id'], datum)
+            API.update_location(doc['_id'], datum, updatum)
+            # update datum to current state
+            datum = updatum.copy()  
         raise
 
-    datum['status'] = 'verifying'
+    updatum['status'] = 'verifying'
     if config.DATABASE_LOG == True:
-        print("Would update database...")
-        # API.update_location(doc['_id'], datum)
+        API.update_location(doc['_id'], datum, updatum)
+        datum = updatum.copy()
 
-    datum['checksum'] = checksumdir._filehash(datum['location'],
-                                              hashlib.sha512)
+    updatum['checksum'] = checksumdir._filehash(datum['location'],
+                                                hashlib.sha512)
     if verify():
-        datum['status'] = 'transferred'
+        updatum['status'] = 'transferred'
     else:
-        datum['status'] = 'failed'
-
+        updatum['status'] = 'failed'
+        
     if config.DATABASE_LOG == True:
-        print("Would update database...")
-        # API.update_location(doc['_id'], datum)
+        API.update_location(doc['_id'], datum, updatum)
         
 class ProcessBatchQueue(Task):
     "Create and submit job submission script."

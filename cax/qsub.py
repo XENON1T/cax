@@ -63,10 +63,10 @@ def submit_job(host,script, name, extra=''):
         
 
     logging.info('submit job:\n %s' % submit_command)
-    result = subprocess.check_output(submit_command,
-                                     stderr=subprocess.STDOUT,
-                                     shell=True)
-    logging.info(result)
+    #result = subprocess.check_output(submit_command,
+    #                                 stderr=subprocess.STDOUT,
+    #                                 shell=True)
+    #logging.info(result)
         
     delete_script(script_path)
         

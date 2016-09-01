@@ -1,5 +1,5 @@
 [
-  {
+    {
     "name": "midway-login1",
     "method": "scp",
     "hostname": "midway-login1.rcc.uchicago.edu",
@@ -11,6 +11,6 @@
           "midway-login1"],	
     "task_list": ["ProcessBatchQueue"],
     "dataset_list": ["160315_1425"],
-    "pax_processing_versions": ["head"]
+      "pax_processing_versions": ["v4.9.1"]
      }
 ]    
