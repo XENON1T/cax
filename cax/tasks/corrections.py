@@ -17,7 +17,7 @@ from cax import config
 from cax.task import Task
 
 PAX_CONFIG = configuration.load_configuration('XENON1T')
-
+PAX_CONFIG_MV = configuration.load_configuration('XENON1T_MV')
 
 class CorrectionBase(Task):
     "Derive correction"
@@ -141,6 +141,9 @@ class AddGains(CorrectionBase):
         if self.run_doc['reader']['self_trigger']:
             self.log.info("Run %d: gains computing" % self.run_doc['number'])
             gains = self.get_gains(timestamp)
+        elif self.run_doc['detector'] == 'muon_veto':
+            self.log.info("Run %d: using 1e6 as gain for MV" % self.run_doc['number'])
+            gains = len(PAX_CONFIG_MV['DEFAULT']['pmts'])*[1e6]
         else:
             self.log.info("Run %d: using 1 as gain for LED" % self.run_doc['number'])
             gains = len(PAX_CONFIG['DEFAULT']['pmts'])*[1]
