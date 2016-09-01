@@ -28,7 +28,7 @@ def verify():
 
 
 def _process(name, in_location, host, pax_version, pax_hash,
-             out_location, ncpus=1):
+             out_location, detector='tpc',  ncpus=1):
     """Called by another command.
     """
     print('Welcome to cax-process')
@@ -56,9 +56,8 @@ def _process(name, in_location, host, pax_version, pax_hash,
 
     # This query is used to find if this run has already processed this data
     # in the same way.  If so, quit.
-    query = {'detector': 'tpc',
-             'name'    : name,
-
+    query = {'name'    : name,
+             'detector' : detector,
              # This 'data' gets deleted later and only used for checking
              'data'    : {'$elemMatch': {'host'       : host,
                                          'type'       : 'processed',
@@ -70,7 +69,7 @@ def _process(name, in_location, host, pax_version, pax_hash,
         return 1
 
     # Not processed this way already, so notify run DB we will
-    doc = collection.find_one_and_update({'detector': 'tpc', 'name': name},
+    doc = collection.find_one_and_update({'detector': detector, 'name': name},
                                          {'$push': {'data': datum}},
                                          return_document=ReturnDocument.AFTER)
 
@@ -195,7 +194,9 @@ class ProcessBatchQueue(Task):
 
 
             _process(self.run_doc['name'], have_raw['location'], thishost,
-                     version, pax_hash, out_location, ncpus)
+                     version, pax_hash, out_location,
+                     self.run_doc['detector'],
+                     ncpus)
 
 
     def local_data_finder(self, thishost, versions):
