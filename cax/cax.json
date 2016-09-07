@@ -1,5 +1,5 @@
 [
-    {
+   {
     "name": "login",
     "method": "scp",
     "hostname": "login.ci-connect.uchicago.edu",
@@ -12,5 +12,5 @@
     "task_list": ["ProcessBatchQueue"],
     "dataset_list": ["160315_1425"],
       "pax_processing_versions": ["v4.11.0"]
-     }
-]    
+      }				
+] 

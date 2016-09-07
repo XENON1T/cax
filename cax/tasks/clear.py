@@ -101,8 +101,13 @@ class RetryBadChecksumTransfer(checksum.CompareChecksums):
         if data_doc["status"] != "transferred":
             return
 
-        if data_doc['checksum'] != self.get_main_checksum(**data_doc):
-            self.give_error("Bad checksum")
+        comparison = self.get_main_checksum(**data_doc)
+
+        if comparison is None:
+            return
+
+        if data_doc['checksum'] != comparison:
+            self.give_error("Bad checksum %d" % self.run_doc['number'])
             if self.check(warn=False) > 1:
                 self.log.info("Deleting %s" % data_doc['location'])
 

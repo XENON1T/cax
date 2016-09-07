@@ -4,6 +4,7 @@
 import json
 import logging
 import os
+import pax
 import socket
 
 import pymongo
@@ -11,6 +12,9 @@ import pymongo
 # global variable to store the specified .json config file
 CAX_CONFIGURE = ''
 DATABASE_LOG = True
+HOST = os.environ.get("HOSTNAME") if os.environ.get("HOSTNAME") else socket.gethostname().split('.')[0]
+DATA_USER_PDC = 'bobau'
+DATA_GROUP_PDC = 'xenon-users'
 
 PAX_DEPLOY_DIRS = {
     'midway-login1' : '/project/lgrandi/deployHQ/pax',
@@ -20,6 +24,9 @@ PAX_DEPLOY_DIRS = {
 
 DETECTOR = "tpc"
 API_URL = "https://xenon1t-daq.lngs.infn.it/runs_api/runs/runs/"
+
+
+
 
 def mongo_password():
     """Fetch passsword for MongoDB
@@ -39,7 +46,8 @@ def mongo_password():
 def get_hostname():
     """Get hostname of the machine we're running on.
     """
-    return socket.gethostname().split('.')[0]
+    global HOST
+    return HOST
 
 
 def set_json(config):
@@ -148,7 +156,8 @@ def mongo_collection(collection_name='runs_new'):
         uri = 'mongodb://eb:%s@xenon1t-daq.lngs.infn.it:27017,copslx50.fysik.su.se:27017,zenigata.uchicago.edu:27017/run'
         uri = uri % os.environ.get('MONGO_PASSWORD')
         c = pymongo.MongoClient(uri,
-                                replicaSet='runs')
+                                replicaSet='runs',
+                                readPreference='secondaryPreferred')
     db = c['run']
     collection = db[collection_name]
     return collection
@@ -169,85 +178,114 @@ def data_availability(hostname=get_hostname()):
     return results
 
 
-def processing_script(host):
-    # Script parts common to all sites
-    
-    script_template = """#!/bin/bash
-#SBATCH --job-name={name}_{pax_version}
+
+def fill_args(args, default_args): 
+    # used in processing_script() below to assign default values to args not passed to processing_scrit()
+    for key, value in default_args.items():
+        if key not in args:
+            args[key] = value
+
+# for midway and tegner
+SBATCH_TEMPLATE = """#!/bin/bash
+#SBATCH --job-name={use}_{number}_{pax_version}
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task={ncpus}
-#SBATCH --mem-per-cpu=2000
+#SBATCH --output={base}/{use}/{number}_{pax_version}/{number}_{pax_version}_%J.log
+#SBATCH --error={base}/{use}/{number}_{pax_version}/{number}_{pax_version}_%J.log
+#SBATCH --account={account}
+#SBATCH --partition={partition}
+{extra}
+export PATH={anaconda}:$PATH
+export JOB_WORKING_DIR={base}/{use}/{number}_{pax_version}
+mkdir -p ${{JOB_WORKING_DIR}}
+cd ${{JOB_WORKING_DIR}}
+rm -f pax_event_class*
+source activate pax_{pax_version}
+HOSTNAME={host} {command}
+{stats}
 """
-    # Midway-specific script options
-    if host == "midway-login1":
-        script_template += """
-#SBATCH --output=/home/ershockley/caxOSG_testing/logs/{name}_{pax_version}.log
-#SBATCH --error=/home/ershockley/caxOSG_testing/logs/{name}_{pax_version}.log
-#SBATCH --account=pi-lgrandi
-#SBATCH --qos=xenon1t
-#SBATCH --partition=xenon1t
 
-export PATH=/project/lgrandi/anaconda3/bin:$PATH
-
-export PROCESSING_DIR=/home/ershockley/caxOSG_testing/processing/{name}_{pax_version}
-        """
-    elif host == "tegner-login-1": # Stockolm-specific script options
-        script_template = """
-#SBATCH --output=/cfs/klemming/projects/xenon/common/xenon1t/processing/logs/{name}_{pax_version}_%J.log
-#SBATCH --error=/cfs/klemming/projects/xenon/common/xenon1t/processing/logs/{name}_{pax_version}_%J.log
-#SBATCH --account=xenon
-#SBATCH --partition=main
-#SBATCH -t 72:00:00
-#SBATCH --mail-user=Boris.Bauermeister@fysik.su.se
-
-source /afs/pdc.kth.se/home/b/bobau/load_4.8.4.sh
-
-export PROCESSING_DIR=/cfs/klemming/projects/xenon/xenon1t/processing/{name}_{pax_version}
-# WARNING: Boris should check this directory and the one above for log/error output ^        
-#     multiple instances of pax should be run in separate directories to avoid clash of libraries     
-        """
-
-
-
-    elif host == "login": # OSG-Connect specific script options
-        script_template = """
-executable = /home/ershockley/caxOSG_testing/run_cax_dryrun.sh
+# for OSG
+CONDOR_TEMPLATE = """#!/bin/bash
+executable = /home/ershockley/caxOSG_testing/run_cax_dryrun.sh                                                                
 universe = vanilla
-Error = /home/ershockley/caxOSG_testing/log/err$(Cluster).$(Process)
-Output  = /home/ershockley/caxOSG_testing/log/out.$(Cluster).$(Process)
-Log     = /home/ershockley/caxOSG_testing/log/log.$(Cluster).$(Process)
+Error = /home/ershockley/caxOSG_testing/log/{number}_{pax_version}.log
+Output  = /home/ershockley/caxOSG_testing/log/{number}_{pax_version}.log
+Log     = /home/ershockley/caxOSG_testing/log/{number}_{pax_version}_JOBLOG.log
 
-Requirements = (CVMFS_oasis_opensciencegrid_org_TIMESTAMP >= 1449684749) && (OpSysAndVer =?= "SL6") && (GLIDEIN_ResourceName =!= "BNL-ATLAS") && (GLIDEIN_ResourceName =!= "AGLT2")
+Requirements = (CVMFS_oasis_opensciencegrid_org_TIMESTAMP >= 1449684749) && (OpSysAndVer =?= "SL6") && (GLIDEIN_ResourceName =\
+!= "BNL-ATLAS") && (GLIDEIN_ResourceName =!= "AGLT2")                                                                          
 request_cpus = {ncpus}
-when_to_transfer_output = ON_EXIT 
+when_to_transfer_output = ON_EXIT
 on_exit_hold = (ExitBySignal == True) || (ExitCode != 0)
 transfer_executable = True
 periodic_release =  (NumJobStarts < 5) && ((CurrentTime - EnteredCurrentStatus) > 600)
 arguments = {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
-queue 1                                                                                                  
+queue 1
 """
 
-#  LocalWords:  ExitCode # not sure what this is
+def processing_script(args={}):
+    host = get_hostname()
+    if host not in ('midway-login1', 'tegner-login-1', 'login'):
+        raise ValueError
+
+    midway = (host == 'midway-login1')
+    tegner = (host == 'tegner-login1')
+    ci = (host == 'login')
+
+    
+    if midway or tegner:
+
+        default_args = dict(host=host,
+                            use='cax',
+                            number=333,
+                            ncpus=4 if midway else 1,
+                            pax_version=(('v%s' % pax.__version__) if midway else 'head'),
+                            partition='xenon1t' if midway else 'main',
+                            base='/project/lgrandi/xenon1t' if midway else '/cfs/klemming/projects/xenon/xenon1t',
+                            account='pi-lgrandi' if midway else 'xenon',
+                            anaconda='/project/lgrandi/anaconda3/bin' if midway else '/afs/pdc.kth.se/projects/xenon/software/Anaconda3/bin',
+                            extra='#SBATCH --mem-per-cpu=2000\n#SBATCH --qos=xenon1t' if midway else '#SBATCH -t 72:00:00',
+                            stats=''
+                            )
+#                        stats='sacct -j $SLURM_JOB_ID --format="JobID,Elapsed,AllocCPUS,CPUTime,MaxRSS"' if midway else '',
+
+        fill_args(args, default_args)
+        # Evaluate {variables} within strings in the arguments.
+        args = {k:v.format(**args) if isinstance(v, str) else v for k,v in args.items()}
+        os.makedirs(args['base']+"/"+args['use']+("/%d"%args['number'])+"_"+args['pax_version'], exist_ok=True)
+
+        script_template = SBATCH_TEMPLATE.format(**args)
+
+    elif ci:
+        default_args = dict(host=host,
+                            use='cax',
+                            number=28,
+                            ncpus=1,
+                            pax_version=('v%s' % pax.__version__),
+                            partition='n/a'
+                            base='/xenon/xenon1t/',
+                            account='n/a',
+                            anaconda='/stash2/project/@xenon1t/anaconda3/bin',
+                            extra='n/a',
+                            stats=''
+                            )
+        
+        
+        fill_args(args, default_args)
+
+        # Evaluate {variables} within strings in the arguments.
+        args = {k:v.format(**args) if isinstance(v, str) else v for k,v in args.items()}
+        os.makedirs(args['base']+"/"+args['use']+("/%d"%args['number'])+"_"+args['pax_version'], exist_ok=True)
+        
+        script_template = CONDOR_TEMPLATE.format(**args)
 
     else:
         raise NotImplementedError("Host %s processing not implemented",
                                   host)
 
-    # Script parts common to Midway and Stockholm but NOT ci-connect
-    if host != "login":
-        script_template += """
-mkdir -p ${{PROCESSING_DIR}} {out_location}
-cd ${{PROCESSING_DIR}}
-rm -f pax_event_class*
-
-source activate pax_v{pax_version}
-
-echo time  ~/cax/bin/cax-process {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
-time ~/cax/bin/cax-process {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
-
-"""
-
     return script_template
+
 
 def get_base_dir(category, host):
     destination_config = get_config(host)
@@ -255,12 +293,29 @@ def get_base_dir(category, host):
     # Determine where data should be copied to
     return destination_config['dir_%s' % category]
 
+
 def get_raw_base_dir(host=get_hostname()):
     return get_base_dir('raw', host)
+
 
 def get_processing_base_dir(host=get_hostname()):
     return get_base_dir('processed', host)
 
+
 def get_processing_dir(host, version):
     return os.path.join(get_processing_base_dir(host),
                         'pax_%s' % version)
+
+def adjust_permission_base_dir(base_dir, destination):
+    """Set ownership and permissons for basic folder of processed data (pax_vX)"""
+
+    if destination=="tegner-login-1":
+      #Change group and set permissions for PDC Stockholm
+      user_group = DATA_USER_PDC + ":" + DATA_GROUP_PDC
+      
+      subprocess.Popen( ["chown", "-R", user_group, base_dir],
+                        stdout=subprocess.PIPE )
+                             
+
+      subprocess.Popen( ["setfacl", "-R", "-M", "/cfs/klemming/projects/xenon/misc/basic", base_dir],
+                        stdout=subprocess.PIPE )

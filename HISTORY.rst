@@ -2,6 +2,144 @@
 History
 =======
 
+4.3.12 (2016-08-31)
+------------------
+
+*  Add command line options --once and --config for massive-cax
+ 
+4.3.11 (2016-08-17)
+------------------
+
+* Bug fix: Job name should have pax version, not cax version
+
+4.3.10 (2016-08-17)
+------------------
+
+* Temporarily disable 'sacct' call (seems to be broken on Midway after restart) 
+
+4.3.8 (2016-08-17)
+------------------
+
+* Bug fix: check for actual version number in queue list instead of "head"
+
+4.3.7 (2016-08-17)
+------------------
+
+* Reduce allowed number of jobs in queue to 500 (since we only have 28*16=448 cores)
+
+4.3.6 (2016-08-12)
+------------------
+
+* Change path to Anaconda Installation at PDC
+
+4.3.5 (2016-08-10)
+------------------
+
+* Process after copy.
+
+
+4.3.4 (2016-08-09)
+------------------
+
+* Have LED mode have gains equal to 1, which is the same as XENON1T_LED.ini.
+
+4.3.3 (2016-08-04)
+------------------
+
+* Fix permissions at PDC when new folder for new processed versions of data (#35).
+
+
+4.3.2 (2016-08-02)
+------------------
+
+* Forgot to remove line about batch queue statistics that only works at Midway.
+
+
+4.3.1 (2016-08-02)
+------------------
+
+* Forgot to update HISTORY.rst
+
+4.3.0 (2016-08-02)
+------------------
+
+* Gains derived from HV measurements using HTTP interface (#34).
+* Statistics at end of job on usage.
+
+
+4.2.0 (2016-07-25)
+------------------
+
+* Slow control variables defined in hax added to rundoc.
+
+4.1.3 (2016-07-21)
+------------------
+
+* Allow more jobs at Midway
+
+4.1.2 (2016-07-21)
+------------------
+
+* Error if default gains
+
+4.1.1 (2016-07-20)
+------------------
+
+* Create output directory prior to pax processing
+  
+4.1.0 (2016-07-20)
+------------------
+
+* Gains support (#32).
+
+4.0.4 (2016-07-15)
+------------------
+
+* Create and use run sub-directory for logs
+* Fix bug where "[]" in cax.json is not treated as "None"
+  
+4.0.3 (2016-07-12)
+------------------
+
+* Yet more PDC changes
+
+4.0.2 (2016-07-12)
+------------------
+
+* Changes for Stockholm PDC
+
+4.0.1 (2016-07-12)
+------------------
+
+* Forgot to switch environment outside of test environment
+
+4.0.0 (2016-07-12)
+------------------
+
+* cax now operates by sending jobs to the batch queue for every run (See PR #30).
+
+3.0.7 (2016-06-30)
+------------------
+
+* Only send email notifications for failed jobs 
+  
+3.0.6 (2016-06-29)
+------------------
+
+* Remove Nikhef ability to pull new data
+
+
+3.0.5 (2016-06-28)
+------------------
+
+* Switch queue check command for public nodes on Midway
+
+3.0.4 (2016-06-27)
+------------------
+
+* Switch to public nodes on Midway for next mass reprocessing
+* Increase 1 CPU processing threshold to 1000 events (https://github.com/XENON1T/pax/issues/390)
+  
 3.0.2 (2016-06-23)
 ------------------
 

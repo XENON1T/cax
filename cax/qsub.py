@@ -12,7 +12,9 @@
 """
 import logging
 import os
+from cax import config
 import subprocess
+import tempfile
 from distutils.spawn import find_executable
 
 
@@ -29,6 +31,7 @@ def which(program):
         raise Exception('The program %s is not available.' % program)
 
 
+
 def submit_job(host,script, name, extra=''):
     """Submit a job
 
@@ -37,17 +40,17 @@ def submit_job(host,script, name, extra=''):
     :param extra: optional extra arguments for the sbatch command.
 
     """
-
-    script_path, script_name = create_script(script, name)
+    fileobj = create_script(script, name)
 
     #Different submit command for using OSG
     if host == 'login':
         which('condor_submit')
         
-        # Effect of the arguments for condor_submit:                                                                                                            
-        # http://research.cs.wisc.edu/htcondor/manual/v7.6/condor_submit.html                                                                                   
+        # Effect of the arguments for condor_submit:                      
+        # http://research.cs.wisc.edu/htcondor/manual/v7.6/condor_submit.html
+
         submit_command = ('condor_submit {extra} {script}'
-                          .format(name=name, script=script_path,
+                          .format(script=fileobg.name,
                                   extra=extra))
 
     else:
@@ -55,57 +58,82 @@ def submit_job(host,script, name, extra=''):
         
         # Effect of the arguments for sbatch:
         # http://slurm.schedmd.com/sbatch.html
+
         submit_command = ('sbatch -J {name} {extra} {script}'
                           .format(name=name, script=script_path,
                                   extra=extra))
-        
-        
-        
-
+                
+    
     logging.info('submit job:\n %s' % submit_command)
     #result = subprocess.check_output(submit_command,
     #                                 stderr=subprocess.STDOUT,
     #                                 shell=True)
     #logging.info(result)
         
-    delete_script(script_path)
-        
 
-def create_script(script, name):
+    try:
+        result = subprocess.check_output(submit_command,
+  except subprocess.TimeoutExpired as e:
+        logging.error("Process timeout")
+    except Exception as e:
+        logging.exception(e)
+    
+    delete_script(fileobj)
+
+
+def create_script(script):
     """Create script as temp file to be run on cluster"""
+    fileobj = tempfile.NamedTemporaryFile(delete=False,
+                                          suffix='.sh',
+                                          mode='wt',
+                                          buffering=1)
+    fileobj.write(script)
+    os.chmod(fileobj.name, 0o774)
 
-    script_name = 'batch_queue_job_{name}.sh'.format(name=name)
-    script_path = os.path.join('/tmp', script_name)
-
-    with open(script_path, 'w') as script_file:
-        script_file.write(script)
-    os.chmod(script_path, 0o774)
-
-    return script_path, script_name
+    return fileobj
 
 
-def delete_script(script_path):
+def delete_script(fileobj):
     """Delete script after submitting to cluster
 
     :param script_path: path to the script to be removed
 
     """
-    os.remove(script_path)
+    fileobj.close()
 
 
-def get_queue(host):
+def get_number_in_queue(host=config.get_hostname()):
+    return len(get_queue(host))
+
+
+def get_queue(host=config.get_hostname()):
     """Get list of jobs in queue"""
 
-    if host == "midway-login1":
-        partition='xenon1t'
-    if host == "tegner-login-1":
-        partition='main'
-    
-    if host == "midway-login1" or host=="tegner-login-1":   
-        queue = subprocess.check_output("squeue --partition=" + partition + " -o \"\%.30j\"", shell=True)
-    else:
-        logging.error("Host %s not implemented in get_queue()" % host)
-        return ''
 
-    queue_list = queue.rstrip().decode('ascii')
-    return queue_list
+    if host == "midway-login1":
+        args = {'partition': 'xenon1t',
+                'user' : 'tunnell'}
+    elif host == 'tegner-login-1':
+        args = {'partition': 'main',
+                'user' : 'bobau'}
+    else:
+        raise ValueError()
+
+    command = 'squeue --partition={partition} --user={user} -o "%.30j"'.format(**args)
+    try:
+        queue = subprocess.check_output(command,
+                                        shell=True,
+                                        timeout=120)
+    except subprocess.TimeoutExpired as e:
+        logging.error("Process timeout")
+        return []
+    except Exception as e:
+        logging.exception(e)
+        return []
+
+
+    queue_list = queue.rstrip().decode('ascii').split()
+    if len(queue_list) > 1:
+        return queue_list[1:]
+    return []
+

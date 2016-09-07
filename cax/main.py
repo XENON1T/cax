@@ -1,11 +1,17 @@
 import argparse
 import logging
 import os.path
+import datetime
 import time
 
 from cax import __version__
-from cax import config
-from cax.tasks import checksum, clear, data_mover, process, filesystem, purity
+from cax import config, qsub
+
+import pax
+
+from cax.tasks import checksum, clear, data_mover, process, filesystem
+from cax.tasks import corrections
+
 
 def main():
     parser = argparse.ArgumentParser(description="Copying All kinds of XENON1T "
@@ -19,8 +25,19 @@ def main():
                         help="Logging level e.g. debug")
     parser.add_argument('--disable_database_update', action='store_true',
                         help="Disable the update function the run data base")
+    parser.add_argument('--run', type=int,
+                        help="Select a single run")
+    parser.add_argument('--host', type=str,
+                        help="Host to pretend to be")
+
 
     args = parser.parse_args()
+
+
+    if args.host:
+        config.HOST = args.host
+
+    print(args.run, config.get_hostname())
 
     log_level = getattr(logging, args.log.upper())
     if not isinstance(log_level, int):
@@ -65,14 +82,19 @@ def main():
             config.set_json(args.config_file)
 
     tasks = [
-        purity.AddElectronLifetime(),
-        process.ProcessBatchQueue(),
+        checksum.AddChecksum(),
+        corrections.AddElectronLifetime(),
+        corrections.AddGains(),
+        corrections.AddSlowControlInformation(),
         data_mover.CopyPull(),
         data_mover.CopyPush(),
+        checksum.AddChecksum(),
+        process.ProcessBatchQueue(),
         checksum.CompareChecksums(),
         checksum.AddChecksum(),
         clear.RetryStalledTransfer(),
-        clear.RetryBadChecksumTransfer()
+        clear.RetryBadChecksumTransfer(),
+        filesystem.SetPermission()
     ]
 
     # Raises exception if unknown host
@@ -90,7 +112,7 @@ def main():
             logging.info("Executing %s." % name)
 
             try:
-                task.go()
+                task.go(args.run)
             except Exception as e:
                 logging.fatal("Exception caught from task %s" % name,
                               exc_info=True)
@@ -104,6 +126,100 @@ def main():
         else:
             logging.info('Sleeping.')
             time.sleep(60)
+
+
+def massive():
+    # Command line arguments setup
+    parser = argparse.ArgumentParser(description="Submit cax tasks to batch queue.")
+    parser.add_argument('--once', action='store_true',
+                        help="Run all tasks just one, then exits")
+    parser.add_argument('--config', action='store', type=str,
+                        dest='config_file',
+                        help="Load a custom .json config file into cax")
+
+    args = parser.parse_args()
+
+    run_once = args.once
+
+    config_arg = ''
+    if args.config_file:
+        if not os.path.isfile(args.config_file):
+            logging.error("Config file %s not found", args.config_file)
+        else:
+            logging.info("Using custom config file: %s",
+                         args.config_file)
+            config_arg = '--config '+args.config_file
+
+    # Setup logging
+    cax_version = 'cax_v%s - ' % __version__
+    logging.basicConfig(filename='massive_cax.log',
+                        level=logging.INFO,
+                        format=cax_version + '%(asctime)s [%(levelname)s] '
+                                             '%(message)s')
+
+    # Check Mongo connection
+    config.mongo_password()
+
+    # Establish mongo connection
+    collection = config.mongo_collection()
+    sort_key = (('start', -1),
+                ('number', -1),
+                ('detector', -1),
+                ('_id', -1))
+    #collection.create_indexes(sort_key, name='cax')
+
+    dt = datetime.timedelta(days=1)
+    t0 = datetime.datetime.utcnow() - 2*dt
+
+
+    while True: # yeah yeah
+        query = {'detector': 'tpc'}
+
+        t1 = datetime.datetime.utcnow()
+        if t1 - t0 < dt:
+            print("Iterative mode")
+
+            # See if there is something to do
+            query['start'] = {'$gt' : t0}
+
+            logging.info(query)
+        else:
+            logging.info("Full mode")
+            t0 = t1
+
+        docs = list(collection.find(query,
+                                    sort=sort_key,
+                                    projection=['start', 'number',
+                                                'detector', '_id']))
+
+        for doc in docs:
+         
+            job = dict(command='cax --once --run {number} '+config_arg,
+                        number=doc['number'],
+                       )
+            script = config.processing_script(job)
+
+            if 'cax_%d_v%s' % (doc['number'], pax.__version__) in qsub.get_queue():
+                logging.debug('Skip: cax_%d_v%s job exists' % (doc['number'], pax.__version__))
+                continue
+
+            while qsub.get_number_in_queue() > (200 if config.get_hostname() == 'midway-login1' else 30):
+                logging.info("Speed break 60s because %d in queue" % qsub.get_number_in_queue())
+                time.sleep(60)
+
+
+            print(script)
+            qsub.submit_job(script)
+
+            logging.debug("Pace by 1s")
+            time.sleep(1)  # Pace 1s for batch queue
+
+        if run_once:
+            break
+        else:
+            pace = 5
+            logging.info("Done, waiting %d minutes" % pace)
+            time.sleep(60*pace) # Pace 5 minutes
 
 
 def move():
