@@ -144,15 +144,17 @@ class ProcessBatchQueue(Task):
         '''
 
         name = self.run_doc['name']
+        number = self.run_doc['number']
 
-        script_template = config.processing_script(host)
-        
-        script = script_template.format(name=name, in_location=in_location,
-                                        processing_dir=config.get_processing_base_dir(host),
-                                        host=host, pax_version=pax_version,
-                                        pax_hash=pax_hash,
-                                        out_location=out_location,
-                                        ncpus=ncpus)
+        script_args = dict(host=host,
+                           name=name,
+                           pax_version='v%s' % pax.__version__,
+                           number=number,
+                           base = out_location,
+                           ncpus = ncpus
+                           )
+
+        script = config.processing_script(script_args)
         self.log.info(script)
         qsub.submit_job(host, script, name + "_" + pax_version)
 

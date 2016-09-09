@@ -64,21 +64,19 @@ def submit_job(host,script, name, extra=''):
                                   extra=extra))
                 
     
-    logging.info('submit job:\n %s' % submit_command)
-    #result = subprocess.check_output(submit_command,
-    #                                 stderr=subprocess.STDOUT,
-    #                                 shell=True)
-    #logging.info(result)
-        
+    logging.info('submit job:\n %s' % submit_command)   
 
-    try:
-        result = subprocess.check_output(submit_command,
-  except subprocess.TimeoutExpired as e:
-        logging.error("Process timeout")
-    except Exception as e:
-        logging.exception(e)
+    #try:
+    #    result = subprocess.check_output(submit_command,
+    #                                     stderr=subprocess.STDOUT,
+    #                                     shell=True,
+    #                                     timeout=120)
+    #except subprocess.TimeoutExpired as e:
+    #    logging.error("Process timeout")
+    #except Exception as e:
+    #    logging.exception(e)
     
-    delete_script(fileobj)
+    #delete_script(fileobj)
 
 
 def create_script(script):

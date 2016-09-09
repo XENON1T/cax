@@ -183,6 +183,9 @@ def fill_args(args, default_args):
     # used in processing_script() below to assign default values to args not passed to processing_scrit()
     for key, value in default_args.items():
         if key not in args:
+            print('ARGS:', args)
+            print('KEY:', key)
+            print('value', value)
             args[key] = value
 
 # for midway and tegner
@@ -201,7 +204,8 @@ mkdir -p ${{JOB_WORKING_DIR}}
 cd ${{JOB_WORKING_DIR}}
 rm -f pax_event_class*
 source activate pax_{pax_version}
-HOSTNAME={host} {command}
+HOSTNAME={host} 
+{command}
 {stats}
 """
 
@@ -220,7 +224,7 @@ when_to_transfer_output = ON_EXIT
 on_exit_hold = (ExitBySignal == True) || (ExitCode != 0)
 transfer_executable = True
 periodic_release =  (NumJobStarts < 5) && ((CurrentTime - EnteredCurrentStatus) > 600)
-arguments = {name} {in_location} {host} {pax_version} {pax_hash} {out_location} {ncpus}
+arguments = {name} {base}/raw/{name} {host} {pax_version} {pax_hash} {out_location} {ncpus}
 queue 1
 """
 
@@ -263,12 +267,12 @@ def processing_script(args={}):
                             number=28,
                             ncpus=1,
                             pax_version=('v%s' % pax.__version__),
-                            partition='n/a'
-                            base='/xenon/xenon1t/',
+                            partition='n/a',
+                            base='/xenon/xenon1t/raw',
                             account='n/a',
                             anaconda='/stash2/project/@xenon1t/anaconda3/bin',
                             extra='n/a',
-                            stats=''
+                            stats='',
                             )
         
         

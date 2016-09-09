@@ -129,6 +129,7 @@ def main():
 
 
 def massive():
+    print("welcome to massive cax, Evan's version")
     # Command line arguments setup
     parser = argparse.ArgumentParser(description="Submit cax tasks to batch queue.")
     parser.add_argument('--once', action='store_true',
@@ -136,6 +137,8 @@ def massive():
     parser.add_argument('--config', action='store', type=str,
                         dest='config_file',
                         help="Load a custom .json config file into cax")
+    parser.add_argument('--run', type=int,
+                        help="Select a single run")
 
     args = parser.parse_args()
 
@@ -193,7 +196,11 @@ def massive():
                                                 'detector', '_id']))
 
         for doc in docs:
-         
+
+            if args.run:
+                if args.run != doc['number']:
+                    continue
+
             job = dict(command='cax --once --run {number} '+config_arg,
                         number=doc['number'],
                        )
