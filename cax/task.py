@@ -20,8 +20,13 @@ class Task():
 
         query = {}
 
+
+        # argument can be run number or run name
         if specify_run is not None:
-            query['number'] = specify_run
+            if isinstance(specify_run,int):
+                query['number'] = specify_run
+            if isinstance(specify_run,str):
+                query['name'] = specify_run
 
         # Get user-specified list of datasets
         datasets = config.get_dataset_list()
