@@ -40,7 +40,7 @@ def submit_job(host,script, name, extra=''):
     :param extra: optional extra arguments for the sbatch command.
 
     """
-    fileobj = create_script(script, name)
+    fileobj = create_script(script)
 
     #Different submit command for using OSG
     if host == 'login':
@@ -50,7 +50,7 @@ def submit_job(host,script, name, extra=''):
         # http://research.cs.wisc.edu/htcondor/manual/v7.6/condor_submit.html
 
         submit_command = ('condor_submit {extra} {script}'
-                          .format(script=fileobg.name,
+                          .format(script=fileobj.name,
                                   extra=extra))
 
     else:
@@ -60,23 +60,23 @@ def submit_job(host,script, name, extra=''):
         # http://slurm.schedmd.com/sbatch.html
 
         submit_command = ('sbatch -J {name} {extra} {script}'
-                          .format(name=name, script=script_path,
+                          .format(name=name, script=fileobj.name,
                                   extra=extra))
                 
     
     logging.info('submit job:\n %s' % submit_command)   
 
-    #try:
-    #    result = subprocess.check_output(submit_command,
-    #                                     stderr=subprocess.STDOUT,
-    #                                     shell=True,
-    #                                     timeout=120)
-    #except subprocess.TimeoutExpired as e:
-    #    logging.error("Process timeout")
-    #except Exception as e:
-    #    logging.exception(e)
+    try:
+        result = subprocess.check_output(submit_command,
+                                         stderr=subprocess.STDOUT,
+                                         shell=True,
+                                         timeout=120)
+    except subprocess.TimeoutExpired as e:
+        logging.error("Process timeout")
+    except Exception as e:
+        logging.exception(e)
     
-    #delete_script(fileobj)
+    delete_script(fileobj)
 
 
 def create_script(script):

@@ -94,14 +94,14 @@ class api():
                 if self.verify_site(entry, parameters):
                     print(entry)
                     print(parameters)
-                    raise RuntimeError("Failed to update run doc")
+                    raise RuntimeError("Failed to update run doc 1")
         else:
             if 'data' not in doc:
-                raise RuntimeError("Failed to update run doc")
+                raise RuntimeError("Failed to update run doc 2")
             for entry in doc['data']:
                 if self.verify_site(entry, parameters):
                     return True
-            raise RuntimeError("Failed to update run doc")
+            raise RuntimeError("Failed to update run doc 3")
                 
     def remove_location(self, uuid, parameters):    
         # Removes a data location from the list        

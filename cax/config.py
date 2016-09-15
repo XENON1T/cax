@@ -211,7 +211,7 @@ HOSTNAME={host}
 
 # for OSG
 CONDOR_TEMPLATE = """#!/bin/bash
-executable = /home/ershockley/caxOSG_testing/run_cax_dryrun.sh                                                                
+executable = /home/ershockley/caxOSG_testing/run_cax.sh                                                                
 universe = vanilla
 Error = /home/ershockley/caxOSG_testing/log/{number}_{pax_version}.log
 Output  = /home/ershockley/caxOSG_testing/log/{number}_{pax_version}.log
@@ -224,7 +224,7 @@ when_to_transfer_output = ON_EXIT
 on_exit_hold = (ExitBySignal == True) || (ExitCode != 0)
 transfer_executable = True
 periodic_release =  (NumJobStarts < 5) && ((CurrentTime - EnteredCurrentStatus) > 600)
-arguments = {name} {base}/raw/{name} {host} {pax_version} {pax_hash} {out_location} {ncpus}
+arguments = {name} {base}/{name} {host} {pax_version} {pax_hash} {out_location} {ncpus} {disable_updates}
 queue 1
 """
 
@@ -251,6 +251,7 @@ def processing_script(args={}):
                             anaconda='/project/lgrandi/anaconda3/bin' if midway else '/afs/pdc.kth.se/projects/xenon/software/Anaconda3/bin',
                             extra='#SBATCH --mem-per-cpu=2000\n#SBATCH --qos=xenon1t' if midway else '#SBATCH -t 72:00:00',
                             stats=''
+                            
                             )
 #                        stats='sacct -j $SLURM_JOB_ID --format="JobID,Elapsed,AllocCPUS,CPUTime,MaxRSS"' if midway else '',
 
@@ -268,6 +269,7 @@ def processing_script(args={}):
                             ncpus=1,
                             pax_version=('v%s' % pax.__version__),
                             partition='n/a',
+                            pax_hash = 'n/a',
                             base='/xenon/xenon1t/raw',
                             account='n/a',
                             anaconda='/stash2/project/@xenon1t/anaconda3/bin',
@@ -280,7 +282,7 @@ def processing_script(args={}):
 
         # Evaluate {variables} within strings in the arguments.
         args = {k:v.format(**args) if isinstance(v, str) else v for k,v in args.items()}
-        os.makedirs(args['base']+"/"+args['use']+("/%d"%args['number'])+"_"+args['pax_version'], exist_ok=True)
+        # os.makedirs(args['base']+"/"+args['use']+("/%d"%args['number'])+"_"+args['pax_version'], exist_ok=True)
         
         script_template = CONDOR_TEMPLATE.format(**args)
 

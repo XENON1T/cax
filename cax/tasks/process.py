@@ -12,7 +12,7 @@ from collections import defaultdict
 
 import pax
 import checksumdir
-from pymongo import ReturnDocument
+#from pymongo import ReturnDocument
 
 from cax import qsub, config
 from cax.task import Task
@@ -27,20 +27,36 @@ def verify():
 
 
 def _process(name, in_location, host, pax_version, pax_hash,
-             out_location, ncpus=1):
+             out_location, ncpus=1, disable_updates=False):
     """Called by another command.
     """
-    print('Welcome to cax-process, OSG development')
+    print('Welcome to cax-process, OSG development 2')
+
+    print('disable_updates =', disable_updates)
+
+    if disable_updates:
+        print("disabling updates")
+        config.set_database_log(False)
+
+    else:
+        print("enabling updates")
+        config.set_database_log(True)
+
+    print("database_log = ",config.DATABASE_LOG)
 
     if pax_version[0] != 'v':
         pax_version = 'v' + pax_version
 
     # Import pax so can process the data
-    from pax import core
+    from pax import core   
 
-    output_fullname = out_location + '/' + name
+    if host != 'login':
+        output_fullname = out_location + '/' + name
+        os.makedirs(out_location, exist_ok=True)
 
-    os.makedirs(out_location, exist_ok=True)
+    else:
+        os.makedirs('output', exist_ok=True)
+        output_fullname = 'output/' + name
 
     # New data location
     datum = {'host'          : host,
@@ -82,8 +98,10 @@ def _process(name, in_location, host, pax_version, pax_hash,
         return 1
     
     # Not processed this way already, so notify run DB we will
-    print('Not processed yet, adding to database')
-    API.add_location(doc['_id'], datum)
+    print('Not processed yet')
+    if config.DATABASE_LOG == True:
+        API.add_location(doc['_id'], datum)
+        print('location added to database')
 
     API = api()
     doc = API.get_next_run(query)
@@ -106,7 +124,7 @@ def _process(name, in_location, host, pax_version, pax_hash,
                            config_dict={'pax': {'input_name' : in_location,
                                                 'output_name': output_fullname,
                                                 'n_cpus'     : ncpus,
-                                                'stop_after' : 10,
+                                                'stop_after' : 20,
                                                 # need this for runs prior to file format change (which run?)
                                                 'decoder_plugin' : 'BSON.DecodeZBSON'}})
         p.run()
@@ -139,7 +157,7 @@ class ProcessBatchQueue(Task):
     "Create and submit job submission script."
 
     def submit(self, in_location, host, pax_version, pax_hash, out_location,
-               ncpus):
+               ncpus, disable_updates):
         '''Submission Script
         '''
 
@@ -150,8 +168,9 @@ class ProcessBatchQueue(Task):
                            name=name,
                            pax_version='v%s' % pax.__version__,
                            number=number,
-                           base = out_location,
-                           ncpus = ncpus
+                           out_location = out_location,
+                           ncpus = ncpus,
+                           disable_updates = disable_updates
                            )
 
         script = config.processing_script(script_args)
@@ -167,14 +186,20 @@ class ProcessBatchQueue(Task):
             self.log.debug("Do not process tag found")
             return
 
+        print("no donotprocess tag")
+
         if 'processor' not in self.run_doc or \
                 'DEFAULT' not in self.run_doc['processor']:
             return
+        
+        print("processor ok")
 
         processing_parameters = self.run_doc['processor']['DEFAULT']
         if 'gains' not in processing_parameters or \
             'electron_lifetime_liquid' not in processing_parameters:
             return
+
+        print("gains and e_lifetime in processing parameters")
 
         thishost = config.get_hostname()
 
@@ -188,9 +213,12 @@ class ProcessBatchQueue(Task):
             self.log.debug("Skipping %s with no raw data",
                            self.run_doc['name'])
             return
+        print('raw data present')
 
         if self.run_doc['reader']['ini']['write_mode'] != 2:
             return
+
+        print('rundoc write mode != 2')
 
         # Get number of events in data set (not set for early runs <1000)
         events = self.run_doc.get('trigger', {}).get('events_built', -1)
@@ -208,6 +236,9 @@ class ProcessBatchQueue(Task):
         else:
             ncpus = 4  # based on Figure 2 here https://xecluster.lngs.infn.it/dokuwiki/doku.php?id=xenon:xenon1t:shockley:performance#automatic_processing
 
+        disable_updates = not config.DATABASE_LOG
+
+        print(versions)
         # Process all specified versions
         for version in versions:
             pax_hash = "n/a"
@@ -216,7 +247,7 @@ class ProcessBatchQueue(Task):
                                                      version)
 
             if have_processed[version]:
-                self.log.debug("Skipping %s already processed with %s",
+                self.log.info("Skipping %s already processed with %s",
                                self.run_doc['name'],
                                version)
                 continue
@@ -236,8 +267,9 @@ class ProcessBatchQueue(Task):
             # _process(self.run_doc['name'], have_raw['location'], thishost,
                      # version, pax_hash, out_location, ncpus)
 
+
             self.submit(have_raw['location'], thishost, version,
-                        pax_hash, out_location, ncpus)
+                        pax_hash, out_location, ncpus, disable_updates)
 
 
     def local_data_finder(self, thishost, versions):
