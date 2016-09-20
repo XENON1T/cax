@@ -56,7 +56,7 @@ class AddChecksum(Task):
                                         'data': {'$elemMatch': data_doc}},
                                        {'$set': {'data.$.status'  : status,
                                                  'data.$.checksum': value}})
-            elif data_doc['checksum'] != value:
+            elif data_doc['checksum'] != value or status == 'error':
                 self.log.info("Adding a checksum to run "
                               "%d %s" % (self.run_doc['number'],
                                          data_doc['type']))
