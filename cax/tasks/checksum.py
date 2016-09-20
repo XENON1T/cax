@@ -11,11 +11,15 @@ from ..task import Task
 
 
 class AddChecksum(Task):
-    "Perform a checksum on accessible data."
+    """Perform a checksum on accessible data.
+
+    If no previous checksum present, then adds one.  Otherwise, confirms the
+    checksum still is true.
+    """
 
     def each_location(self, data_doc):
         # Only raw data waiting to be verified
-        if data_doc['status'] != 'verifying':
+        if data_doc['status'] != 'verifying' and data_doc['status'] != 'transferred':
             self.log.debug('Location does not qualify')
             return
 
@@ -48,13 +52,22 @@ class AddChecksum(Task):
             status = 'error'
 
         if config.DATABASE_LOG:
-            self.log.info("Adding a checksum to run "
-                          "%d %s" % (self.run_doc['number'],
-                                     data_doc['type']))
-            self.collection.update({'_id' : self.run_doc['_id'],
-                                    'data': {'$elemMatch': data_doc}},
-                                   {'$set': {'data.$.status'  : status,
-                                             'data.$.checksum': value}})
+            if data_doc['status'] == 'verifying':
+                self.log.info("Adding a checksum to run "
+                              "%d %s" % (self.run_doc['number'],
+                                         data_doc['type']))
+                self.collection.update({'_id' : self.run_doc['_id'],
+                                        'data': {'$elemMatch': data_doc}},
+                                       {'$set': {'data.$.status'  : status,
+                                                 'data.$.checksum': value}})
+            elif data_doc['checksum'] != value or status == 'error':
+                self.log.info("Checksum fail "
+                              "%d %s" % (self.run_doc['number'],
+                                         data_doc['type']))
+                self.collection.update({'_id' : self.run_doc['_id'],
+                                        'data': {'$elemMatch': data_doc}},
+                                       {'$set': {'data.$.checksumproblem': True}})
+
 
 
 class CompareChecksums(Task):
