@@ -11,7 +11,11 @@ from ..task import Task
 
 
 class AddChecksum(Task):
-    "Perform a checksum on accessible data."
+    """Perform a checksum on accessible data.
+
+    If no previous checksum present, then adds one.  Otherwise, confirms the
+    checksum still is true.
+    """
 
     def each_location(self, data_doc):
         # Only raw data waiting to be verified
