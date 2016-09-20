@@ -1,6 +1,6 @@
 import argparse
 import logging
-import os.path
+import os
 import datetime
 import time
 
@@ -148,7 +148,7 @@ def massive():
         else:
             logging.info("Using custom config file: %s",
                          args.config_file)
-            config_arg = '--config '+args.config_file
+            config_arg = '--config ' + os.path.abspath(args.config_file)
 
     # Setup logging
     cax_version = 'cax_v%s - ' % __version__
