@@ -61,7 +61,7 @@ class AddChecksum(Task):
                                        {'$set': {'data.$.status'  : status,
                                                  'data.$.checksum': value}})
             elif data_doc['checksum'] != value or status == 'error':
-                self.log.info("Adding a checksum to run "
+                self.log.info("Checksum fail "
                               "%d %s" % (self.run_doc['number'],
                                          data_doc['type']))
                 self.collection.update({'_id' : self.run_doc['_id'],
