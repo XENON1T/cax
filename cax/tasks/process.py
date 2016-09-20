@@ -30,11 +30,12 @@ def _process(name, in_location, host, pax_version, pax_hash,
              out_location, ncpus=1, disable_updates=False):
     """Called by another command.
     """
-    print('Welcome to cax-process, OSG development 2')
+    print('Welcome to cax-process, OSG development with pax mod')
 
     print('disable_updates =', disable_updates)
+    print('disable_updates == True:',  disable_updates=='True')
 
-    if disable_updates:
+    if disable_updates == 'True':
         print("disabling updates")
         config.set_database_log(False)
 
@@ -44,11 +45,12 @@ def _process(name, in_location, host, pax_version, pax_hash,
 
     print("database_log = ",config.DATABASE_LOG)
 
+
     if pax_version[0] != 'v':
         pax_version = 'v' + pax_version
 
     # Import pax so can process the data
-    from pax import core   
+    from pax import core, configuration   
 
     if host != 'login':
         output_fullname = out_location + '/' + name
@@ -82,7 +84,6 @@ def _process(name, in_location, host, pax_version, pax_hash,
     API = api()
     
     doc = API.get_next_run(query)
-    print(query)
     
     if doc is None:
         print("Run name " + name + " not found")
@@ -93,9 +94,7 @@ def _process(name, in_location, host, pax_version, pax_hash,
               d['pax_version'] == pax_version ) for d in doc['data'] ):
         print("Already processed %s.  Clear first.  %s" % (name,
                                                            pax_version))
-        #API.remove_location(doc['_id'], datum)
-        #print('location removed')
-        return 1
+        #return 1
     
     # Not processed this way already, so notify run DB we will
     print('Not processed yet')
@@ -106,6 +105,7 @@ def _process(name, in_location, host, pax_version, pax_hash,
     API = api()
     doc = API.get_next_run(query)
     
+
     if doc is None:
         print("Error finding doc after update")
         return 1
@@ -116,17 +116,31 @@ def _process(name, in_location, host, pax_version, pax_hash,
         pax_config = 'XENON1T'
     else:
         pax_config = 'XENON1T_LED'
+    
+
+    config_dict = {'pax': {'input_name' : in_location,
+                           'output_name': output_fullname,
+                           'n_cpus'     : ncpus,
+                           'stop_after' : 20,
+                           'decoder_plugin' : 'BSON.DecodeZBSON',
+                           'look_for_config_in_runs_db' : False
+                           }
+                   }
+
+    mongo_config = doc['processor']
+    config_dict = configuration.combine_configs(mongo_config, override=config_dict)
+
+    # Add run number and run name to the config_dict
+    config_dict.setdefault('DEFAULT', {})
+    config_dict['DEFAULT']['run_number'] = doc['number']
+    config_dict['DEFAULT']['run_name'] = doc['name'] 
+
 
     # Try to process data.
     try:
         print('processing', name, in_location, pax_config)
         p = core.Processor(config_names=pax_config,
-                           config_dict={'pax': {'input_name' : in_location,
-                                                'output_name': output_fullname,
-                                                'n_cpus'     : ncpus,
-                                                'stop_after' : 20,
-                                                # need this for runs prior to file format change (which run?)
-                                                'decoder_plugin' : 'BSON.DecodeZBSON'}})
+                           config_dict=config_dict)
         p.run()
 
     except Exception as exception:
