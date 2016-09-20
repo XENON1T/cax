@@ -115,11 +115,12 @@ def main():
             logging.info("Executing %s." % name)
 
             try:
-                #task.go(args.run)
                 if args.run is not None:
                     task.go(args.run)
                 elif args.name is not None:
                     task.go(args.name)
+                else:
+                    raise ValueError()
 
             except Exception as e:
                 logging.fatal("Exception caught from task %s" % name,
@@ -180,7 +181,6 @@ def massive():
 
 
     while True: # yeah yeah
-        #query = {'detector': 'tpc'}
         query = {}
 
         t1 = datetime.datetime.utcnow()
