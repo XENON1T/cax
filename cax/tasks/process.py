@@ -12,7 +12,6 @@ from collections import defaultdict
 
 import pax
 import checksumdir
-from pymongo import ReturnDocument
 
 from cax import qsub, config
 from cax.task import Task
@@ -36,9 +35,6 @@ def _process(name, in_location, host, pax_version, pax_hash,
     # Import pax so can process the data
     from pax import core
 
-    # Grab the Run DB so we can query it
-    collection = config.mongo_collection()
-
     if detector == 'muon_veto':
         output_fullname = out_location + '/' + name + '_MV'
     elif detector == 'tpc':
@@ -57,24 +53,30 @@ def _process(name, in_location, host, pax_version, pax_hash,
              'creation_time' : datetime.datetime.utcnow(),
              'creation_place': host}
 
-    # This query is used to find if this run has already processed this data
-    # in the same way.  If so, quit.
-    query = {'name'    : name,
-             'detector' : detector,
-             # This 'data' gets deleted later and only used for checking
-             'data'    : {'$elemMatch': {'host'       : host,
-                                         'type'       : 'processed',
-                                         'pax_version': pax_version}}}
-    doc = collection.find_one(query)  # Query DB
-    if doc is not None:
+    # Fetch the run doc
+    query = {
+        'detector': detector,
+        'name'    : name
+    }
+    doc = self.api.get_next_run(query)
+    if doc is None:
+        print("Run name " + name + " not found")
+        return 1
+
+    # Sorry
+    if any( ( d['host'] == host and d['type'] == 'processed' and
+              d['pax_version'] == pax_version ) for d in doc['data'] ):
         print("Already processed %s.  Clear first.  %s" % (name,
                                                            pax_version))
         return 1
 
     # Not processed this way already, so notify run DB we will
-    doc = collection.find_one_and_update({'detector': detector, 'name': name},
-                                         {'$push': {'data': datum}},
-                                         return_document=ReturnDocument.AFTER)
+    self.api.add_location(doc['_id'], datum)
+    doc = self.api.get_next_run(query)
+
+    if doc is None:
+        print("Error finding doc after update")
+        return 1
 
     # Determine based on run DB what settings to use for processing.
     if doc['detector'] == 'muon_veto':
@@ -101,12 +103,12 @@ def _process(name, in_location, host, pax_version, pax_hash,
         # Data processing failed.
         datum['status'] = 'error'
         if config.DATABASE_LOG == True:
-            collection.update(query, {'$set': {'data.$': datum}})
+            self.api.update_location(doc['_id'], datum)
         raise
 
     datum['status'] = 'verifying'
     if config.DATABASE_LOG == True:
-        collection.update(query, {'$set': {'data.$': datum}})
+        self.api.update_location(doc['_id'], datum)
 
     datum['checksum'] = checksumdir._filehash(datum['location'],
                                               hashlib.sha512)
@@ -116,7 +118,7 @@ def _process(name, in_location, host, pax_version, pax_hash,
         datum['status'] = 'failed'
 
     if config.DATABASE_LOG == True:
-        collection.update(query, {'$set': {'data.$': datum}})
+        self.api.update_location(doc['_id'], datum)
 
 
 class ProcessBatchQueue(Task):

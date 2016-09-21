@@ -7,6 +7,7 @@ the DAQ buffer copy.
 
 import datetime
 import os
+import shutil
 
 from cax import config
 from cax.task import Task
@@ -37,7 +38,9 @@ class RetryStalledTransfer(checksum.CompareChecksums):
         except FileNotFoundError:
             time_modified = 0
         time_modified = datetime.datetime.fromtimestamp(time_modified)
-        time_made = data_doc['creation_time']
+        time_made = datetime.datetime.strptime(
+            data_doc['creation_time'][0][:-7],
+            "%Y-%m-%dT%H:%M:%S")
         difference = datetime.datetime.utcnow() - max(time_modified,
                                                       time_made)
 
@@ -63,7 +66,8 @@ class RetryStalledTransfer(checksum.CompareChecksums):
                 try:
                     shutil.rmtree(data_doc['location'])
                 except FileNotFoundError:
-                    self.log.warning("FileNotFoundError within %s" % data_doc['location'])
+                    self.log.warning(
+                        "FileNotFoundError within %s" % data_doc['location'])
                 self.log.info('Deleted, notify run database.')
             elif os.path.isfile(data_doc['location']):
                 os.remove(data_doc['location'])
@@ -71,8 +75,8 @@ class RetryStalledTransfer(checksum.CompareChecksums):
                 self.log.error('did not exist, notify run database.')
 
             if config.DATABASE_LOG == True:
-                resp = self.collection.update({'_id': self.run_doc['_id']},
-                                              {'$pull': {'data': data_doc}})
+                self.api.remove_location(self.run_doc['_id'], data_doc)
+
             self.log.error('Removed from run database.')
             self.log.debug(resp)
 
@@ -104,6 +108,9 @@ class RetryBadChecksumTransfer(checksum.CompareChecksums):
             if self.check(warn=False) > 1:
                 self.purge(data_doc)
 
+                if config.DATABASE_LOG == True:
+                    self.api.remove_location(self.run_doc['_id'], data_doc)
+
 
 class BufferPurger(checksum.CompareChecksums):
     """Purge buffer
@@ -119,14 +126,14 @@ class BufferPurger(checksum.CompareChecksums):
         # Skip places where we can't locally access data
         if 'host' not in data_doc or data_doc['host'] != config.get_hostname():
             return
-        
+
         self.log.info("Checking purge logic")
 
         # Only purge transfered data
         if data_doc["status"] != "transferred":
             return
 
-                # See if purge settings specified, otherwise don't purge
+            # See if purge settings specified, otherwise don't purge
         if config.purge_settings() == None:
             return
 

@@ -1,11 +1,12 @@
 """Responsible for all checksum operations on data.
 """
 
+import copy
 import hashlib
 import os
+import shutil
 
 import checksumdir
-import shutil
 
 from cax import config
 from ..task import Task
@@ -20,7 +21,8 @@ class AddChecksum(Task):
 
     def each_location(self, data_doc):
         # Only raw data waiting to be verified
-        if data_doc['status'] != 'verifying' and data_doc['status'] != 'transferred':
+        if data_doc['status'] != 'verifying' and data_doc[
+            'status'] != 'transferred':
             self.log.debug('Location does not qualify')
             return
 
@@ -32,7 +34,8 @@ class AddChecksum(Task):
         if data_doc['host'] != config.get_hostname():
 
             # Special case of midway-srm accessible via POSIX on midway-login1
-            if not (data_doc['host']  == "midway-srm" and config.get_hostname() == "midway-login1"):
+            if not (data_doc[
+                        'host'] == "midway-srm" and config.get_hostname() == "midway-login1"):
                 self.log.debug('Location not here')
                 return
 
@@ -57,18 +60,19 @@ class AddChecksum(Task):
                 self.log.info("Adding a checksum to run "
                               "%d %s" % (self.run_doc['number'],
                                          data_doc['type']))
-                self.collection.update({'_id' : self.run_doc['_id'],
-                                        'data': {'$elemMatch': data_doc}},
-                                       {'$set': {'data.$.status'  : status,
-                                                 'data.$.checksum': value}})
+                update_doc = copy.deepcopy(data_doc)
+                update_doc['status'] = status
+                update_doc['checksum'] = value
+                self.api.update_location(self.run_doc['_id'], data_doc,
+                                         update_doc)
             elif data_doc['checksum'] != value or status == 'error':
                 self.log.info("Checksum fail "
                               "%d %s" % (self.run_doc['number'],
                                          data_doc['type']))
-                self.collection.update({'_id' : self.run_doc['_id'],
-                                        'data': {'$elemMatch': data_doc}},
-                                       {'$set': {'data.$.checksumproblem': True}})
-
+                update_doc = copy.deepcopy(data_doc)
+                update_doc['checksumproblem'] = True
+                self.api.update_location(self.run_doc['_id'], data_doc,
+                                         update_doc)
 
 
 class CompareChecksums(Task):
@@ -121,7 +125,8 @@ class CompareChecksums(Task):
 
                 # Special case of midway-srm accessible via POSIX on midway-login1
                 if data_doc['host'] == config.get_hostname() \
-                   or (data_doc['host'] == "midway-srm" and config.get_hostname() == "midway-login1"):
+                        or (data_doc[
+                                'host'] == "midway-srm" and config.get_hostname() == "midway-login1"):
                     error = "Local checksum error " \
                             "run %d" % self.run_doc['number']
                     if warn:
