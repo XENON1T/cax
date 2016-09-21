@@ -5,6 +5,7 @@ import hashlib
 import os
 
 import checksumdir
+import shutil
 
 from cax import config
 from ..task import Task
@@ -100,7 +101,11 @@ class CompareChecksums(Task):
 
     def check(self,
               warn=True):
-        """Returns number of good locations"""
+        """Returns number of verified data locations
+
+        Return the number of sites that have the same checksum as the master
+        site.
+        """
         n = 0
 
         for data_doc in self.run_doc['data']:
@@ -130,3 +135,18 @@ class CompareChecksums(Task):
         self.log.debug("Checking checksums "
                        "run %d" % self.run_doc['number'])
         self.check()
+
+    def purge(self, data_doc):
+        self.log.info("Deleting %s" % data_doc['location'])
+        if os.path.isdir(data_doc['location']):
+            shutil.rmtree(data_doc['location'])
+            self.log.error('Deleted, notify run database.')
+        elif os.path.isfile(data_doc['location']):
+            os.remove(data_doc['location'])
+        else:
+            self.log.error('did not exist, notify run database.')
+        if config.DATABASE_LOG == True:
+            resp = self.collection.update({'_id': self.run_doc['_id']},
+                                          {'$pull': {'data': data_doc}})
+        self.log.error('Removed from run database.')
+        self.log.debug(resp)

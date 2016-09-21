@@ -72,6 +72,9 @@ def load():
 
     return json.loads(open(filename, 'r').read())
 
+def purge_settings(hostname=get_hostname()):
+    return get_config(hostname).get('purge',
+                                    None)
 
 def get_config(hostname=get_hostname()):
     """Returns the cax configuration for a particular hostname

@@ -7,7 +7,8 @@
     "dir_processed": "/data/xenon/xenon1t/processed",
     "upload_options": null,
     "username": "ctunnell",
-    "download_options": null
+    "download_options": null,
+    "purge_delay" : 1
   },
   {
     "name": "midway-login1",
@@ -17,7 +18,8 @@
     "dir_processed": "/project/lgrandi/xenon1t/processed",
     "upload_options": null,
     "username": "tunnell",
-    "download_options": ["xe1t-datamanager"]
+    "download_options": ["xe1t-datamanager"],
+    "purge_delay" : 1
   },
   {
     "name": "login",
@@ -48,7 +50,8 @@
     "method": "scp",
     "dir_raw": "/data/xenon/raw",
     "upload_options": null,
-    "download_options": null
+    "download_options": null,
+    "purge_delay" : 1
   },
   {
     "name": "lfc",
