@@ -140,7 +140,7 @@ class CompareChecksums(Task):
         self.log.info("Deleting %s" % data_doc['location'])
         if os.path.isdir(data_doc['location']):
             shutil.rmtree(data_doc['location'])
-            self.log.error('Deleted, notify run database.')
+            self.log.info('Deleted, notify run database.')
         elif os.path.isfile(data_doc['location']):
             os.remove(data_doc['location'])
         else:
