@@ -121,18 +121,22 @@ class BufferPurger(checksum.CompareChecksums):
         if 'host' not in data_doc or data_doc['host'] != config.get_hostname():
             return
 
+        self.log.info("2")
         # Only purge transfered data
         if data_doc["status"] != "transferred":
             return
 
+        self.log.info("3")
         # See if purge settings specified, otherwise don't purge
         if config.purge_settings() == None:
             return
 
+        self.log.info("4")
         # Require at least three copies of the data since we are deleting third.
         if self.check(warn=False) < 3:
             return
 
+        self.log.info("5")
         # The dt we require
         dt = datetime.timedelta(months=config.purge_settings())
 
