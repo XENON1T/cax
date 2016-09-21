@@ -138,7 +138,7 @@ class BufferPurger(checksum.CompareChecksums):
 
         self.log.info("5")
         # The dt we require
-        dt = datetime.timedelta(months=config.purge_settings())
+        dt = datetime.timedelta(days=config.purge_settings())
 
         t0 = self.run_doc['start']
         t1 = datetime.datetime.utcnow()

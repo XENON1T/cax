@@ -8,7 +8,7 @@
     "upload_options": null,
     "username": "ctunnell",
     "download_options": null,
-    "purge" : 1
+    "purge" : 2
   },
   {
     "name": "midway-login1",
@@ -19,7 +19,7 @@
     "upload_options": null,
     "username": "tunnell",
     "download_options": ["xe1t-datamanager"],
-    "purge" : 1
+    "purge" : 60
   },
   {
     "name": "login",
@@ -51,7 +51,7 @@
     "dir_raw": "/data/xenon/raw",
     "upload_options": null,
     "download_options": null,
-    "purge" : 1
+    "purge" : 10
   },
   {
     "name": "lfc",
