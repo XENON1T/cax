@@ -116,10 +116,11 @@ class BufferPurger(checksum.CompareChecksums):
     def each_location(self, data_doc):
         """Check every location with data whether it should be purged.
         """
-        self.log.info("Doing purge logic")
         # Skip places where we can't locally access data
         if 'host' not in data_doc or data_doc['host'] != config.get_hostname():
             return
+        
+        self.log.info("Checking purge logic")
 
         # Only purge transfered data
         if data_doc["status"] != "transferred":
