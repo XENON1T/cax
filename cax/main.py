@@ -1,14 +1,13 @@
 import argparse
+import datetime
 import logging
 import os
-import datetime
 import time
-
-from cax import __version__
-from cax import config, qsub
 
 import pax
 
+from cax import __version__
+from cax import config, qsub
 from cax.tasks import checksum, clear, data_mover, process, filesystem
 from cax.tasks import corrections
 
@@ -32,9 +31,7 @@ def main():
     parser.add_argument('--host', type=str,
                         help="Host to pretend to be")
 
-
     args = parser.parse_args()
-
 
     if args.host:
         config.HOST = args.host
@@ -139,7 +136,8 @@ def main():
 
 def massive():
     # Command line arguments setup
-    parser = argparse.ArgumentParser(description="Submit cax tasks to batch queue.")
+    parser = argparse.ArgumentParser(
+        description="Submit cax tasks to batch queue.")
     parser.add_argument('--once', action='store_true',
                         help="Run all tasks just one, then exits")
     parser.add_argument('--config', action='store', type=str,
@@ -177,10 +175,9 @@ def massive():
                 ('_id', -1))
 
     dt = datetime.timedelta(days=1)
-    t0 = datetime.datetime.utcnow() - 2*dt
+    t0 = datetime.datetime.utcnow() - 2 * dt
 
-
-    while True: # yeah yeah
+    while True:  # yeah yeah
         query = {}
 
         t1 = datetime.datetime.utcnow()
@@ -188,7 +185,7 @@ def massive():
             print("Iterative mode")
 
             # See if there is something to do
-            query['start'] = {'$gt' : t0}
+            query['start'] = {'$gt': t0}
 
             logging.info(query)
         else:
@@ -197,30 +194,33 @@ def massive():
 
         docs = list(collection.find(query,
                                     sort=sort_key,
-                                    projection=['start', 'number','name',
+                                    projection=['start', 'number', 'name',
                                                 'detector', '_id']))
 
         for doc in docs:
 
             if doc['detector'] == 'tpc':
-                job = dict(command='cax --once --run {number} '+config_arg,
-                            number=doc['number'],
+                job = dict(command='cax --once --run {number} ' + config_arg,
+                           number=doc['number'],
                            )
             elif doc['detector'] == 'muon_veto':
-                job = dict(command='cax --once --name {number} '+config_arg,
-                            number=doc['name'],
+                job = dict(command='cax --once --name {number} ' + config_arg,
+                           number=doc['name'],
                            )
-         
+
             script = config.processing_script(job)
 
-            if 'cax_%d_v%s' % (doc['number'], pax.__version__) in qsub.get_queue():
-                logging.debug('Skip: cax_%d_v%s job exists' % (doc['number'], pax.__version__))
+            if 'cax_%d_v%s' % (
+            doc['number'], pax.__version__) in qsub.get_queue():
+                logging.debug('Skip: cax_%d_v%s job exists' % (
+                doc['number'], pax.__version__))
                 continue
 
-            while qsub.get_number_in_queue() > (200 if config.get_hostname() == 'midway-login1' else 30):
-                logging.info("Speed break 60s because %d in queue" % qsub.get_number_in_queue())
+            while qsub.get_number_in_queue() > (
+            200 if config.get_hostname() == 'midway-login1' else 30):
+                logging.info(
+                    "Speed break 60s because %d in queue" % qsub.get_number_in_queue())
                 time.sleep(60)
-
 
             print(script)
             qsub.submit_job(script)
@@ -233,7 +233,7 @@ def massive():
         else:
             pace = 5
             logging.info("Done, waiting %d minutes" % pace)
-            time.sleep(60*pace) # Pace 5 minutes
+            time.sleep(60 * pace)  # Pace 5 minutes
 
 
 def move():
@@ -276,6 +276,7 @@ def remove():
 
     filesystem.RemoveSingle(args.location).go()
 
+
 def stray():
     parser = argparse.ArgumentParser(description="Find stray files.")
     parser.add_argument('--delete', action='store_true',
@@ -286,11 +287,12 @@ def stray():
 
     filesystem.FindStrays().go()
 
+
 def status():
-    #Ask the database for the actual status of the file or folder:
-    
+    # Ask the database for the actual status of the file or folder:
+
     parser = argparse.ArgumentParser(description="Check the database status")
-    
+
     parser.add_argument('--node', type=str, required=True,
                         help="Select the node")
     parser.add_argument('--status', type=str, required=True,
@@ -321,13 +323,13 @@ def status():
     console.setFormatter(formatter)
     # add the handler to the root logger
     logging.getLogger('').addHandler(console)
-    
 
     # Set information to update the run database
     config.set_database_log(database_log)
     config.mongo_password()
-    
+
     filesystem.StatusSingle(args.node, args.status).go()
+
 
 if __name__ == '__main__':
     main()
