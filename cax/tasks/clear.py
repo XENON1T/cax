@@ -37,7 +37,8 @@ class RetryStalledTransfer(checksum.CompareChecksums):
         except FileNotFoundError:
             time_modified = 0
         time_modified = datetime.datetime.fromtimestamp(time_modified)
-        time_made = data_doc['creation_time']
+        time_made = datetime.datetime.strptime(data_doc['creation_time'][0][:-7],
+                                               "%Y-%m-%dT%H:%M:%S")
         difference = datetime.datetime.utcnow() - max(time_modified,
                                                       time_made)
 
@@ -71,8 +72,8 @@ class RetryStalledTransfer(checksum.CompareChecksums):
                 self.log.error('did not exist, notify run database.')
 
             if config.DATABASE_LOG == True:
-                resp = self.collection.update({'_id': self.run_doc['_id']},
-                                              {'$pull': {'data': data_doc}})
+                self.api.remove_location(self.run_doc['_id'], data_doc)
+
             self.log.error('Removed from run database.')
             self.log.debug(resp)
 
@@ -104,6 +105,9 @@ class RetryBadChecksumTransfer(checksum.CompareChecksums):
             if self.check(warn=False) > 1:
                 self.purge(data_doc)
 
+
+                if config.DATABASE_LOG == True:
+                    self.api.remove_location(self.run_doc['_id'], data_doc)
 
 class BufferPurger(checksum.CompareChecksums):
     """Purge buffer

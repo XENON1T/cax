@@ -16,6 +16,9 @@ HOST = os.environ.get("HOSTNAME") if os.environ.get("HOSTNAME") else socket.geth
 DATA_USER_PDC = 'bobau'
 DATA_GROUP_PDC = 'xenon-users'
 
+DETECTOR = "tpc"
+API_URL = "https://xenon1t-daq.lngs.infn.it/runs_api/runs/runs/"
+
 PAX_DEPLOY_DIRS = {
     'midway-login1' : '/project/lgrandi/deployHQ/pax',
     'tegner-login-1': '/afs/pdc.kth.se/projects/xenon/software/pax'
@@ -136,6 +139,11 @@ def get_task_list():
 
     return options
 
+def api_user():
+    return os.environ.get("API_USER")
+
+def api_key():
+    return os.environ.get("API_KEY")
 
 def mongo_collection(collection_name='runs_new'):
     # For the event builder to communicate with the gateway, we need to use the DAQ network address

@@ -16,6 +16,7 @@ from cax import config
 from cax.task import Task
 
 import subprocess
+import copy
 
 class CopyBase(Task):
 
@@ -162,6 +163,7 @@ class CopyBase(Task):
     def copySCP(self, datum_original, datum_destination, server, username, option_type):
         """Copy data via SCP function
         """
+
         util.log_to_file('ssh.log')
         ssh = SSHClient()
         ssh.load_system_host_keys()
@@ -317,28 +319,27 @@ class CopyBase(Task):
         filename = datum['location'].split('/')[-1]
 
         self.log.debug("Notifying run database")
-        datum_new = {'type'         : datum['type'],
-                     'host'         : destination,
-                     'status'       : 'transferring',
-                     'location'     : os.path.join(base_dir,
-                                                   filename),
-                     'checksum'     : None,
-                     'creation_time': datetime.datetime.utcnow(),
-                     }
+        datum_new = {
+            'type'         : datum['type'],
+            'host'         : destination,
+            'status'       : 'transferring',
+            'location'     : os.path.join(base_dir,
+                                          filename),
+            'checksum'     : None,            
+        }
 
         if datum['type'] == 'processed':
             for variable in ('pax_version', 'pax_hash', 'creation_place'):
                 datum_new[variable] = datum.get(variable)
 
         if config.DATABASE_LOG == True:
-            result = self.collection.update_one({'_id': self.run_doc['_id'],
-                                                 },
-                                   {'$push': {'data': datum_new}})
+            self.api.add_location(self.run_doc['_id'], datum_new)
 
-            if result.matched_count == 0:
-                self.log.error("Race condition!  Could not copy because another "
-                               "process seemed to already start.")
-                return
+            # Note! Should we account for this race condition?
+            #if result.matched_count == 0:
+            #    self.log.error("Race condition!  Could not copy because another "
+            #                   "process seemed to already start.")
+            #    return
 
         self.log.info('Starting '+method)
 
@@ -361,11 +362,10 @@ class CopyBase(Task):
         self.log.debug(method+" done, telling run database")
 
         if config.DATABASE_LOG:
-            self.collection.update({'_id' : self.run_doc['_id'],
-                                    'data': {
-                                        '$elemMatch': datum_new}},
-                                   {'$set': {'data.$.status': status}})
-
+            update_datum = copy.deepcopy(datum_new)
+            update_datum['status'] = status
+            self.api.update_location(self.run_doc['_id'], datum_new, update_datum)
+            
         self.log.debug(method+" done, telling run database")
 
         self.log.info("End of "+option_type+"\n")

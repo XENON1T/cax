@@ -1,20 +1,19 @@
 import logging
-from json import loads
+from json import dumps, loads
+from bson import json_util
 
-import pymongo
-from bson.json_util import dumps
-
+from cax import api
 from cax import config
 
 
 class Task():
     def __init__(self):
-        # Grab the Run DB so we can query it
-        self.collection = config.mongo_collection()
+        # Grab the Run DB so we can query it        
         self.log = logging.getLogger(self.__class__.__name__)
         self.run_doc = None
         self.untriggered_data = None
-
+        self.api = api.api()
+        
     def go(self, specify_run = None):
         """Run this periodically"""
 
@@ -29,26 +28,10 @@ class Task():
 
         # Get user-specified list of datasets
         datasets = config.get_dataset_list()
-
-        # Collect all run document ids.  This has to be turned into a list
-        # to avoid timeouts if a task takes too long.
-        try:
-            ids = [doc['_id'] for doc in self.collection.find(query,
-                                                              projection=('_id'),
-                                                              sort=(('start', -1),))]
-        except pymongo.errors.CursorNotFound:
-            self.log.warning("Curson not found exception.  Skipping")
-            return
-
-        # Iterate over each run
-        for id in ids:
-            # Make sure up to date
-            try:
-                self.run_doc = self.collection.find_one({'_id': id})
-            except pymongo.errors.AutoReconnect:
-                self.log.error("pymongo.errors.AutoReconnect, skipping...")
-                continue
-
+        
+        # Iterate over each run matcing query
+        self.run_doc = self.api.get_next_run(query)
+        while self.run_doc is not None:
 
             if 'data' not in self.run_doc:
                 continue
@@ -63,6 +46,9 @@ class Task():
                     continue
 
             self.each_run()
+
+            # Continue until no runs remain
+            self.run_doc = self.api.get_next_run(query)
 
         self.shutdown()
 
@@ -91,7 +77,7 @@ class Task():
         This calls peoples and issues a wide range of alarms, so use wisely.
         """
         santized_run_doc = self.run_doc.copy()
-        santized_run_doc = loads(dumps(santized_run_doc))
+        santized_run_doc = loads(json_util.dumps(santized_run_doc))
 
         self.log.error(message)
 
