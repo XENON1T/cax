@@ -84,7 +84,6 @@ def main():
             config.set_json(args.config_file)
 
     tasks = [
-        clear.BufferPurger(),
         checksum.AddChecksum(),
         corrections.AddElectronLifetime(),
         corrections.AddGains(),
@@ -97,7 +96,8 @@ def main():
         checksum.AddChecksum(),
         clear.RetryStalledTransfer(),
         clear.RetryBadChecksumTransfer(),
-        filesystem.SetPermission()
+        filesystem.SetPermission(),
+        clear.BufferPurger(),
     ]
 
     # Raises exception if unknown host

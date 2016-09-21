@@ -148,5 +148,5 @@ class CompareChecksums(Task):
         if config.DATABASE_LOG == True:
             resp = self.collection.update({'_id': self.run_doc['_id']},
                                           {'$pull': {'data': data_doc}})
-        self.log.error('Removed from run database.')
+        self.log.info('Removed from run database.')
         self.log.debug(resp)
