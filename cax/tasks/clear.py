@@ -7,6 +7,7 @@ the DAQ buffer copy.
 
 import datetime
 import os
+import shutil
 
 from cax import config
 from cax.task import Task
