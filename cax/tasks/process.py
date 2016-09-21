@@ -39,7 +39,10 @@ def _process(name, in_location, host, pax_version, pax_hash,
     # Grab the Run DB so we can query it
     collection = config.mongo_collection()
 
-    output_fullname = out_location + '/' + name
+    if detector == 'muon_veto':
+        output_fullname = out_location + '/' + name + '_MV'
+    elif detector == 'tpc':
+        output_fullname = out_location + '/' + name
 
     os.makedirs(out_location, exist_ok=True)
 
@@ -74,12 +77,13 @@ def _process(name, in_location, host, pax_version, pax_hash,
                                          return_document=ReturnDocument.AFTER)
 
     # Determine based on run DB what settings to use for processing.
-    if doc['reader']['self_trigger']:
-        pax_config = 'XENON1T'
-    elif doc['detector'] == 'muon_veto':
+    if doc['detector'] == 'muon_veto':
         pax_config = 'XENON1T_MV'
-    else:
-        pax_config = 'XENON1T_LED'
+    elif doc['detector'] == 'tpc':
+        if doc['reader']['self_trigger']:
+            pax_config = 'XENON1T'
+        else:
+            pax_config = 'XENON1T_LED'
 
     # Try to process data.
     try:
