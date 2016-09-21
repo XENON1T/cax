@@ -96,7 +96,8 @@ def main():
         checksum.AddChecksum(),
         clear.RetryStalledTransfer(),
         clear.RetryBadChecksumTransfer(),
-        filesystem.SetPermission()
+        filesystem.SetPermission(),
+        clear.BufferPurger(),
     ]
 
     # Raises exception if unknown host
@@ -174,7 +175,6 @@ def massive():
                 ('number', -1),
                 ('detector', -1),
                 ('_id', -1))
-    #collection.create_indexes(sort_key, name='cax')
 
     dt = datetime.timedelta(days=1)
     t0 = datetime.datetime.utcnow() - 2*dt
@@ -301,9 +301,7 @@ def status():
     args = parser.parse_args()
 
     database_log = not args.disable_database_update
-    node = args.node
-    status = args.status
-    
+
     # Setup logging
     cax_version = 'cax_v%s - ' % __version__
     logging.basicConfig(filename='status.log',
