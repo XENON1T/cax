@@ -26,7 +26,9 @@ def main():
     parser.add_argument('--disable_database_update', action='store_true',
                         help="Disable the update function the run data base")
     parser.add_argument('--run', type=int,
-                        help="Select a single run")
+                        help="Select a single run using the run number")
+    parser.add_argument('--name', type=str,
+                        help="Select a single run using the run name")
     parser.add_argument('--host', type=str,
                         help="Host to pretend to be")
 
@@ -85,7 +87,7 @@ def main():
         checksum.AddChecksum(),
         corrections.AddElectronLifetime(),
         corrections.AddGains(),
-        #corrections.AddSlowControlInformation(),
+        corrections.AddSlowControlInformation(),
         data_mover.CopyPull(),
         data_mover.CopyPush(),
         checksum.AddChecksum(),
@@ -113,7 +115,13 @@ def main():
             logging.info("Executing %s." % name)
 
             try:
-                task.go(args.run)
+                if args.run is not None:
+                    task.go(args.run)
+                elif args.name is not None:
+                    task.go(args.name)
+                else:
+                    raise ValueError()
+
             except Exception as e:
                 logging.fatal("Exception caught from task %s" % name,
                               exc_info=True)
@@ -173,7 +181,7 @@ def massive():
 
 
     while True: # yeah yeah
-        query = {'detector': 'tpc'}
+        query = {}
 
         t1 = datetime.datetime.utcnow()
         if t1 - t0 < dt:
@@ -189,14 +197,20 @@ def massive():
 
         docs = list(collection.find(query,
                                     sort=sort_key,
-                                    projection=['start', 'number',
+                                    projection=['start', 'number','name',
                                                 'detector', '_id']))
 
         for doc in docs:
+
+            if doc['detector'] == 'tpc':
+                job = dict(command='cax --once --run {number} '+config_arg,
+                            number=doc['number'],
+                           )
+            elif doc['detector'] == 'muon_veto':
+                job = dict(command='cax --once --name {number} '+config_arg,
+                            number=doc['name'],
+                           )
          
-            job = dict(command='cax --once --run {number} '+config_arg,
-                        number=doc['number'],
-                       )
             script = config.processing_script(job)
 
             if 'cax_%d_v%s' % (doc['number'], pax.__version__) in qsub.get_queue():
