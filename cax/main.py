@@ -116,12 +116,10 @@ def main():
             logging.info("Executing %s." % name)
 
             try:
-                if args.run is not None:
-                    task.go(args.run)
-                elif args.name is not None:
+                if args.name is not None:
                     task.go(args.name)
                 else:
-                    raise ValueError()
+                    task.go(args.run)
 
             except Exception as e:
                 logging.fatal("Exception caught from task %s" % name,
