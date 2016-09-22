@@ -177,13 +177,13 @@ def processing_script(args={}):
     default_args = dict(host=host,
                         use='cax',
                         number=333,
-                        ncpus=4 if midway else 1,
-                        pax_version=(('v%s' % pax.__version__) if midway else 'head'),
+                        ncpus=4 if midway else 40,
+                        pax_version=('v%s' % pax.__version__),
                         partition='xenon1t' if midway else 'main',
                         base='/project/lgrandi/xenon1t' if midway else '/cfs/klemming/projects/xenon/xenon1t',
                         account='pi-lgrandi' if midway else 'xenon',
-                        anaconda='/project/lgrandi/anaconda3/bin' if midway else '/afs/pdc.kth.se/projects/xenon/software/Anaconda3/bin',
-                        extra='#SBATCH --mem-per-cpu=2000\n#SBATCH --qos=xenon1t' if midway else '#SBATCH -t 72:00:00',
+                        anaconda='/project/lgrandi/anaconda3/bin' if midway else '/cfs/klemming/nobackup/b/bobau/ToolBox/TestEnv/Anaconda3/bin',
+                        extra='#SBATCH --mem-per-cpu=2000\n#SBATCH --qos=xenon1t' if midway else '#SBATCH -t 35:00:00',
                         stats=''
                         )
 #                        stats='sacct -j $SLURM_JOB_ID --format="JobID,Elapsed,AllocCPUS,CPUTime,MaxRSS"' if midway else '',
