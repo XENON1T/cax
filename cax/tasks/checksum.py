@@ -25,7 +25,7 @@ class AddChecksum(Task):
             return
         
         if data_doc['status'] == 'transferred' and \
-           (config.get_hostname() == 'xe1t-datamanager' or config.get_hostname() == 'login')
+           (config.get_hostname() == 'xe1t-datamanager' or config.get_hostname() == 'login'):
             return
         
 
