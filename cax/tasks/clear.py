@@ -125,14 +125,17 @@ class BufferPurger(checksum.CompareChecksums):
 
         # Only purge transfered data
         if data_doc["status"] != "transferred":
+            self.log.debug("Not transfered")
             return
 
-                # See if purge settings specified, otherwise don't purge
+        # See if purge settings specified, otherwise don't purge
         if config.purge_settings() == None:
+            self.log.debug("No purge settings")
             return
 
         # Require at least three copies of the data since we are deleting third.
         if self.check(warn=False) < 3:
+            self.log.debug("Not enough copies")
             return
 
         # The dt we require
