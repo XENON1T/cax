@@ -2,6 +2,12 @@
 History
 =======
 
+
+4.4.2 (2016-09-23)
+------------------
+
+* Bug fix (commented wrong line in job script in previous commit)
+
 4.4.1 (2016-09-23)
 ------------------
 
