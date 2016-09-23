@@ -24,7 +24,8 @@ class AddChecksum(Task):
             self.log.debug('Location does not qualify')
             return
         
-        if data_doc['status'] == 'transferred' and config.get_hostname() == 'xe1t-datamanager':
+        if data_doc['status'] == 'transferred' and \
+           (config.get_hostname() == 'xe1t-datamanager' or config.get_hostname() == 'login')
             return
         
 
