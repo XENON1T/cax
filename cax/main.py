@@ -143,6 +143,10 @@ def massive():
     parser.add_argument('--config', action='store', type=str,
                         dest='config_file',
                         help="Load a custom .json config file into cax")
+    parser.add_argument('--run', type=int,
+                        help="Select a single run")
+    parser.add_argument('--start', type=int,
+                        help="Select a starting run")
 
     args = parser.parse_args()
 
@@ -200,6 +204,14 @@ def massive():
 
         for doc in docs:
 
+            if args.run:
+                if args.run != doc['number']:
+                    continue
+
+            if args.start:
+                if args.start < doc['number']:
+                    continue
+
             if doc['detector'] == 'tpc':
                 job = dict(command='cax --once --run {number} '+config_arg,
                             number=doc['number'],
@@ -208,7 +220,7 @@ def massive():
                 job = dict(command='cax --once --name {number} '+config_arg,
                             number=doc['name'],
                            )
-         
+
             script = config.processing_script(job)
 
             if 'cax_%d_v%s' % (doc['number'], pax.__version__) in qsub.get_queue():
