@@ -23,6 +23,10 @@ class AddChecksum(Task):
         if data_doc['status'] != 'verifying' and data_doc['status'] != 'transferred':
             self.log.debug('Location does not qualify')
             return
+        
+        if data_doc['status'] == 'transferred' and config.get_hostname() == 'xe1t-datamanager':
+            return
+        
 
         # Data must be hosted somewhere
         if 'host' not in data_doc:
