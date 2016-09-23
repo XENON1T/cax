@@ -121,7 +121,7 @@ class BufferPurger(checksum.CompareChecksums):
         if 'host' not in data_doc or data_doc['host'] != config.get_hostname():
             return
         
-        self.log.info("Checking purge logic")
+        self.log.debug("Checking purge logic")
 
         # Only purge transfered data
         if data_doc["status"] != "transferred":
@@ -140,6 +140,8 @@ class BufferPurger(checksum.CompareChecksums):
 
         t0 = self.run_doc['start']
         t1 = datetime.datetime.utcnow()
+
+        self.log.info(t1-t0 > dt)
 
         if t1 - t0 > dt:
             self.log.info("Purging %s" % data_doc['location'])
