@@ -2,6 +2,15 @@
 History
 =======
 
+4.4.1 (2016-09-23)
+------------------
+
+* Command-line option to specify one run or starting run with massive-cax
+* Hardcoded (commented out) option to switch to Midway sandyb (public) partition
+* Check queue in all partitions on Midway instead of just xenon1t
+* Add "login" (Stash/ci-connect) to Midway upload option (remove Midway from Stash download)
+* Do not recheck checksums on Stash ("login"), too slow since no batch queue for massive-cax
+
 4.4.0 (2016-09-20)
 ------------------
 
