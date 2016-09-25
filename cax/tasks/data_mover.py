@@ -14,6 +14,7 @@ from paramiko import SSHClient, util
 
 from cax import config
 from cax.task import Task
+from cax import qsub
 
 import subprocess
 
@@ -221,6 +222,7 @@ class CopyBase(Task):
 
             # Get transfer protocol
             method = config.get_config(remote_host)['method'] 
+            
             if not method:
                 print ("Must specify transfer protocol (method) for "+remote_host)
                 raise
@@ -230,13 +232,23 @@ class CopyBase(Task):
                                                              remote_host)
 
             # Upload logic
-            if option_type == 'upload' and datum_here and datum_there is None:
+            if option_type == 'upload' and datum_here and datum_there is None and method != "tsm":
                 self.copy_handshake(datum_here, remote_host, method, option_type)
                 break
 
             # Download logic
-            if option_type == 'download' and datum_there and datum_here is None:
+            if option_type == 'download' and datum_there and datum_here is None and method != "tsm":
                 self.copy_handshake(datum_there, config.get_hostname(), method, option_type)
+                break
+            
+            # Upload tsm:
+            if option_type == 'upload' and datum_here and datum_there is None and method == "tsm":
+                self.copy_tsm(datum_here, config.get_config(remote_host)['name'], method, option_type)
+                break
+                
+            # Download tsm:
+            if option_type == 'download' and datum_here and datum_there is None and method == "tsm":
+                print('Download from the tape storage')
                 break
 
         dataset = None
@@ -276,6 +288,127 @@ class CopyBase(Task):
 
         return datum_here, datum_there
 
+    def copy_tsm(self, datum, destination, method, option_type):
+        print('nice try')
+        print( datum, destination, method, option_type)
+        
+        raw_data_location = datum['location']
+        raw_data_filename = datum['location'].split('/')[-1]
+
+    
+        
+        self.log.debug("Notifying run database")
+        datum_new = {'type'         : datum['type'],
+                     'host'         : destination,
+                     'status'       : 'transferring',
+                     'location'     : raw_data_location,
+                     'checksum'     : None,
+                     'creation_time': datetime.datetime.utcnow(),
+                     }
+        print( datum_new)
+        
+        if config.DATABASE_LOG == True:
+            result = self.collection.update_one({'_id': self.run_doc['_id'],
+                                                 },
+                                   {'$push': {'data': datum_new}})
+
+            if result.matched_count == 0:
+                self.log.error("Race condition!  Could not copy because another "
+                               "process seemed to already start.")
+                return
+        
+        
+        #Test if raw_data_location exists already on tape
+        
+        #script = config.tsm_commands("check-for-raw-data").format(path=raw_data_location)
+        
+        #logging.info( script )
+        #msg_std, msg_err = qsub.execute_script( script )
+        #for i in msg_std:
+            #logging.info("TSM Client - %s", i)
+            
+        
+        script = config.tsm_commands("incr-upload-path").format(path=raw_data_location)
+        
+        logging.info( script )
+        
+        
+        tno_dict = {
+            "tno_inspected": -1,
+            "tno_updated": -1,
+            "tno_rebound": -1,
+            "tno_deleted": -1,
+            "tno_expired": -1,
+            "tno_failed":-1,
+            "tno_encrypted":-1,
+            "tno_grew": -1,
+            "tno_retries": -1,
+            "tno_bytes_inspected": -1,
+            "tno_bytes_transferred": -1,
+            "tno_data_transfer_time":-1,
+            "tno_network_transfer_rate": -1,
+            "tno_aggregate_transfer_rate":-1,
+            "tno_object_compressed":-1,
+            "tno_total_data_reduction":-1,
+            "tno_elapsed_processing_time":-1
+
+            }
+        
+
+        
+        msg_std, msg_err = qsub.execute_script( script )
+        for i in msg_std:
+
+            if i.find("Total number of objects inspected:") >= 0:
+              tno_dict['tno_inspected'] = int(i.split(":")[1])
+            elif i.find("Total number of objects backed up:") >= 0:
+              tno_dict['tno_backedup'] = int(i.split(":")[1])  
+            elif i.find("Total number of objects updated:") >= 0:
+              tno_dict['tno_updated'] = int(i.split(":")[1])
+            elif i.find("Total number of objects rebound:") >= 0:
+              tno_dict['tno_rebound'] = int(i.split(":")[1])
+            elif i.find("Total number of objects deleted:") >= 0:
+              tno_dict['tno_deleted'] = int(i.split(":")[1])
+            elif i.find("Total number of objects expired:") >= 0:
+              tno_dict['tno_expired'] = int(i.split(":")[1])
+            elif i.find("Total number of objects failed:") >= 0:
+              tno_dict['tno_failed'] = int(i.split(":")[1])
+            elif i.find("Total number of objects encrypted:") >= 0:
+              tno_dict['tno_encrypted'] = int(i.split(":")[1])
+            elif i.find("Total number of objects grew:") >= 0:
+              tno_dict['tno_grew'] = int(i.split(":")[1])
+            elif i.find("Total number of retries:") >= 0:
+              tno_dict['tno_retries'] = int(i.split(":")[1])
+            elif i.find("Total number of bytes inspected:") >= 0:
+              tno_dict['tno_bytes_inspected'] = i.split(":")[1].replace(" ", "")
+            elif i.find("Total number of bytes transferred:") >= 0:
+              tno_dict['tno_bytes_transferred'] = i.split(":")[1].replace(" ", "")
+            elif i.find("Data transfer time:") >= 0:
+              tno_dict['tno_data_transfer_time'] = i.split(":")[1].replace(" ", "")
+            elif i.find("Network data transfer rate:") >= 0:
+              tno_dict['tno_network_transfer_rate'] = i.split(":")[1].replace(" ", "")
+            elif i.find("Aggregate data transfer rate:") >= 0:
+              tno_dict['tno_aggregate_transfer_rate'] = i.split(":")[1].replace(" ", "")
+            elif i.find("Objects compressed by:") >= 0:
+              tno_dict['tno_object_compressed'] = i.split(":")[1].replace(" ", "")
+            elif i.find("Total data reduction ratio:") >= 0:
+              tno_dict['tno_total_data_reduction'] = i.split(":")[1].replace(" ", "")
+            elif i.find("Elapsed processing time:") >= 0:
+              tno_dict['tno_elapsed_processing_time'] = (i.split(":")[1].replace(" ", "") + ":" + 
+                                                        i.split(":")[2].replace(" ", "") + ":" + 
+                                                        i.split(":")[3].replace(" ", "") )
+                                
+
+        print( tno_dict )
+                
+        if config.DATABASE_LOG:
+          self.collection.update({'_id' : self.run_doc['_id'],
+                                  'data': {
+                                        '$elemMatch': datum_new}},
+                                   {'$set': {'data.$.status': status}})
+            
+        
+
     def copy_handshake(self, datum, destination, method, option_type):
         """ Perform all the handshaking required with the run DB.
         :param datum: The dictionary data location describing data to be
@@ -287,6 +420,7 @@ class CopyBase(Task):
         """
 
         # Get information about this destination
+        print(destination)
         destination_config = config.get_config(destination)
 
         self.log.info(option_type+"ing run %d to: %s" % (self.run_doc['number'],
