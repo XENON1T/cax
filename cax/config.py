@@ -179,14 +179,15 @@ def processing_script(args={}):
                         number=333,
                         ncpus=4 if midway else 1,
                         pax_version=(('v%s' % pax.__version__) if midway else 'head'),
+#                        partition='sandyb' if midway else 'main',
                         partition='xenon1t' if midway else 'main',
                         base='/project/lgrandi/xenon1t' if midway else '/cfs/klemming/projects/xenon/xenon1t',
                         account='pi-lgrandi' if midway else 'xenon',
                         anaconda='/project/lgrandi/anaconda3/bin' if midway else '/afs/pdc.kth.se/projects/xenon/software/Anaconda3/bin',
                         extra='#SBATCH --mem-per-cpu=2000\n#SBATCH --qos=xenon1t' if midway else '#SBATCH -t 72:00:00',
-                        stats=''
+#                        extra='#SBATCH --mem-per-cpu=2000' if midway else '#SBATCH -t 72:00:00',
+                        stats='sacct -j $SLURM_JOB_ID --format="JobID,Elapsed,AllocCPUS,CPUTime,MaxRSS"' if midway else ''
                         )
-#                        stats='sacct -j $SLURM_JOB_ID --format="JobID,Elapsed,AllocCPUS,CPUTime,MaxRSS"' if midway else '',
 
     for key, value in default_args.items():
         if key not in args:
@@ -195,7 +196,7 @@ def processing_script(args={}):
     # Evaluate {variables} within strings in the arguments.
     args = {k:v.format(**args) if isinstance(v, str) else v for k,v in args.items()}
 
-    os.makedirs(args['base']+"/"+args['use']+("/%d"%args['number'])+"_"+args['pax_version'], exist_ok=True)
+    os.makedirs(args['base']+"/"+args['use']+("/%s"%str(args['number']))+"_"+args['pax_version'], exist_ok=True)
 
     # Script parts common to all sites
     script_template = """#!/bin/bash
