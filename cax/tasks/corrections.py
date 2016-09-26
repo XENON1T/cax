@@ -207,7 +207,7 @@ class AddGains(CorrectionBase):
 
         for doc in json_value:
             if doc['tagname'] in mapping.keys():
-                voltages[mapping[doc['tagname']]] = doc['value']
+                voltages[mapping[doc['tagname']]] = doc['value'] if doc['value'] > 1 else 0
 
         return voltages
 

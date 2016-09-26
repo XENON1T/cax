@@ -80,7 +80,7 @@ class CompareChecksums(Task):
 
         # These types of data and location provide master checksum
         master_checksums = (('raw', 'xe1t-datamanager', None),
-                            ('raw', 'xenon1t-daq', None),
+                            ('raw', 'tegner-login-1', None),
                             ('processed', 'midway-login1', pax_version))
 
         for data_doc in self.run_doc['data']:
