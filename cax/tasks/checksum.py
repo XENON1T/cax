@@ -1,8 +1,10 @@
 """Responsible for all checksum operations on data.
 """
 
+import copy
 import hashlib
 import os
+import shutil
 
 import checksumdir
 
@@ -11,11 +13,16 @@ from ..task import Task
 
 
 class AddChecksum(Task):
-    "Perform a checksum on accessible data."
+    """Perform a checksum on accessible data.
+
+    If no previous checksum present, then adds one.  Otherwise, confirms the
+    checksum still is true.
+    """
 
     def each_location(self, data_doc):
         # Only raw data waiting to be verified
-        if data_doc['status'] != 'verifying':
+        if data_doc['status'] != 'verifying' and data_doc[
+            'status'] != 'transferred':
             self.log.debug('Location does not qualify')
             return
 
@@ -27,7 +34,8 @@ class AddChecksum(Task):
         if data_doc['host'] != config.get_hostname():
 
             # Special case of midway-srm accessible via POSIX on midway-login1
-            if not (data_doc['host']  == "midway-srm" and config.get_hostname() == "midway-login1"):
+            if not (data_doc[
+                        'host'] == "midway-srm" and config.get_hostname() == "midway-login1"):
                 self.log.debug('Location not here')
                 return
 
@@ -48,13 +56,23 @@ class AddChecksum(Task):
             status = 'error'
 
         if config.DATABASE_LOG:
-            self.log.info("Adding a checksum to run "
-                          "%d %s" % (self.run_doc['number'],
-                                     data_doc['type']))
-            self.collection.update({'_id' : self.run_doc['_id'],
-                                    'data': {'$elemMatch': data_doc}},
-                                   {'$set': {'data.$.status'  : status,
-                                             'data.$.checksum': value}})
+            if data_doc['status'] == 'verifying':
+                self.log.info("Adding a checksum to run "
+                              "%d %s" % (self.run_doc['number'],
+                                         data_doc['type']))
+                update_doc = copy.deepcopy(data_doc)
+                update_doc['status'] = status
+                update_doc['checksum'] = value
+                self.api.update_location(self.run_doc['_id'], data_doc,
+                                         update_doc)
+            elif data_doc['checksum'] != value or status == 'error':
+                self.log.info("Checksum fail "
+                              "%d %s" % (self.run_doc['number'],
+                                         data_doc['type']))
+                update_doc = copy.deepcopy(data_doc)
+                update_doc['checksumproblem'] = True
+                self.api.update_location(self.run_doc['_id'], data_doc,
+                                         update_doc)
 
 
 class CompareChecksums(Task):
@@ -87,7 +105,11 @@ class CompareChecksums(Task):
 
     def check(self,
               warn=True):
-        """Returns number of good locations"""
+        """Returns number of verified data locations
+
+        Return the number of sites that have the same checksum as the master
+        site.
+        """
         n = 0
 
         for data_doc in self.run_doc['data']:
@@ -103,7 +125,8 @@ class CompareChecksums(Task):
 
                 # Special case of midway-srm accessible via POSIX on midway-login1
                 if data_doc['host'] == config.get_hostname() \
-                   or (data_doc['host'] == "midway-srm" and config.get_hostname() == "midway-login1"):
+                        or (data_doc[
+                                'host'] == "midway-srm" and config.get_hostname() == "midway-login1"):
                     error = "Local checksum error " \
                             "run %d" % self.run_doc['number']
                     if warn:
@@ -117,3 +140,18 @@ class CompareChecksums(Task):
         self.log.debug("Checking checksums "
                        "run %d" % self.run_doc['number'])
         self.check()
+
+    def purge(self, data_doc):
+        self.log.info("Deleting %s" % data_doc['location'])
+        if os.path.isdir(data_doc['location']):
+            shutil.rmtree(data_doc['location'])
+            self.log.info('Deleted, notify run database.')
+        elif os.path.isfile(data_doc['location']):
+            os.remove(data_doc['location'])
+        else:
+            self.log.error('did not exist, notify run database.')
+        if config.DATABASE_LOG == True:
+            resp = self.collection.update({'_id': self.run_doc['_id']},
+                                          {'$pull': {'data': data_doc}})
+        self.log.info('Removed from run database.')
+        self.log.debug(resp)
