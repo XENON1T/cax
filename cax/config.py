@@ -189,6 +189,7 @@ def processing_script(args={}):
                         account='pi-lgrandi' if midway else 'xenon',
                         anaconda='/project/lgrandi/anaconda3/bin' if midway else '/afs/pdc.kth.se/projects/xenon/software/Anaconda3/bin',
                         extra='#SBATCH --mem-per-cpu=2000\n#SBATCH --qos=xenon1t' if midway else '#SBATCH -t 72:00:00',
+                        extra2='source /cvmfs/oasis.opensciencegrid.org/osg-software/osg-wn-client/3.3/current/el6-x86_64/setup.sh' if midway else '',
 #                        extra='#SBATCH --mem-per-cpu=2000' if midway else '#SBATCH -t 72:00:00',
                         stats='sacct -j $SLURM_JOB_ID --format="JobID,Elapsed,AllocCPUS,CPUTime,MaxRSS"' if midway else ''
                         )
@@ -222,6 +223,8 @@ cd ${{JOB_WORKING_DIR}}
 
 rm -f pax_event_class*
 source activate pax_{pax_version}
+
+{extra2}
 
 HOSTNAME={host} {command}
 
