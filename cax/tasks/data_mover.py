@@ -31,7 +31,10 @@ class CopyBase(Task):
             server = config_original['hostname']
             username = config_original['username']
 
-        nstreams = 16
+        if config.nstream_settings() == None:
+            nstreams = 1
+        else:
+            nstreams = config.nstream_settings()
 
         # Determine method for remote site
         if method == 'scp':
@@ -113,7 +116,8 @@ class CopyBase(Task):
         #   -f: overwrite 
         #   -r: recursive
         #   -n: number of streams (4 for now, but doesn't work on xe1t-datamanager so use lcg-cp instead)
-        command = "time gfal-copy -v -f -r -p -n %d " % nstreams
+        #   -t: timeout in seconds
+        command = "time gfal-copy -v -f -r -p -t 10800 -n %d " % nstreams
 
         status = -1
 
@@ -122,15 +126,15 @@ class CopyBase(Task):
                                             server+datum_destination['location']))
 
             # Simultaneous LFC registration
-            lfc_config = config.get_config("lfc")
+            #lfc_config = config.get_config("lfc")
 
             # Warning: Processed data dir not implemented for LFC here
-            lfc_address = lfc_config['hostname']+lfc_config['dir_'+datum_original['type']]
+            #lfc_address = lfc_config['hostname']+lfc_config['dir_'+datum_original['type']]
 
             full_command = command+ \
                            "file://"+datum_original['location']+" "+ \
-                           server+datum_destination['location']+" "+ \
-                           lfc_address+"/"+dataset                  
+                           server+datum_destination['location'] #+" "+ \
+                           #lfc_address+"/"+dataset                  
 
         else: # download
             logging.info(option_type+": %s to %s" % (server+datum_original['location'],

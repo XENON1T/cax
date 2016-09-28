@@ -23,8 +23,8 @@
   },
   {
     "name": "login",
-    "method": "scp",
-    "hostname": "login.ci-connect.uchicago.edu",
+    "method": "gfal-copy",
+    "hostname": "gsiftp://ceph04.grid.uchicago.edu:2811/cephfs/srm",
     "dir_raw": "/xenon/xenon1t_test",
     "dir_processed": null,
     "upload_options": null,
