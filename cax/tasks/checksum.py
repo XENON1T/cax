@@ -151,7 +151,8 @@ class CompareChecksums(Task):
         else:
             self.log.error('did not exist, notify run database.')
         if config.DATABASE_LOG == True:
-            resp = self.collection.update({'_id': self.run_doc['_id']},
-                                          {'$pull': {'data': data_doc}})
+            self.api.remove_location(self.run_doc["_id"],
+                                     data_doc) 
+
         self.log.info('Removed from run database.')
         self.log.debug(resp)
