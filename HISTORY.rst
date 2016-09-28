@@ -2,7 +2,12 @@
 History
 =======
 
-4.4.5 (2016-09-26)
+4.4.6 (2016-09-28)
+------------------
+
+* Load GRID tools within job on Midway
+	
+4.4.5 (2016-09-28)
 ------------------
 
 * Switch Stash SRM address to gsiftp address
