@@ -76,6 +76,10 @@ def purge_settings(hostname=get_hostname()):
     return get_config(hostname).get('purge',
                                     None)
 
+def nstream_settings(hostname=get_hostname()):
+    return get_config(hostname).get('nstreams',
+                                    None)
+
 def get_config(hostname=get_hostname()):
     """Returns the cax configuration for a particular hostname
     NB this currently reloads the cax.json file every time it is called!!
