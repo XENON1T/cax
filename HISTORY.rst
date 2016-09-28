@@ -2,6 +2,14 @@
 History
 =======
 
+4.4.5 (2016-09-26)
+------------------
+
+* Switch Stash SRM address to gsiftp address
+* Allow specification in cax.json for number of streams in GRID copy
+* Increase gfal-copy timeout  to 3 hours (-t 10800)
+* Disable LFC registration (Rucio should pick up the bookkeeping later)
+
 4.4.4 (2016-09-26)
 ------------------
 
