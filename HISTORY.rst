@@ -2,6 +2,12 @@
 History
 =======
 
+4.4.7 (2016-09-29)
+------------------
+
+* Pass GRID certificate for worker nodes.
+* Change raw directory for Stash GRID copy.
+  
 4.4.6 (2016-09-28)
 ------------------
 
