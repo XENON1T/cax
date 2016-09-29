@@ -36,12 +36,17 @@ class CopyBase(Task):
         else:
             nstreams = config.nstream_settings()
 
+        if config.get_cert() == None:
+            grid_cert = ''
+        else:
+            grid_cert = config.get_cert()
+
         # Determine method for remote site
         if method == 'scp':
             self.copySCP(datum_original, datum_destination, server, username, option_type)
 
         elif method == 'gfal-copy':
-            self.copyGFAL(datum_original, datum_destination, server, option_type, nstreams)
+            self.copyGFAL(datum_original, datum_destination, server, option_type, nstreams, grid_cert)
 
         elif method == 'lcg-cp':
             self.copyLCGCP(datum_original, datum_destination, server, option_type, nstreams)
@@ -106,7 +111,7 @@ class CopyBase(Task):
             #               "file://"+datum_destination['location']
 
 
-    def copyGFAL(self, datum_original, datum_destination, server, option_type, nstreams):
+    def copyGFAL(self, datum_original, datum_destination, server, option_type, nstreams, grid_cert):
         """Copy data via GFAL function
         WARNING: Only SRM<->Local implemented (not yet SRM<->SRM)
         """
@@ -117,7 +122,8 @@ class CopyBase(Task):
         #   -r: recursive
         #   -n: number of streams (4 for now, but doesn't work on xe1t-datamanager so use lcg-cp instead)
         #   -t: timeout in seconds
-        command = "time gfal-copy -v -f -r -p -t 10800 -n %d " % nstreams
+        # --cert: path to initialized GRID certificate (voms-proxy-init  -voms xenon.biggrid.nl -valid 168:00 -out user_cert)
+        command = "time gfal-copy -v -f -r -p -t 10800 --cert %s -n %d " % (grid_cert, nstreams)
 
         status = -1
 
