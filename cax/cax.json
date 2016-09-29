@@ -19,13 +19,14 @@
     "upload_options": ["login"],
     "username": "tunnell",
     "download_options": ["xe1t-datamanager"],
-    "purge" : 60
+    "purge" : 60,
+    "grid_cert": "/project/lgrandi/deployHQ/cax/user_cert"
   },
   {
     "name": "login",
     "method": "gfal-copy",
     "hostname": "gsiftp://ceph04.grid.uchicago.edu:2811/cephfs/srm",
-    "dir_raw": "/xenon/xenon1t_test",
+    "dir_raw": "/xenon/xenon1t/raw",
     "dir_processed": null,
     "upload_options": null,
     "username": "pdeperio",
