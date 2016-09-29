@@ -30,7 +30,8 @@
     "dir_processed": null,
     "upload_options": null,
     "username": "pdeperio",
-    "download_options": []
+    "download_options": [],
+    "grid_cert": "/stash2/project/@xenon1t/deployHQ/cax/user_cert"
   },
   {
     "name": "tegner-login-1",

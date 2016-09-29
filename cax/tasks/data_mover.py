@@ -226,6 +226,8 @@ class CopyBase(Task):
         start = time.time()
 
         # For this run, where do we have transfer access?
+        datum_there = None
+        datum_here = None
         for remote_host in options:
             self.log.debug(remote_host)
 
