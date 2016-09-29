@@ -58,25 +58,7 @@ class RetryStalledTransfer(checksum.CompareChecksums):
             self.give_error("Transfer lasting more than 24 hours "
                             "or errored, retry.")
 
-            self.log.info("Deleting %s" % data_doc['location'])
-
-            if os.path.isdir(data_doc['location']):
-                try:
-                    shutil.rmtree(data_doc['location'])
-                except FileNotFoundError:
-                    self.log.warning("FileNotFoundError within %s" % data_doc['location'])
-                self.log.info('Deleted, notify run database.')
-            elif os.path.isfile(data_doc['location']):
-                os.remove(data_doc['location'])
-            else:
-                self.log.error('did not exist, notify run database.')
-
-            if config.DATABASE_LOG == True:
-                resp = self.collection.update({'_id': self.run_doc['_id']},
-                                              {'$pull': {'data': data_doc}})
-            self.log.error('Removed from run database.')
-            self.log.debug(resp)
-
+            self.purge(data_doc)
 
 class RetryBadChecksumTransfer(checksum.CompareChecksums):
     """Alert if stale transfer.
