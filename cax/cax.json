@@ -86,7 +86,7 @@
     "name": "nikhef-srm",
     "method": "gfal-copy",
     "hostname": "srm://tbn18.nikhef.nl:8446/srm/managerv2?SFN=",
-    "dir_raw": "/dpm/nikhef.nl/home/xenon.biggrid.nl/xenon1t",
+    "dir_raw": "/dpm/nikhef.nl/home/xenon.biggrid.nl/xenon1t/raw",
     "username": null
   },
   {
