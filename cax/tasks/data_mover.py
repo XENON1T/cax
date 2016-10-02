@@ -123,7 +123,7 @@ class CopyBase(Task):
         #   -n: number of streams (4 for now, but doesn't work on xe1t-datamanager so use lcg-cp instead)
         #   -t: timeout in seconds
         # --cert: path to initialized GRID certificate (voms-proxy-init  -voms xenon.biggrid.nl -valid 168:00 -out user_cert)
-        command = "time gfal-copy -v -f -r -p -t 10800 --cert %s -n %d " % (grid_cert, nstreams)
+        command = "time gfal-copy -v -f -r -p -t 32400 --cert %s -n %d " % (grid_cert, nstreams)
 
         status = -1
 
@@ -137,7 +137,17 @@ class CopyBase(Task):
             # Warning: Processed data dir not implemented for LFC here
             #lfc_address = lfc_config['hostname']+lfc_config['dir_'+datum_original['type']]
 
-            full_command = command+ \
+            # Use GSIFTP source instead of POSIX from Stash (to avoid login node)
+            if config.get_hostname() == 'login':
+                config_original = config.get_config('login')
+                server = config_original['hostname']
+                full_command = command+ \
+                           server+datum_original['location']+" "+ \
+                           server+datum_destination['location'] #+" "+ \
+                           #lfc_address+"/"+dataset                  
+            
+            else:
+                full_command = command+ \
                            "file://"+datum_original['location']+" "+ \
                            server+datum_destination['location'] #+" "+ \
                            #lfc_address+"/"+dataset                  
