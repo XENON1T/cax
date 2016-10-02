@@ -139,10 +139,10 @@ class CopyBase(Task):
 
             # Use GSIFTP source instead of POSIX from Stash (to avoid login node)
             if config.get_hostname() == 'login':
-                config_original = config.get_config('login')
-                server = config_original['hostname']
+                config_original = config.get_config(datum_original['host'])
+                server_original = config_original['hostname']
                 full_command = command+ \
-                           server+datum_original['location']+" "+ \
+                           server_original+datum_original['location']+" "+ \
                            server+datum_destination['location'] #+" "+ \
                            #lfc_address+"/"+dataset                  
             
