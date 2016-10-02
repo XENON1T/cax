@@ -2,6 +2,15 @@
 History
 =======
 
+4.4.9 (2016-10-02)
+------------------
+
+* Extend gfal-copy time even more (to 9 hours)
+* Should cover typical 40 GB file and slow 3 MB/s speed
+* Use GSIFTP address of Stash (login) as source with gfal-copy
+* Upload to nikhef-srm from Stash (login)
+* Switch from lcg-cp to gfal-copy in cax.json
+
 4.4.8 (2016-09-29)
 ------------------
 
