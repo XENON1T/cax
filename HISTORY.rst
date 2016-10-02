@@ -2,6 +2,11 @@
 History
 =======
 
+4.4.10 (2016-10-02)
+------------------
+
+* Fix variable name for GSIFTP source server 
+
 4.4.9 (2016-10-02)
 ------------------
 
