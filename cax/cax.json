@@ -52,7 +52,7 @@
     "dir_raw": "/data/xenon/raw",
     "upload_options": null,
     "download_options": null,
-    "purge" : 60
+    "purge" : 7
   },
   {
     "name": "lfc",
