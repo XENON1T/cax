@@ -128,16 +128,18 @@ class ProcessBatchQueue(Task):
 
     def each_run(self):
         if self.has_tag('donotprocess'):
-            self.log.debug("Do not process tag found")
+            self.log.debug("Do not process tag found, skip processing")
             return
 
         if 'processor' not in self.run_doc or \
                 'DEFAULT' not in self.run_doc['processor']:
+            self.log.debug("processor or DEFAUT tag not in run_doc, skip processing")
             return
 
         processing_parameters = self.run_doc['processor']['DEFAULT']
         if 'gains' not in processing_parameters or \
             'electron_lifetime_liquid' not in processing_parameters:
+            self.log.info("gains or e-lifetime not in run_doc, skip processing")
             return
 
         thishost = config.get_hostname()
@@ -157,6 +159,7 @@ class ProcessBatchQueue(Task):
             return
 
         if self.run_doc['reader']['ini']['write_mode'] != 2:
+            self.log.debug("write_mode != 2, skip processing")
             return
 
         # Get number of events in data set (not set for early runs <1000)
