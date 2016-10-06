@@ -2,6 +2,11 @@
 History
 =======
 
+4.4.12 (2016-10-06)
+------------------
+
+* Change Stash GSIFTP site to round-robin address
+  
 4.4.11 (2016-10-02)
 ------------------
 
