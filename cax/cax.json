@@ -25,7 +25,7 @@
   {
     "name": "login",
     "method": "gfal-copy",
-    "hostname": "gsiftp://ceph04.grid.uchicago.edu:2811/cephfs/srm",
+    "hostname": "gsiftp://gridftp.grid.uchicago.edu:2811/cephfs/srm",
     "dir_raw": "/xenon/xenon1t/raw",
     "dir_processed": null,
     "upload_options": ["nikhef-srm"],
