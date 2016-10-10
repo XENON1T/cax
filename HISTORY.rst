@@ -2,6 +2,13 @@
 History
 =======
 
+4.4.14 (2016-10-10)
+------------------
+
+* Hardcode Midway SRM address for gfal-copy uploads.
+* Switch back to Stash round-robin address.
+* Fix missing "dir_processed" key error.
+
 4.4.13 (2016-10-10)
 ------------------
 
