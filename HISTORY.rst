@@ -2,6 +2,13 @@
 History
 =======
 
+4.4.13 (2016-10-10)
+------------------
+
+* Change from Stash to Nikhef for Midway GRID upload
+* Specify ADLER32 checksum for gfal-copy
+* Skip "verifying" stage for GRID transfers (assume gfal-copy checksum is sufficient)
+  
 4.4.12 (2016-10-06)
 ------------------
 
