@@ -122,8 +122,9 @@ class CopyBase(Task):
         #   -r: recursive
         #   -n: number of streams (4 for now, but doesn't work on xe1t-datamanager so use lcg-cp instead)
         #   -t: timeout in seconds
+        #   -K: specify checksum algorithm
         # --cert: path to initialized GRID certificate (voms-proxy-init  -voms xenon.biggrid.nl -valid 168:00 -out user_cert)
-        command = "time gfal-copy -v -f -r -p -t 32400 --cert %s -n %d " % (grid_cert, nstreams)
+        command = "time gfal-copy -v -f -r -p -t 32400 -K adler32 --cert %s -n %d " % (grid_cert, nstreams)
 
         status = -1
 
@@ -369,7 +370,14 @@ class CopyBase(Task):
                       datum_new, 
                       method, 
                       option_type)
-            status = 'verifying'
+            # Checksumming to follow on local site
+            if method == 'scp':
+                status = 'verifying'
+
+            # Cannot do cax-checksum on GRID sites, 
+            # so assume gfal-copy/lcg-cp checksum is sufficient
+            else:
+                status = 'transferred'
 
         except scp.SCPException as e:
             self.log.exception(e)
