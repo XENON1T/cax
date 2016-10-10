@@ -25,13 +25,13 @@
   {
     "name": "login",
     "method": "gfal-copy",
-    "hostname": "gsiftp://ceph04.grid.uchicago.edu:2811/cephfs/srm",
+    "hostname": "gsiftp://gridftp.grid.uchicago.edu:2811/cephfs/srm",
     "dir_raw": "/xenon/xenon1t/raw",
     "dir_processed": null,
     "upload_options": ["nikhef-srm"],
     "username": "pdeperio",
     "download_options": [],
-    "nstreams": 8,
+    "nstreams": 2,
     "grid_cert": "/stash2/project/@xenon1t/deployHQ/cax/user_cert"
   },
   {
@@ -50,6 +50,7 @@
     "username": "xe1ttransfer",
     "method": "scp",
     "dir_raw": "/data/xenon/raw",
+    "dir_processed": null,
     "upload_options": null,
     "download_options": null,
     "purge" : 7
@@ -59,6 +60,7 @@
     "method": "gfal-copy",
     "hostname": "lfn:",
     "dir_raw": "/grid/xenon.biggrid.nl/xenon1t/raw",
+    "dir_processed": null,
     "username": null
   },
   {
@@ -66,6 +68,7 @@
     "method": "gfal-copy",
     "hostname": "srm://ceph-se.osgconnect.net:8443/srm/v2/server?SFN=",
     "dir_raw": "/cephfs/srm/xenon/xenon1t",
+    "dir_processed": null,
     "username": null
   },
   {
@@ -73,6 +76,7 @@
     "method": "gfal-copy",
     "hostname": "srm://srm1.rcc.uchicago.edu:8443/srm/v2/server?SFN=",
     "dir_raw": "/project/lgrandi/xenon1t/raw",
+    "dir_processed": null,
     "username": null
   },
   {
@@ -80,6 +84,7 @@
     "method": "gfal-copy",
     "hostname": "srm://storm-fe-archive.cr.cnaf.infn.it:8444/srm/managerv2?SFN=",
     "dir_raw": "/xenon/xenon1t",
+    "dir_processed": null,
     "username": null
   },
   {
@@ -87,6 +92,7 @@
     "method": "gfal-copy",
     "hostname": "srm://tbn18.nikhef.nl:8446/srm/managerv2?SFN=",
     "dir_raw": "/dpm/nikhef.nl/home/xenon.biggrid.nl/xenon1t/raw",
+    "dir_processed": null,
     "username": null
   },
   {
@@ -94,6 +100,7 @@
     "method": "gfal-copy",
     "hostname": "srm://wipp-se.weizmann.ac.il",
     "dir_raw": "/xenon/xenon1t",
+    "dir_processed": null,
     "username": null
   }
 ]
