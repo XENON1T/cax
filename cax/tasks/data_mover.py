@@ -138,7 +138,7 @@ class CopyBase(Task):
             # Warning: Processed data dir not implemented for LFC here
             #lfc_address = lfc_config['hostname']+lfc_config['dir_'+datum_original['type']]
 
-            # Use GSIFTP source instead of POSIX from Stash (to avoid login node)
+            # Use GSIFTP address instead of POSIX from Stash (to avoid login node)
             if config.get_hostname() == 'login':
                 config_original = config.get_config(datum_original['host'])
                 server_original = config_original['hostname']
@@ -146,7 +146,15 @@ class CopyBase(Task):
                            server_original+datum_original['location']+" "+ \
                            server+datum_destination['location'] #+" "+ \
                            #lfc_address+"/"+dataset                  
-            
+
+            # Use SRM address instead of POSIX from Midway (to avoid worker nodes)
+            elif config.get_hostname() == 'midway-login1':
+                server_original = 'srm://srm1.rcc.uchicago.edu:8443/srm/v2/server?SFN='
+                full_command = command+ \
+                           server_original+datum_original['location']+" "+ \
+                           server+datum_destination['location'] #+" "+ \
+                           #lfc_address+"/"+dataset                  
+           
             else:
                 full_command = command+ \
                            "file://"+datum_original['location']+" "+ \
