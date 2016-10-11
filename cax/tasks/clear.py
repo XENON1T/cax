@@ -100,7 +100,7 @@ class BufferPurger(checksum.CompareChecksums):
         """Check every location with data whether it should be purged.
         """
         # Skip places where we can't locally access data
-        if 'host' not in data_doc or data_doc['host'] != config.get_hostname():
+        if 'host' not in data_doc or data_doc['host'] != config.get_hostname() or data_doc['type'] == 'processed':
             return
         
         self.log.debug("Checking purge logic")
