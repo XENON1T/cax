@@ -84,7 +84,7 @@ class RetryBadChecksumTransfer(checksum.CompareChecksums):
 
         if data_doc['checksum'] != comparison:
             self.give_error("Bad checksum %d" % self.run_doc['number'])
-            if self.check(warn=False) > 1:
+            if self.check(data_doc['type'], warn=False) > 1:
                 self.purge(data_doc)
 
 
@@ -100,7 +100,12 @@ class BufferPurger(checksum.CompareChecksums):
         """Check every location with data whether it should be purged.
         """
         # Skip places where we can't locally access data
-        if 'host' not in data_doc or data_doc['host'] != config.get_hostname() or data_doc['type'] == 'processed':
+        if 'host' not in data_doc or data_doc['host'] != config.get_hostname():
+            return
+
+        # Do not purge processed data
+        # Warning: if you want to enable this here, need to add pax version checking in check()
+        if data_doc['type'] == 'processed':
             return
         
         self.log.debug("Checking purge logic")
@@ -116,7 +121,7 @@ class BufferPurger(checksum.CompareChecksums):
             return
 
         # Require at least three copies of the data since we are deleting third.
-        if self.check(warn=False) < 3:
+        if self.check(data_doc['type'], warn=False) < 3:
             self.log.debug("Not enough copies")
             return
 
