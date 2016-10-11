@@ -219,14 +219,8 @@ class ProcessBatchQueue(Task):
             if 'host' not in datum:
                 continue
 
-            # If the location is Midway SRM...
-            if datum['host']  == "midway-srm":
-                # ... must access from midway-login1
-                if thishost != "midway-login1":
-                    continue
-
-            # Otherwise, if the location doesn't refer to here, skip
-            elif datum['host'] != thishost:
+            # If the location doesn't refer to here, skip
+            if datum['host'] != thishost:
                 continue
 
             # Raw data must exist
