@@ -105,7 +105,7 @@ class CompareChecksums(Task):
         self.log.debug("Missing checksum within %d" % self.run_doc['number'])
         return None
 
-    def check(self,
+    def check(self, type='raw',
               warn=True):
         """Returns number of verified data locations
 
@@ -119,6 +119,7 @@ class CompareChecksums(Task):
             if 'host' not in data_doc or \
                             data_doc['status'] != 'transferred' or \
                             data_doc['type'] == 'untriggered' or \
+                            data_doc['type'] != type or \
                             'checksum' not in data_doc:
                 continue
 
