@@ -121,8 +121,9 @@ class BufferPurger(checksum.CompareChecksums):
             return
 
         # Require at least three copies of the data since we are deleting third.
-        if self.check(data_doc['type'], warn=False) < 3:
-            self.log.debug("Not enough copies")
+        num_copies = self.check(data_doc['type'], warn=False)
+        if num_copies < 3:
+            self.log.debug("Not enough copies (%d)" % num_copies)
             return
 
         # The dt we require
