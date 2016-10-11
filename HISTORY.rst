@@ -2,6 +2,13 @@
 History
 =======
 
+4.4.15 (2016-10-11)
+------------------
+
+* Do not purge processed files
+* Consider only same file type when counting copies
+* Remove hardcoded midway-srm treatment
+
 4.4.14 (2016-10-10)
 ------------------
 
