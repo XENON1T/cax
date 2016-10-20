@@ -56,7 +56,8 @@ setup(
             'cax-mv = cax.main:move',
             'cax-rm = cax.main:remove',
             'cax-stray = cax.main:stray',
-            'cax-status = cax.main:status'
+            'cax-status = cax.main:status',
+            'cax-tsm-remove = cax.main:remove_from_tsm',
         ],
     },
 )

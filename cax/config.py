@@ -261,42 +261,7 @@ def adjust_permission_base_dir(base_dir, destination):
       subprocess.Popen( ["setfacl", "-R", "-M", "/cfs/klemming/projects/xenon/misc/basic", base_dir],
                         stdout=subprocess.PIPE )
 
-def tsm_commands(method=None):
-    
-    host_xe1t_datamanager = """#!/bin/bash
-    echo "Basic Config"
-    source /home/xe1ttransfer/tsm_config/init_tsm.sh   
-    """
-    
-    host_teger = """#!/bin/bash
-echo "Basic Config But No TSM CLIENT
-    """
-    
-    general = {"xe1t-datamanager":host_xe1t_datamanager,
-               "tegner-login-1": host_teger}
-    
-    
-    check_for_raw_data = """
-dsmc query ba {path}    
-    """
-    
-    check_method = """
-echo "No method is selected: Do nothing"
-    """
-    
-    incr_upload = """
-dsmc incr {path}/
-    """
-    
-    
-    if method == "check-for-raw-data":
-      return general[get_hostname()]+check_for_raw_data
-    elif method == None:
-      return general[get_hostname()]
-    elif method == "incr-upload-path":
-      return general[get_hostname()]+incr_upload  
-    else:
-      return general[get_hostname()]+check_method
+
     
     
     

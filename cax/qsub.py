@@ -119,17 +119,3 @@ def get_queue(host=config.get_hostname()):
     if len(queue_list) > 1:
         return queue_list[1:]
     return []
-
-def execute_script( upload_string ):
-    #scname = "rucio_call_{runnumber}".format(runnumber= self.run_doc['number'] )
-    #sc = "/tmp/{sc_name}.sh".format(sc_name="tsm_client")
-
-    sc = create_script( upload_string )
-    execute = subprocess.Popen( ['sh', sc.name] , 
-                                stdin=subprocess.PIPE,
-                                stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT, shell=False )
-    stdout_value, stderr_value = execute.communicate()
-    stdout_value = str(stdout_value).split("\\n")
-    stderr_value = str(stderr_value).split("\\n")
-    return stdout_value, stderr_value

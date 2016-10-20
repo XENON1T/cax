@@ -272,7 +272,7 @@ def remove():
     config.set_database_log(database_log)
     config.mongo_password()
 
-    filesystem.RemoveSingle(args.location).go()
+    filesystem.RemoveSingle(args.location, args.host).go()
 
 def stray():
     parser = argparse.ArgumentParser(description="Find stray files.")
@@ -326,6 +326,34 @@ def status():
     config.mongo_password()
     
     filesystem.StatusSingle(args.node, args.status).go()
+
+def remove_from_tsm():
+    parser = argparse.ArgumentParser(description="Remove data and notify"
+                                                 " the run database.")
+    parser.add_argument('--location', type=str, required=True,
+                        help="Location of file or folder to be removed")
+    parser.add_argument('--disable_database_update', action='store_true',
+                        help="Disable the update function the run data base")
+    parser.add_argument('--run', type=int, required=False,
+                        help="Select a single run by number")
+    parser.add_argument('--name', type=str, required=False,
+                        help="Select a single run by name")
+    
+    args = parser.parse_args()
+
+    database_log = not args.disable_database_update
+
+    # Set information to update the run database
+    config.set_database_log(database_log)
+    config.mongo_password()
+    
+    number_name = None
+    if args.name is not None:
+      number_name = args.name
+    else:
+      number_name = args.run
+
+    filesystem.RemoveTSMEntry(args.location).go(number_name)
 
 if __name__ == '__main__':
     main()
