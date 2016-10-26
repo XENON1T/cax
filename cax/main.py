@@ -84,20 +84,18 @@ def main():
             config.set_json(args.config_file)
 
     tasks = [
-        checksum.AddChecksum(),
         corrections.AddElectronLifetime(),
         corrections.AddGains(),
         corrections.AddSlowControlInformation(),
         data_mover.CopyPull(),
         data_mover.CopyPush(),
-        checksum.AddChecksum(),
-        process.ProcessBatchQueue(),
         checksum.CompareChecksums(),
         checksum.AddChecksum(),
         clear.RetryStalledTransfer(),
         clear.RetryBadChecksumTransfer(),
         filesystem.SetPermission(),
         clear.BufferPurger(),
+        process.ProcessBatchQueue(),
     ]
 
     # Raises exception if unknown host

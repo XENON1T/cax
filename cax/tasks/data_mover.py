@@ -148,11 +148,11 @@ class CopyBase(Task):
                            #lfc_address+"/"+dataset                  
 
             # Use SRM address instead of POSIX from Midway (to avoid worker nodes)
-            elif config.get_hostname() == 'midway-login1':
-                server_original = 'srm://srm1.rcc.uchicago.edu:8443/srm/v2/server?SFN='
-                full_command = command+ \
-                           server_original+datum_original['location']+" "+ \
-                           server+datum_destination['location'] #+" "+ \
+            #elif config.get_hostname() == 'midway-login1':
+            #    server_original = 'srm://srm1.rcc.uchicago.edu:8443/srm/v2/server?SFN='
+            #    full_command = command+ \
+            #               server_original+datum_original['location']+" "+ \
+            #               server+datum_destination['location'] #+" "+ \
                            #lfc_address+"/"+dataset                  
            
             else:

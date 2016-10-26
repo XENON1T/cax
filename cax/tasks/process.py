@@ -91,7 +91,8 @@ def _process(name, in_location, host, pax_version, pax_hash,
         p = core.Processor(config_names=pax_config,
                            config_dict={'pax': {'input_name' : in_location,
                                                 'output_name': output_fullname,
-                                                'n_cpus'     : ncpus
+                                                'n_cpus'     : ncpus,
+                                                'max_queue_blocks': 50
                                                 }
                                         }
                            )
