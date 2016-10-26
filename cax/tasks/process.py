@@ -34,7 +34,7 @@ def _process(name, in_location, host, pax_version, pax_hash,
     print('Welcome to cax-process')
 
     # Import pax so can process the data
-    from pax import core
+    from pax import core, parallel
 
     # Grab the Run DB so we can query it
     collection = config.mongo_collection()
@@ -88,15 +88,14 @@ def _process(name, in_location, host, pax_version, pax_hash,
     # Try to process data.
     try:
         print('processing', name, in_location, pax_config)
-        p = core.Processor(config_names=pax_config,
-                           config_dict={'pax': {'input_name' : in_location,
-                                                'output_name': output_fullname,
-                                                'n_cpus'     : ncpus,
-                                                'max_queue_blocks': 50
-                                                }
-                                        }
-                           )
-        p.run()
+        pax_kwargs = dict(config_names=pax_config,
+                          config_dict={'pax': {'input_name' : in_location,
+                                               'output_name': output_fullname,
+                                               'max_queue_blocks': 50}})
+        if ncpus > 1:
+            parallel.multiprocess_locally(n_cpus=ncpus, **pax_kwargs)
+        else:
+            core.Processor(**pax_kwargs).run()
 
     except Exception as exception:
         # Data processing failed.
