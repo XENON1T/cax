@@ -2,6 +2,14 @@
 History
 =======
 
+4.4.16 (2016-10-26)
+------------------
+
+* Revert to file:// instead of SRM address for Midway gfal-copy upload
+* Remove extraenous AddChecksum's and put ProcessBatchQueue at the end
+* Reduce max_queue_blocks from 100 to 50 (otherwise AmBe hits memory limit)
+
+ 
 4.4.15 (2016-10-11)
 ------------------
 
