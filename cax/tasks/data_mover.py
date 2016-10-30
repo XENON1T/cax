@@ -385,7 +385,8 @@ class CopyBase(Task):
             # Cannot do cax-checksum on GRID sites, 
             # so assume gfal-copy/lcg-cp checksum is sufficient
             else:
-                status = 'transferred'
+                status = 'verifying'
+                # TO DO: Manually copy checksum to DB entry here
 
         except scp.SCPException as e:
             self.log.exception(e)
