@@ -19,7 +19,7 @@
     "upload_options": ["login"],
     "username": "tunnell",
     "download_options": ["xe1t-datamanager"],
-    "purge" : 30,
+    "purge" : 25,
     "grid_cert": "/project/lgrandi/deployHQ/cax/user_cert"
   },
   {
