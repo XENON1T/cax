@@ -35,6 +35,7 @@ def main():
 
     args = parser.parse_args()
 
+    print(args.run, config.get_hostname())
 
     if args.host:
         config.HOST = args.host
@@ -59,8 +60,6 @@ def main():
                         format=cax_version + '%(asctime)s [%(levelname)s] '
                                              '%(message)s')
     logging.info('Daemon is starting')
-
-    logging.info(args.run, config.get_hostname())
 
     # define a Handler which writes INFO messages or higher to the sys.stderr
     console = logging.StreamHandler()
