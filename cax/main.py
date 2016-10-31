@@ -39,9 +39,6 @@ def main():
     if args.host:
         config.HOST = args.host
 
-    
-    logging.info(args.run, config.get_hostname())
-
     log_level = getattr(logging, args.log.upper())
     if not isinstance(log_level, int):
         raise ValueError('Invalid log level: %s' % args.log)
@@ -62,6 +59,8 @@ def main():
                         format=cax_version + '%(asctime)s [%(levelname)s] '
                                              '%(message)s')
     logging.info('Daemon is starting')
+
+    logging.info(args.run, config.get_hostname())
 
     # define a Handler which writes INFO messages or higher to the sys.stderr
     console = logging.StreamHandler()
