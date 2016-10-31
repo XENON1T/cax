@@ -2,6 +2,12 @@
 History
 =======
 
+4.1.0 (2016-10-31)
+------------------
+
+* Remove gfal environment setup (may be clashing with pax)
+* Remove "once" functionality from massive-cax (strange error with "watch", and hanging without "watch")
+      
 4.4.16 (2016-10-26)
 ------------------
 
