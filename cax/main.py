@@ -40,7 +40,7 @@ def main():
         config.HOST = args.host
 
     
-    args.run, config.get_hostname())
+    logging.info(args.run, config.get_hostname())
 
     log_level = getattr(logging, args.log.upper())
     if not isinstance(log_level, int):
