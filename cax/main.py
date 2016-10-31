@@ -235,12 +235,12 @@ def massive():
             logging.debug("Pace by 1s")
             time.sleep(1)  # Pace 1s for batch queue
 
-        if run_once:
-            break
-        else:
-            pace = 5
-            logging.info("Done, waiting %d minutes" % pace)
-            time.sleep(60*pace) # Pace 5 minutes
+        #if run_once:
+        #    break
+        #else:
+        #    pace = 5
+        #    logging.info("Done, waiting %d minutes" % pace)
+        #    time.sleep(60*pace) # Pace 5 minutes
 
 
 def move():
