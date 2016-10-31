@@ -2,7 +2,12 @@
 History
 =======
 
-4.1.0 (2016-10-31)
+4.5.1 (2016-10-31)
+------------------
+
+* Fix pax queue size configuration option 
+
+4.5.0 (2016-10-31)
 ------------------
 
 * Remove gfal environment setup (may be clashing with pax) 
