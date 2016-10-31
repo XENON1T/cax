@@ -6,7 +6,7 @@ History
 ------------------
 
 * Fix pax queue size configuration option
-
+ 
 4.5.0 (2016-10-31)
 ------------------
 
