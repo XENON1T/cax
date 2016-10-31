@@ -83,18 +83,18 @@ def main():
             config.set_json(args.config_file)
 
     tasks = [
-        corrections.AddElectronLifetime(),
-        corrections.AddGains(),
-        corrections.AddSlowControlInformation(),
-        data_mover.CopyPull(),
-        data_mover.CopyPush(),
-        checksum.CompareChecksums(),
-        checksum.AddChecksum(),
-        clear.RetryStalledTransfer(),
-        clear.RetryBadChecksumTransfer(),
-        filesystem.SetPermission(),
-        clear.BufferPurger(),
-        process.ProcessBatchQueue(),
+        corrections.AddElectronLifetime(),  # Add electron lifetime to run, which is just a function of calendar time
+        corrections.AddGains(), #  Adds gains to a run, where this is computed using slow control information
+        #corrections.AddSlowControlInformation(),  
+        data_mover.CopyPull(), # Download data through e.g. scp to this location
+        data_mover.CopyPush(),  # Upload data through e.g. scp or gridftp to this location where cax running
+        checksum.CompareChecksums(),  # See if local data corrupted
+        checksum.AddChecksum(),  # Add checksum for data here so can know if corruption (useful for knowing when many good copies!)
+        clear.RetryStalledTransfer(),  # If data transferring e.g. 48 hours, probably cax crashed so delete then retry
+        clear.RetryBadChecksumTransfer(),  # If bad checksum for local data and can fetch from somewhere else, delete our copy
+        filesystem.SetPermission(),  # Set any permissions (primarily for Tegner) for new data to make sure analysts can access
+        clear.BufferPurger(),  # Clear old data at some locations as specified in cax.json
+        process.ProcessBatchQueue(),  # Process the data with pax
     ]
 
     # Raises exception if unknown host
