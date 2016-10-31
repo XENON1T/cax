@@ -39,7 +39,8 @@ def main():
     if args.host:
         config.HOST = args.host
 
-    print(args.run, config.get_hostname())
+    
+    args.run, config.get_hostname())
 
     log_level = getattr(logging, args.log.upper())
     if not isinstance(log_level, int):
@@ -185,7 +186,7 @@ def massive():
 
         t1 = datetime.datetime.utcnow()
         if t1 - t0 < dt:
-            print("Iterative mode")
+            logging.info("Iterative mode")
 
             # See if there is something to do
             query['start'] = {'$gt' : t0}
