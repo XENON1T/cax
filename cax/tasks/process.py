@@ -91,7 +91,7 @@ def _process(name, in_location, host, pax_version, pax_hash,
         pax_kwargs = dict(config_names=pax_config,
                           config_dict={'pax': {'input_name' : in_location,
                                                'output_name': output_fullname},
-                                       'Queues': {'event_block_size': }})
+                                       'Queues': {'event_block_size': 1}})
         if ncpus > 1:
             parallel.multiprocess_locally(n_cpus=ncpus, **pax_kwargs)
         else:
