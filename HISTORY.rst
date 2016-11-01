@@ -2,6 +2,10 @@
 History
 =======
 
+4.5.2 (2016-11-01)
+------------------
+*  Reduce pax queue block size in batch processing #51
+
 4.5.1 (2016-10-31)
 ------------------
 
