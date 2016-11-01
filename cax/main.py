@@ -3,13 +3,14 @@ import logging
 import os
 import datetime
 import time
+import subprocess
 
 from cax import __version__
 from cax import config, qsub
 
 import pax
 
-from cax.tasks import checksum, clear, data_mover, process, filesystem
+from cax.tasks import checksum, clear, data_mover, process, filesystem, tsm_mover
 from cax.tasks import corrections
 
 
@@ -23,6 +24,8 @@ def main():
                         help="Load a custom .json config file into cax")
     parser.add_argument('--log', dest='log', type=str, default='info',
                         help="Logging level e.g. debug")
+    parser.add_argument('--log-file', dest='logfile', type=str, default='main_log.log',
+                        help="Log file")
     parser.add_argument('--disable_database_update', action='store_true',
                         help="Disable the update function the run data base")
     parser.add_argument('--run', type=int,
@@ -56,7 +59,7 @@ def main():
 
     # Setup logging
     cax_version = 'cax_v%s - ' % __version__
-    logging.basicConfig(filename='cax.log',
+    logging.basicConfig(filename=args.logfile,
                         level=log_level,
                         format=cax_version + '%(asctime)s [%(levelname)s] '
                                              '%(message)s')
@@ -84,20 +87,21 @@ def main():
             config.set_json(args.config_file)
 
     tasks = [
-        #checksum.AddChecksum(),
-        #corrections.AddElectronLifetime(),
-        #corrections.AddGains(),
-        #corrections.AddSlowControlInformation(),
+        checksum.AddChecksum(),
+        corrections.AddElectronLifetime(),
+        corrections.AddGains(),
+        corrections.AddSlowControlInformation(),
         data_mover.CopyPull(),
         data_mover.CopyPush(),
-        #checksum.AddChecksum(),
-        #process.ProcessBatchQueue(),
-        #checksum.CompareChecksums(),
-        #checksum.AddChecksum(),
-        #clear.RetryStalledTransfer(),
-        #clear.RetryBadChecksumTransfer(),
-        #filesystem.SetPermission(),
-        #clear.BufferPurger(),
+        tsm_mover.AddTSMChecksum(),
+        checksum.AddChecksum(),
+        process.ProcessBatchQueue(),
+        checksum.CompareChecksums(),
+        checksum.AddChecksum(),
+        clear.RetryStalledTransfer(),
+        clear.RetryBadChecksumTransfer(),
+        filesystem.SetPermission(),
+        clear.BufferPurger(),
     ]
 
     # Raises exception if unknown host
@@ -354,6 +358,261 @@ def remove_from_tsm():
       number_name = args.run
 
     filesystem.RemoveTSMEntry(args.location).go(number_name)
+
+def massive_tsmclient():
+    # Command line arguments setup
+    parser = argparse.ArgumentParser(description="Submit ruciax tasks to batch queue.")
+
+    parser.add_argument('--once', action='store_true',
+                        help="Run all tasks just one, then exits")
+    parser.add_argument('--config', action='store', type=str,
+                        dest='config_file',
+                        help="Load a custom .json config file into cax")
+    parser.add_argument('--run', type=int,
+                        help="Select a single run")
+    parser.add_argument('--from-run', dest='from_run', type=int, 
+                        help="Choose: run number start")
+    parser.add_argument('--to-run', dest='to_run', type=int, 
+                        help="Choose: run number end")
+    parser.add_argument('--log', dest='log', type=str, default='INFO',
+                        help="Logging level e.g. debug")
+    parser.add_argument('--logfile', dest='logfile', type=str, default='massive_tsm.log',
+                        help="Specify a certain logfile")
+    parser.add_argument('--disable_database_update', action='store_true',
+                        help="Disable the update function the run data base")
+
+    args = parser.parse_args()
+    
+    log_level = args.log
+    #if not isinstance(log_level, int):
+        #raise ValueError('Invalid log level: %s' % args.log)
+
+    run_once = args.once
+
+    #Check on from-run/to-run option:
+    beg_run = -1
+    end_run = -1
+    run_window = False
+    if args.from_run == None and args.to_run == None:
+      pass
+    elif (args.from_run != None and args.to_run == None) or (args.from_run == None and args.to_run != None):
+      logging.info("Select (tpc) runs between %s and %s", args.from_run, args.to_run)
+      logging.info("Make a full selection!")
+    elif args.from_run != None and args.to_run != None and args.from_run >= args.to_run:
+      logging.info("The last run is smaller then the first run!")
+    elif args.from_run != None and args.to_run != None and args.from_run < args.to_run:
+      logging.info("Start (tpc) runs between %s and %s", args.from_run, args.to_run)
+      run_window = True
+      beg_run = args.from_run
+      end_run = args.to_run
+    
+    
+    #configure cax.json
+    config_arg = ''
+    if args.config_file:
+        if not os.path.isfile(args.config_file):
+            logging.error("Config file %s not found", args.config_file)
+        else:
+            logging.info("Using custom config file: %s",
+                         args.config_file)
+            config.set_json(args.config_file)
+            config_arg = '--config ' + os.path.abspath(args.config_file)
+      
+    # Setup logging
+    log_path = {"xe1t-datamanager": "/home/xe1ttransfer/tsm_log",
+               "midway-login1": "n/a"}
+    
+    if not os.path.exists(log_path[config.get_hostname()]):
+        os.makedirs(log_path[config.get_hostname()])
+    cax_version = 'massive_tsm-client_v%s - ' % __version__
+    logging.basicConfig(filename="{logp}/{logf}".format(logp=log_path[config.get_hostname()], logf=args.logfile),
+                        level="INFO",
+                        format=cax_version + '%(asctime)s [%(levelname)s] ' '%(message)s')
+    
+    # define a Handler which writes INFO messages or higher to the sys.stderr
+    console = logging.StreamHandler()
+    console.setLevel("INFO")
+
+    # set a format which is simpler for console use
+
+    formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+    # tell the handler to use this format
+    console.setFormatter(formatter)
+    # add the handler to the root logger
+    logging.getLogger('').addHandler(console)
+    
+    # Check Mongo connection
+    config.mongo_password()
+
+    # Establish mongo connection
+    collection = config.mongo_collection()
+    sort_key = (('number', -1),
+                ('detector', -1),
+                ('_id', -1))
+
+    while True: # yeah yeah
+        #query = {'detector':'tpc'}
+        query = {}
+        
+        docs = list(collection.find(query))
+        
+        cnt_upload_miss=0
+        
+        for doc in docs:
+            
+            #Select a single run for rucio upload (massive-ruciax -> ruciax)
+            if args.run:
+              if args.run != doc['number']:
+                continue
+            
+            #Rucio upload only of certain run numbers in a sequence
+            if doc['number'] < beg_run or doc['number'] > end_run and run_window == True:
+              continue
+            
+            #Double check if a 'data' field is defind in doc
+            if 'data' not in doc:
+              continue
+            
+            #Double check that tsm uploads are only triggered when data exists at the host
+            host_data = False
+            for idoc in doc['data']:
+              if idoc['host'] == config.get_hostname():
+                host_data = True
+                break
+            if host_data == False:
+              cnt_upload_miss+=1
+              continue
+            
+            #Detector choice
+            local_time = time.strftime("%Y%m%d_%H%M%S", time.localtime())
+            if doc['detector'] == 'tpc':
+              job = "{conf} --run {number} --log-file {log_path}/tsm_log_{number}_{timestamp}.txt".format(
+                  conf=config_arg,
+                  number=doc['number'],
+                  log_path=log_path[config.get_hostname()],
+                  timestamp=local_time)
+                
+            elif doc['detector'] == 'muon_veto':
+              job = "{conf} --name {number} --log-file {log_path}/tsm_log_{number}_{timestamp}.txt".format(
+                  conf=config_arg,
+                  number=doc['name'],
+                  log_path=log_path[config.get_hostname()],
+                  timestamp=local_time)
+            
+            #start the time for an upload:
+            time_start = datetime.datetime.utcnow()
+            
+            #Create the command
+            command="cax --once {job}".format(job=job)
+            
+            if args.disable_database_update == True:
+              command = command + " --disable_database_update"
+            
+            #command = general[config.get_hostname()]+command
+                        
+            logging.info(command)
+            print(command)
+            command = command.replace("\n", "")
+            command = command.split(" ")
+            execute = subprocess.Popen( command , 
+                                  stdin=subprocess.PIPE,
+                                  stdout=subprocess.PIPE,
+                                  stderr=subprocess.STDOUT, shell=False )
+            stdout_value, stderr_value = execute.communicate()
+            stdout_value = stdout_value.decode()
+      
+            stdout_value = str(stdout_value).split("\n")
+            stderr_value = str(stderr_value).split("\n")
+      
+            stdout_value.remove('') #remove '' entries from an array
+            
+            #Return command output:
+            for i in stdout_value:
+              print("out. ", i)
+            
+            
+            
+            #Manage the upload time:
+            time_end = datetime.datetime.utcnow()
+            diff = time_end-time_start
+            dd = divmod(diff.total_seconds(), 60)
+            logging.info("Upload time: %s min %s", str(dd[0]), str(dd[1]))
+            
+        if run_once:
+          break
+        else:
+          logging.info('Sleeping.')
+          time.sleep(60)  
+        
+        logging.info("There %s files not on xe1t-datamanager", str(cnt_upload_miss) )        
+
+def cax_tape_log_file():
+    """Analyses the tsm storage"""
+    parser = argparse.ArgumentParser(description="These program helps you to watch the tape backup")
+
+    parser.add_argument('--monitor', dest='monitor', 
+                        help="Select if you want to monitor database or logfile [database/logfile]")
+    parser.add_argument('--run', type=int,
+                        help="Select a single run")
+    parser.add_argument('--name', type=int,
+                        help="Select a single run")
+    parser.add_argument('--config', action='store', type=str,
+                        dest='config_file',
+                        help="Load a custom .json config file into cax")
+    run_once = True
+    args = parser.parse_args()
+    
+    # Check Mongo connection
+    config.mongo_password()
+
+    # Establish mongo connection
+    collection = config.mongo_collection()
+    sort_key = (('number', -1),
+                ('detector', -1),
+                ('_id', -1))
+    
+    if args.monitor == "logfile":
+      """load the logfile watcher class"""
+      a = tsm_mover.TSMLogFileCheck()
+    
+    elif args.monitor == "database":
+      """load the data base watcher class"""
+      #a = tsm_mover.TSMDatabaseCheck()
+
+
+      total_uploaded_amount = 0
+      total_uploaded_datasets = 0
+      #while True: # yeah yeah
+      while True: # yeah yeah    
+        #query = {'detector':'tpc'}
+        query = {}
+        
+        docs = list(collection.find(query))
+        
+        for doc in docs:
+          #tsm_mover.TSMDatabaseCheck()
+          
+          if 'data' not in doc:
+            continue
+          
+          nb_tsm_hosts = 0
+          for idoc in doc['data']:
+            if idoc['host'] == "tsm-server" and idoc['location'] != "n/a" and idoc['location'].find("tsm/") >= 0:
+              nb_tsm_hosts+=1
+              logging.info("Dataset: %s at host %s", idoc['location'], idoc['host'] )
+              fsize = tsm_mover.TSMDatabaseCheck().get_info(idoc['location'])
+              total_uploaded_datasets += 1
+              logging.info( "Total file size of the individual dataset: %s mb", fsize)
+              total_uploaded_amount += fsize
+          
+          if nb_tsm_hosts == 0:
+            continue
+        
+        if run_once:
+            break
+        
+      logging.info("Total amount of uploaded data: %s mb", total_uploaded_amount)
+      logging.info("Total amount of uploaded data sets: %s", total_uploaded_datasets)
 
 if __name__ == '__main__':
     main()

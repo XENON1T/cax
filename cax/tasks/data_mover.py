@@ -220,6 +220,8 @@ class CopyBase(Task):
         start = time.time()
 
         # For this run, where do we have transfer access?
+        datum_there = None
+        datum_here = None
         for remote_host in options:
             self.log.debug(remote_host)
 
@@ -229,11 +231,13 @@ class CopyBase(Task):
             if not method:
                 print ("Must specify transfer protocol (method) for "+remote_host)
                 raise
-
+            
+            print(": ", data_type, option_type, remote_host)
             datum_here, datum_there = self.local_data_finder(data_type,
                                                              option_type,
                                                              remote_host)
-
+            print("here: ", datum_here )
+            print("there: ", datum_there)
             #Upload logic
             if option_type == 'upload' and datum_here and datum_there is None and method != "tsm":
                 self.copy_handshake(datum_here, remote_host, method, option_type)
@@ -247,13 +251,15 @@ class CopyBase(Task):
             
             # Upload tsm:
             if option_type == 'upload' and datum_here and datum_there is None and method == "tsm":
-                print('tttttttt')
                 self.copy_tsm(datum_here, config.get_config(remote_host)['name'], method, option_type)
                 break
                 
             # Download tsm:
-            if option_type == 'download' and datum_here and datum_there is None and method == "tsm":
+            #if option_type == 'download' and datum_there and datum_here is None and method == "tsm":
+            if option_type == 'download' and datum_there and datum_here is not None and method == "tsm":
+                self.copy_tsm_download(datum_there, config.get_hostname(), method, option_type)
                 print('Download from the tape storage')
+                
                 break
 
         dataset = None
@@ -293,23 +299,126 @@ class CopyBase(Task):
 
         return datum_here, datum_there
 
+    def copy_tsm_download( self, datum, destination, method, option_type):
+        """A dedicated download function for downloads from tape storage"""
+        self.tsm = TSMclient()
+        
+        logging.info('Tape Backup to PDC STOCKHOLM (Download)')
+        #print( datum, destination, method, option_type)        
+        
+        raw_data_location = datum['location']
+        raw_data_filename = datum['location'].split('/')[-1]
+        raw_data_path     = config.get_config( config.get_hostname() )['dir_raw']
+        raw_data_tsm      = config.get_config( config.get_hostname() )['dir_tsm']
+        logging.info("Raw data location @xe1t-datamanager: %s", raw_data_location)
+        logging.info("Path to raw data: %s", raw_data_path)
+        logging.info("Path to tsm data: %s", raw_data_tsm)
+        logging.info("File/Folder for backup: %s", raw_data_filename)        
+    
+        self.log.debug("Notifying run database")
+        datum_new = {'type'         : datum['type'],
+                     'host'         : destination,
+                     'status'       : 'transferring',
+                     'location'     : "n/a",
+                     'checksum'     : None,
+                     'creation_time': datetime.datetime.utcnow(),
+                     }
+        logging.info("new entry for rundb: %s", datum_new )
+        
+        if config.DATABASE_LOG == True:
+            result = self.collection.update_one({'_id': self.run_doc['_id'],
+                                                 },
+                                   {'$push': {'data': datum_new}})
+
+            if result.matched_count == 0:
+                self.log.error("Race condition!  Could not copy because another "
+                               "process seemed to already start.")
+                return
+        
+        logging.info("Start tape download")
+    
+        #Sanity Check
+        if self.tsm.check_client_installation() == False:
+          logging.info("There is a problem with your dsmc client")
+          return
+        
+        #Do download:
+        tsm_download_result = self.tsm.download( raw_data_tsm + raw_data_filename, raw_data_path, raw_data_filename)
+        if os.path.exists( raw_data_path + raw_data_filename ) == False:
+          logging.info("Download to %s failed.", raw_data_path)
+          #Notify the database and break up
+        
+        #Rename
+        file_list = []
+        for (dirpath, dirnames, filenames) in os.walk(raw_data_path + raw_data_filename):
+          file_list.extend(filenames)
+          break
+
+        for i_file in file_list:
+          path_old = raw_data_path + raw_data_filename + "/" + i_file
+          path_new = raw_data_path + raw_data_filename + "/" + i_file[12:]
+          if not os.path.exists(path_new):
+              os.rename( path_old, path_new)
+        
+        #Do checksum and summarize it:
+        checksum_after = self.tsm.get_checksum_folder( raw_data_path  + "/" + raw_data_filename )
+        logging.info("Summary of the download for checksum comparison:")
+        logging.info("Number of downloaded files: %s", tsm_download_result["tno_restored_objects"])
+        logging.info("Transferred amount of data: %s", tsm_download_result["tno_restored_bytes"])
+        logging.info("Network transfer rate: %s", tsm_download_result["tno_network_transfer_rate"])
+        logging.info("Download time: %s", tsm_download_result["tno_data_transfer_time"])
+        logging.info("Number of failed downloads: %s", tsm_download_result["tno_failed_objects"])        
+        logging.info("MD5 Hash (database entry): %s", datum['checksum'])
+        logging.info("MD5 Hash (downloaded data): %s", checksum_after)
+        
+        
+        if checksum_after == datum['checksum']:
+          logging.info("The download/restore of the raw data set %s was [SUCCESSFUL]", raw_data_filename)
+          logging.info("Raw data set located at: %s", raw_data_path + raw_data_filename)
+        elif checksum_after != datum['checksum']:
+          logging.info("The download/restore of the raw data set %s [FAILED]", raw_data_filename)
+          logging.info("Checksums do not agree!")
+          
+        #Notifiy the database for final registration
+        if config.DATABASE_LOG:
+          if checksum_after == datum['checksum']:
+            #Notify the database if everything was fine:
+            self.collection.update({'_id' : self.run_doc['_id'],
+                                  'data': {
+                                        '$elemMatch': datum_new}},
+                                   {'$set': {'data.$.status': status,
+                                             'data.$.location': raw_data_path + raw_data_filename,
+                                             'data.$.checksum': checksum_after,
+                                             }
+                                   })
+          
+          elif checksum_after != datum['checksum']:
+            #Notify the database if something went wrong during the download: 
+            self.collection.update({'_id' : self.run_doc['_id'],
+                                  'data': {
+                                        '$elemMatch': datum_new}},
+                                   {'$set': {'data.$.status': "error",
+                                             'data.$.location': "n/a",
+                                             'data.$.checksum': "n/a",
+                                             }
+                                   })
+        
+        return 0
+    
     def copy_tsm(self, datum, destination, method, option_type):
-        self.tsm = TSMclient(self.run_doc)
+        self.tsm = TSMclient()
         
-        print('nice try')
+        logging.info('Tape Backup to PDC STOCKHOLM')
         print( datum, destination, method, option_type)
-        
         
         raw_data_location = datum['location']
         raw_data_filename = datum['location'].split('/')[-1]
         raw_data_path     = raw_data_location.replace( raw_data_filename, "")
-        raw_data_tsm      = "/data/xenon/tsm/"
-        print("path: ", raw_data_location)
-        print("path to raw data: ", raw_data_path)
-        print("path to tsm data: ", raw_data_tsm)
-        print("file: ", raw_data_filename)
-        
-    
+        raw_data_tsm      = config.get_config( config.get_hostname() )['dir_tsm']
+        logging.info("Raw data location @xe1t-datamanager: %s", raw_data_location)
+        logging.info("Path to raw data: %s", raw_data_path)
+        logging.info("Path to tsm data: %s", raw_data_tsm)
+        logging.info("File/Folder for backup: %s", raw_data_filename)
         
         self.log.debug("Notifying run database")
         datum_new = {'type'         : datum['type'],
@@ -319,7 +428,7 @@ class CopyBase(Task):
                      'checksum'     : None,
                      'creation_time': datetime.datetime.utcnow(),
                      }
-        print("new entry for rundb: ", datum_new )
+        logging.info("new entry for rundb: %s", datum_new )
         
         if config.DATABASE_LOG == True:
             result = self.collection.update_one({'_id': self.run_doc['_id'],
@@ -332,6 +441,11 @@ class CopyBase(Task):
                 return
         
         logging.info("Start tape upload")
+        
+        
+        if self.tsm.check_client_installation() == False:
+          logging.info("There is a problem with your dsmc client")
+          return
         
         #Prepare a copy from raw data location to tsm location ( including renaming)
         checksum_before_raw = self.tsm.get_checksum_folder( raw_data_path+raw_data_filename )
@@ -401,11 +515,12 @@ class CopyBase(Task):
                                   'data': {
                                         '$elemMatch': datum_new}},
                                    {'$set': {'data.$.status': status,
-                                             'data.$.location': raw_data_tsm + raw_data_filename
+                                             'data.$.location': raw_data_tsm + raw_data_filename,
+                                             'data.$.checksum': checksum_after,
                                              }
                                    })
             
-        
+        return 0
 
     def copy_handshake(self, datum, destination, method, option_type):
         """ Perform all the handshaking required with the run DB.

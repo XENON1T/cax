@@ -57,7 +57,9 @@ setup(
             'cax-rm = cax.main:remove',
             'cax-stray = cax.main:stray',
             'cax-status = cax.main:status',
+            'massive-tsm = cax.main:massive_tsmclient',
             'cax-tsm-remove = cax.main:remove_from_tsm',
+            'cax-tsm-watch = cax.main:cax_tape_log_file',
         ],
     },
 )
