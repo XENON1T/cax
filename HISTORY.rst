@@ -2,6 +2,10 @@
 History
 =======
 
+4.6.0 (2016-11-03)
+------------------
+*  hax minitree production
+   
 4.5.2 (2016-11-01)
 ------------------
 *  Reduce pax queue block size in batch processing #51 
