@@ -163,7 +163,7 @@ class ProcessBatchQueue(Task):
             return
 
         # Get number of events in data set (not set for early runs <1000)
-        events = self.run_doc.get('trigger', {}).get('events_built', -1)
+        events = self.run_doc.get('trigger', {}).get('events_built', 0)
 
         # Skip if 0 events in dataset
         if events == 0:
