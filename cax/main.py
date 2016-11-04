@@ -9,7 +9,7 @@ from cax import config, qsub
 
 import pax
 
-from cax.tasks import checksum, clear, data_mover, process, filesystem
+from cax.tasks import checksum, clear, data_mover, process, process_hax, filesystem
 from cax.tasks import corrections
 
 
@@ -95,6 +95,7 @@ def main():
         filesystem.SetPermission(),  # Set any permissions (primarily for Tegner) for new data to make sure analysts can access
         clear.BufferPurger(),  # Clear old data at some locations as specified in cax.json
         process.ProcessBatchQueue(),  # Process the data with pax
+        process_hax.ProcessBatchQueueHax()  # Process the data with hax
     ]
 
     # Raises exception if unknown host
