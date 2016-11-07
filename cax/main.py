@@ -225,7 +225,7 @@ def massive():
                 logging.debug('Skip: cax_%d_v%s job exists' % (doc['number'], pax.__version__))
                 continue
 
-            while qsub.get_number_in_queue() > (200 if config.get_hostname() == 'midway-login1' else 30):
+            while qsub.get_number_in_queue() > (500 if config.get_hostname() == 'midway-login1' else 30):
                 logging.info("Speed break 60s because %d in queue" % qsub.get_number_in_queue())
                 time.sleep(60)
 

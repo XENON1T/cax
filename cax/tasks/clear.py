@@ -106,6 +106,11 @@ class BufferPurger(checksum.CompareChecksums):
         # Do not purge processed data
         # Warning: if you want to enable this here, need to add pax version checking in check()
         if data_doc['type'] == 'processed':
+            self.log.debug("Do not purge processed data")
+            return
+
+        if self.run_doc['source']['type'] == "Kr83m" or self.run_doc['source']['type'] == "Rn220":
+            self.log.debug("Do not purge %s data" % self.run_doc['source']['type'])
             return
         
         self.log.debug("Checking purge logic")
