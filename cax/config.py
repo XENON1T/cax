@@ -265,17 +265,3 @@ def get_minitrees_dir(host, version):
     return os.path.join(get_minitrees_base_dir(host),
                         'pax_%s' % version)
 
-
-def adjust_permission_base_dir(base_dir, destination):
-    """Set ownership and permissons for basic folder of processed data (pax_vX)"""
-
-    if destination=="tegner-login-1":
-      #Change group and set permissions for PDC Stockholm
-      user_group = DATA_USER_PDC + ":" + DATA_GROUP_PDC
-      
-      subprocess.Popen( ["chown", "-R", user_group, base_dir],
-                        stdout=subprocess.PIPE )
-                             
-
-      subprocess.Popen( ["setfacl", "-R", "-M", "/cfs/klemming/projects/xenon/misc/basic", base_dir],
-                        stdout=subprocess.PIPE )
