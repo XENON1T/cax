@@ -18,46 +18,69 @@ class SetPermission(Task):
 
     def __init__(self):
         
-        raw_data = {"tegner-login-1": "/cfs/klemming/projects/xenon/xenon1t/raw/",
+        self.raw_data = {"tegner-login-1": "/cfs/klemming/projects/xenon/xenon1t/raw/",
                     "midway-login1": "/project/lgrandi/xenon1t/raw/"}
-        proc_data = {"tegner-login-1": "/cfs/klemming/projects/xenon/xenon1t/processed/",
+        
+        self.proc_data = {"tegner-login-1": "/cfs/klemming/projects/xenon/xenon1t/processed/",
                     "midway-login1": "/project/lgrandi/xenon1t/processed/"}
         
-        self.chmod_file = '/cfs/klemming/projects/xenon/misc/basic_file'
-        self.chmod_folder = '/cfs/klemming/projects/xenon/misc/basic'
+        self.chown_user = {"tegner-login-1": "bobau",
+                           "midway-login1": "tunnell"}
+        
+        self.chown_group = {"tegner-login-1": "xenon-users",
+                            "midway-login1": "xenon1t-admins"}
+        
+        self.chmod = {"tegner-login-1": '750',
+                      "midway-login1": '755'}
 
         Task.__init__(self)
-        self.hostname = config.get_config(config.get_hostname())
-        self.set_rec = "-R"
+        self.hostname_config = config.get_config(config.get_hostname())
+        self.hostname = config.get_hostname()
 
     def each_run(self):
         """Set ownership and permissons for files/folders"""
         for data_doc in self.run_doc['data']:
             # Is not local, skip
-            if 'host' not in data_doc or \
-                            data_doc['host'] != config.get_hostname() or \
-                            data_doc['host'] != 'tegner-login-1':
+            if 'host' not in data_doc or data_doc['host'] != config.get_hostname():
                 continue
+            
 
-            self.log.info("Set owner and group via chmod %s",
-                          config.get_hostname())
-            subprocess.Popen(["chown", self.set_rec, "bobau:xenon-users",
-                              data_doc['location']],
-                             stdout=subprocess.PIPE)
-
-            self.log.info("Set permissions via setfacl %s",
-                          config.get_hostname())
-
-            if data_doc['type'] == 'raw':
-                subprocess.Popen(["setfacl", self.set_rec, "-M",
-                                  self.chmod_folder,
-                                  data_doc['location']],
-                                 stdout=subprocess.PIPE)
+            #extract path:
+            f_path = data_doc['location']
+            f_type = data_doc['type']
+            
+            #apply changes according to processed/raw and analysis facility
+            if f_type == 'processed':
+              logging.info('Change ownership and permission for %s', f_path)
+              logging.info('Change to username %s and group %s', self.chown_user[self.hostname], self.chown_group[self.hostname])
+              logging.info('Set permission: %s', self.chmod[self.hostname] )
+              logging.info('Set ownership and permissions at %s', config.get_hostname() )
+              if config.get_hostname() == "midway-login1":
+                subprocess.call(['chmod', self.chmod[self.hostname], f_path])
+                subprocess.call(['chown', str(self.chown_user[self.hostname]+":"+self.chown_group[self.hostname]), f_path])
+              elif config.get_hostname() == "tegner-login-1":
+                subprocess.call(['chmod', self.chmod[self.hostname], f_path])
+                subprocess.call(['chown', str(self.chown_user[self.hostname]+":"+self.chown_group[self.hostname]), f_path])
+                subprocess.call(['setfacl', '-R', '-M', '/cfs/klemming/projects/xenon/misc/basic_file', f_path])
+              else:
+                logging.info('Analysis facility does not match')
+            elif f_type == 'raw':
+              logging.info('Change ownership and permission for %s', f_path)
+              logging.info('Change to username %s and group %s', self.chown_user[self.hostname], self.chown_group[self.hostname])
+              logging.info('Set permission: %s', self.chmod[self.hostname] )
+              logging.info('Set ownership and permissions at %s', config.get_hostname() )
+              if config.get_hostname() == "midway-login1":
+                subprocess.call(['chmod', '-R', self.chmod[self.hostname], f_path])
+                subprocess.call(['chown', '-R', str(self.chown_user[self.hostname]+":"+self.chown_group[self.hostname]), f_path])
+              elif config.get_hostname() == "tegner-login-1":
+                subprocess.call(['chmod', self.chmod[self.hostname], f_path])
+                subprocess.call(['chown', str(self.chown_user[self.hostname]+":"+self.chown_group[self.hostname]), f_path])
+                subprocess.call(['setfacl', '-R', '-M', '/cfs/klemming/projects/xenon/misc/basic', f_path])
+              else:
+                logging.info('Analysis facility does not match')  
+                
             else:
-                subprocess.Popen(["setfacl", self.set_rec, "-M",
-                                  self.chmod_file,
-                                  data_doc['location']],
-                                 stdout=subprocess.PIPE)
+              logging.info("Nothing to change: Ownership/Permission")
 
 
 class RenameSingle(Task):
