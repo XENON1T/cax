@@ -2,6 +2,10 @@
 History
 =======
 
+4.8.0 (2016-11-07)
+------------------
+* Do not purge Kr83m and Rn220 
+  
 4.7.1 (2016-11-03)
 ------------------
 * Fix bug in queue checking 
