@@ -17,11 +17,17 @@ class SetPermission(Task):
     """Set the correct permissions at the PDC in Stockholm"""
 
     def __init__(self):
+        
+        raw_data = {"tegner-login-1": "/cfs/klemming/projects/xenon/xenon1t/raw/",
+                    "midway-login1": "/project/lgrandi/xenon1t/raw/"}
+        proc_data = {"tegner-login-1": "/cfs/klemming/projects/xenon/xenon1t/processed/",
+                    "midway-login1": "/project/lgrandi/xenon1t/processed/"}
+        
         self.chmod_file = '/cfs/klemming/projects/xenon/misc/basic_file'
         self.chmod_folder = '/cfs/klemming/projects/xenon/misc/basic'
 
         Task.__init__(self)
-        self.destination_config = config.get_config(config.get_hostname())
+        self.hostname = config.get_config(config.get_hostname())
         self.set_rec = "-R"
 
     def each_run(self):
