@@ -17,7 +17,7 @@ class Task():
 
     def go(self, specify_run = None):
         """Run this periodically"""
-
+        print('welcome to GO')
         query = {'detector': 'tpc'}
         if specify_run is not None:
             query['number'] = specify_run
@@ -26,6 +26,8 @@ class Task():
 
         datasets = config.get_dataset_list()
 
+        print('datasets:', datasets)
+
         # Collect all run document ids.  This has to be turned into a list
         # to avoid timeouts if a task takes too long.
         try:
@@ -33,9 +35,11 @@ class Task():
                                                               projection=('_id'),
                                                               sort=(('start', -1),))]
         except pymongo.errors.CursorNotFound:
+            print('cursor not found')
             self.log.warning("Curson not found exception.  Skipping")
             return
 
+        print('iterating over each run')
         # Iterate over each run
         for id in ids:
             # Make sure up to date

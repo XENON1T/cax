@@ -14,6 +14,7 @@ from cax.tasks import corrections
 
 
 def main():
+    print('welcome to cax main (testing)')
     parser = argparse.ArgumentParser(description="Copying All kinds of XENON1T "
                                                  "data.")
     parser.add_argument('--once', action='store_true',
@@ -112,8 +113,10 @@ def main():
             logging.info("Executing %s." % name)
 
             try:
+                print('going')
                 task.go(args.run)
             except Exception as e:
+                print('exception thrown')
                 logging.fatal("Exception caught from task %s" % name,
                               exc_info=True)
                 logging.exception(e)

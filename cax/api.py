@@ -45,8 +45,25 @@ class api():
             params['limit']=1
             params['offset']=0
             
-            ret = json_util.loads(requests.get(self.api_url,
-                                               params = params).text)
+            api_try = 1
+            while api_try <= 3:
+                try:
+                    db_request = requests.get(self.api_url, params = params).text
+                    break
+                except:
+                    time.sleep(5)
+                    api_try += 1
+                if api_try == 3:
+                    print("Error: API call to database failed!")
+                    return None
+            
+            print("\nAPI call returns:")
+            print(db_request)
+            print("\n")
+
+            ret = json_util.loads(db_request)
+
+            #ret = json_util.loads(requests.get(self.api_url, params = params).text)
             
         else:
             ret = json_util.loads(requests.get(self.next_run).text)

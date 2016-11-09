@@ -62,7 +62,7 @@ def set_database_log(config):
     """
     global DATABASE_LOG
     DATABASE_LOG = config
-
+    print('using my config')
 
 def load():
     # User-specified config file
@@ -213,13 +213,17 @@ HOSTNAME={host}
 CONDOR_TEMPLATE = """#!/bin/bash
 executable = /home/ershockley/caxOSG_testing/run_cax.sh                                                                
 universe = vanilla
-Error = /home/ershockley/caxOSG_testing/log/{number}_{pax_version}.log
-Output  = /home/ershockley/caxOSG_testing/log/{number}_{pax_version}.log
-Log     = /home/ershockley/caxOSG_testing/log/{number}_{pax_version}_JOBLOG.log
+Error = /home/ershockley/caxOSG_testing/log/try8/{name}_{pax_version}_$(Cluster).log
+Output  = /home/ershockley/caxOSG_testing/log/try8/{name}_{pax_version}_$(Cluster).log
+Log     = /home/ershockley/caxOSG_testing/log/try8/joblogs/{name}_{pax_version}_$(Cluster)_JOBLOG.log
 
-Requirements = (CVMFS_oasis_opensciencegrid_org_TIMESTAMP >= 1449684749) && (OpSysAndVer =?= "SL6") && (GLIDEIN_ResourceName =\
-!= "BNL-ATLAS") && (GLIDEIN_ResourceName =!= "AGLT2")                                                                          
+Requirements = (OpSysAndVer =?= "SL6") && (GLIDEIN_ResourceName =!= "BNL-ATLAS") && (GLIDEIN_ResourceName =!= "AGLT2") && (GLIDEIN_ResourceName =!= "Clemson-Palmetto") && ( GLIDEIN_ResourceName =!= "NPX" ) && (GLIDEIN_ResourceName =!= "MIT_CMS") 
 request_cpus = {ncpus}
+request_Memory = 16384
+request_disk=52428800
++WANT_RCC_ciconnect = True
+transfer_input_files = /home/ershockley/user_cert,/xenon/ershockley/ziplists/{name}_ziplist.txt
+transfer_output_files = output
 when_to_transfer_output = ON_EXIT
 on_exit_hold = (ExitBySignal == True) || (ExitCode != 0)
 transfer_executable = True

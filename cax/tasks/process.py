@@ -52,13 +52,12 @@ def _process(name, in_location, host, pax_version, pax_hash,
     # Import pax so can process the data
     from pax import core, configuration   
 
-    if host != 'login':
-        output_fullname = out_location + '/' + name
-        os.makedirs(out_location, exist_ok=True)
+    output_fullname = out_location + '/' + name
 
+    if host != 'login':
+        os.makedirs(out_location, exist_ok=True)
     else:
         os.makedirs('output', exist_ok=True)
-        output_fullname = 'output/' + name
 
     # New data location
     datum = {'host'          : host,
@@ -105,7 +104,6 @@ def _process(name, in_location, host, pax_version, pax_hash,
     API = api()
     doc = API.get_next_run(query)
     
-
     if doc is None:
         print("Error finding doc after update")
         return 1
@@ -117,12 +115,14 @@ def _process(name, in_location, host, pax_version, pax_hash,
     else:
         pax_config = 'XENON1T_LED'
     
+    if host == 'login':
+        output_fullname = 'output/' + name
 
     config_dict = {'pax': {'input_name' : in_location,
                            'output_name': output_fullname,
                            'n_cpus'     : ncpus,
-                           'stop_after' : 20,
-                           'decoder_plugin' : 'BSON.DecodeZBSON',
+                           # 'stop_after' : 20,
+                           # 'decoder_plugin' : 'BSON.DecodeZBSON',
                            'look_for_config_in_runs_db' : False
                            }
                    }
@@ -139,6 +139,7 @@ def _process(name, in_location, host, pax_version, pax_hash,
     # Try to process data.
     try:
         print('processing', name, in_location, pax_config)
+        print('saving to', output_fullname)
         p = core.Processor(config_names=pax_config,
                            config_dict=config_dict)
         p.run()
@@ -200,20 +201,15 @@ class ProcessBatchQueue(Task):
             self.log.debug("Do not process tag found")
             return
 
-        print("no donotprocess tag")
-
-        if 'processor' not in self.run_doc or \
-                'DEFAULT' not in self.run_doc['processor']:
+        if 'processor' not in self.run_doc or 'DEFAULT' not in self.run_doc['processor']:
             return
-        
-        print("processor ok")
 
         processing_parameters = self.run_doc['processor']['DEFAULT']
+        
         if 'gains' not in processing_parameters or \
             'electron_lifetime_liquid' not in processing_parameters:
-            return
-
-        print("gains and e_lifetime in processing parameters")
+            self.log.debug('no gains or electron lifetime!')
+            #return
 
         thishost = config.get_hostname()
 
@@ -248,7 +244,8 @@ class ProcessBatchQueue(Task):
             # with too many CPU)
             ncpus = 1
         else:
-            ncpus = 4  # based on Figure 2 here https://xecluster.lngs.infn.it/dokuwiki/doku.php?id=xenon:xenon1t:shockley:performance#automatic_processing
+            ncpus = 8  # based on Figure 2 here https://xecluster.lngs.infn.it/dokuwiki/doku.php?id=xenon:xenon1t:shockley:performance#automatic_processing
+
 
         disable_updates = not config.DATABASE_LOG
 
@@ -257,8 +254,7 @@ class ProcessBatchQueue(Task):
         for version in versions:
             pax_hash = "n/a"
 
-            out_location = config.get_processing_dir(thishost,
-                                                     version)
+            out_location = 'output/' #config.get_processing_dir(thishost, version)
 
             if have_processed[version]:
                 self.log.info("Skipping %s already processed with %s",
