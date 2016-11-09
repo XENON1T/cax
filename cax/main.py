@@ -210,19 +210,20 @@ def massive():
                 if args.start < doc['number']:
                     continue
 
+            job_name = ''
             if doc['detector'] == 'tpc':
-                job = dict(command='cax --once --run {number} '+config_arg,
-                            number=doc['number'],
-                           )
+                job_name = str(doc['number'])
             elif doc['detector'] == 'muon_veto':
-                job = dict(command='cax --once --name {number} '+config_arg,
-                            number=doc['name'],
+                job_name = doc['name']
+
+            job = dict(command='cax --once --run {number} '+config_arg,
+                       number=job_name,
                            )
 
             script = config.processing_script(job)
 
-            if 'cax_%d_v%s' % (doc['number'], pax.__version__) in qsub.get_queue():
-                logging.debug('Skip: cax_%d_v%s job exists' % (doc['number'], pax.__version__))
+            if 'cax_%s_v%s' % (job_name, pax.__version__) in qsub.get_queue():
+                logging.debug('Skip: cax_%s_v%s job exists' % (job_name, pax.__version__))
                 continue
 
             while qsub.get_number_in_queue() > (500 if config.get_hostname() == 'midway-login1' else 30):
@@ -236,8 +237,8 @@ def massive():
             logging.debug("Pace by 1s")
             time.sleep(1)  # Pace 1s for batch queue
 
-        #if run_once:
-        #    break
+        if run_once:
+            break
         #else:
         #    pace = 5
         #    logging.info("Done, waiting %d minutes" % pace)
