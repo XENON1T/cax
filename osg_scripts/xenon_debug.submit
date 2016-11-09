@@ -1,0 +1,18 @@
+#!/bin/bash
+executable = /home/briedel/Xenon1T/processing_test/run_xenon_debug.sh
+universe = vanilla
+Error = /local-scratch/briedel/debug/$(cluster)_$(pax_version).error
+Output  = /local-scratch/briedel/debug/$(cluster)_$(pax_version).log
+Log     = /local-scratch/briedel/debug/$(cluster)_$(pax_version)_JOBLOG.log
+
+Requirements = ((CVMFS_oasis_opensciencegrid_org_TIMESTAMP >= 1449684749) && (OpSysAndVer == "CentOS6" || OpSysAndVer == "RedHat6" || OpSysAndVer == "SL6"))
+# && (GLIDEIN_ResourceName =!= "BNL-ATLAS") && 
+request_cpus = $(ncpus)
+transfer_input_files = /home/briedel/user_cert
+transfer_output_files = ""
+when_to_transfer_output = ON_EXIT
+# on_exit_hold = (ExitBySignal == True) || (ExitCode != 0)
+transfer_executable = True
+# periodic_release =  ((NumJobStarts < 5) && ((CurrentTime - EnteredCurrentStatus) > 600))
+arguments = $(name) $(input_file) $(host) $(pax_version) $(pax_hash) $(out_location) $(ncpus) $(disable_updates)
+queue 1
