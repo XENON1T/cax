@@ -1,14 +1,40 @@
 #!/usr/bin/env python
 from __future__ import print_function
-import sys
 import os
 import logging as log
 from optparse import OptionParser
 
 
 """
+This script creates an HTCondor DAG file by walking through a given
+input directory and looking for folders that contain files that follow
+an input pattern.
 
+This script assumes a directory structure of
 
+/path/to/file/foo/bar/YYMMDD_HHMM/XENON1T-*.zip
+
+Top level dir = /path/to/file/foo/bar/
+run directory = YYMMDD_HHMM
+
+uri = gsiftp://gridftp.grid.uchicago.edu:2811/cephfs/srm
+is the Uniform Resource Identifier that shows
+
+The scripts has multiple input options:
+
+`-o/--outdagfile`: (Required, and unique) DAG file to fill
+`-v/--verbosity`: Verbosity of logging on a range from 1 to 4
+`--inputdir`: (Required) Top level, which contains the run directory
+`--outputdir`: (Required) Directory where output files will be put adding
+               the YYMMDD_HHMM identifier
+`--uri`: (Required) Uniform Resource Identifier that provides the gridFTP
+         or srm server location and the mount point for the data
+         on the server
+`--inputfilefilter`: (Required) File identifier, for example XENON1T-
+`--runnumbers`: A list of run numbers, i.e. YYMMDD_HHMM, to process
+`--muonveto`: Process muon veto file
+`--submitfile`: (Required) HTCondor submit file to be used
+`--paxversion`: (Required) pax version to be used
 """
 
 
@@ -46,9 +72,7 @@ def callback_optparse(option, opt_str, value, parser):
 
 def write_dag_file(options):
     """
-    Writing DAG file. 
-
-
+    Writing DAG file.
     """
     i = 0
     with open(options.outdagfile, "wt") as dag_file:

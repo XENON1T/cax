@@ -5,7 +5,7 @@ Error = /local-scratch/briedel/debug/$(cluster)_$(pax_version).error
 Output  = /local-scratch/briedel/debug/$(cluster)_$(pax_version).log
 Log     = /local-scratch/briedel/debug/$(cluster)_$(pax_version)_JOBLOG.log
 
-Requirements = ((CVMFS_oasis_opensciencegrid_org_TIMESTAMP >= 1449684749) && (OpSysAndVer == "CentOS6" || OpSysAndVer == "RedHat6" || OpSysAndVer == "SL6"))
+Requirements = ((OpSysAndVer == "CentOS6" || OpSysAndVer == "RedHat6" || OpSysAndVer == "SL6"))
 # && (GLIDEIN_ResourceName =!= "BNL-ATLAS") && 
 request_cpus = $(ncpus)
 transfer_input_files = /home/briedel/user_cert
