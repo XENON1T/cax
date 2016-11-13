@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 import os
+import urlparse
 import logging as log
 from optparse import OptionParser
 
@@ -86,14 +87,19 @@ def write_dag_file(options):
             for infile in file_list:
                 if options.inputfilefilter not in infile:
                     continue
+                filepath, file_extenstion = os.path.splitext(infile)
+                if file_extenstion != ".zip":
+                    continue
                 run_number = get_run_number(dir_name)
                 outfile = get_out_name(infile)
-                infile = os.path.join(options.uri, dir_name, infile)
-                if not os.path.exists(os.path.join(options.outdir,
+                infile = os.path.abspath(os.path.join(dir_name, infile))
+                infile = options.uri + infile
+                if not os.path.exists(os.path.join(options.outputdir,
                                                    run_number)):
-                    os.makedirs(os.path.join(options.outdir, run_number))
-                outfile = os.path.join(options.uri, options.outdir,
-                                       run_number, outfile)
+                    os.makedirs(os.path.join(options.outputdir, run_number))
+                outfile = os.path.abspath(os.path.join(options.outputdir,
+                                          run_number, outfile))
+                outfile = options.uri + outfile
                 dag_file.write("JOB XENON.%d %s\n" % (i, options.submitfile))
                 dag_file.write(("VARS XENON.%d input_file=\"%s\" "
                                 "out_location=\"%s\" name=\"%s\" "
@@ -107,32 +113,7 @@ def write_dag_file(options):
 
 
 def main(options, args):
-    if options.outdagfile is None:
-        log.fatal("No output DAG file provided")
-        raise RuntimeError()
-    else:
-        if os.path.exists(options.outdagfile):
-            log.fatal("Output DAG file exists. Please rename or delete.")
-            raise RuntimeError()
-    if options.inputdir is None:
-        log.fatal("No input dir provided")
-        raise RuntimeError()
-    if options.outdir is None:
-        log.fatal("No output top level dir provided")
-        raise RuntimeError()
-    if options.uri is None:
-        log.fatal("No URI to file transfer server provided")
-        raise RuntimeError()
-    if options.submitfile is None:
-        log.fatal("No submit file provided")
-        raise RuntimeError()
-    else:
-        if not os.path.exists(options.submitfile):
-            log.fatal("Submit file does not exist. Please create.")
-            raise RuntimeError()
-    if options.paxversion is None:
-        log.fatal("No URI to file transfer server provided")
-        raise RuntimeError()
+    write_dag_file(options)
 
 
 if __name__ == '__main__':
@@ -161,11 +142,29 @@ if __name__ == '__main__':
     parser.add_option("--paxversion", dest="paxversion", default=None,
                       help="PAX version to be used")
     (options, args) = parser.parse_args()
+    if options.outdagfile is None:
+        parser.error("No output DAG file provided")
+    else:
+        if os.path.exists(options.outdagfile):
+            parser.error("Output DAG file exists. Please rename or delete.")
+    if options.inputdir is None:
+        parser.error("No input dir provided")
+    if options.outputdir is None:
+        parser.error("No output top level dir provided")
+    if options.uri is None:
+        parser.error("No URI to file transfer server provided")
+    if options.submitfile is None:
+        parser.error("No submit file provided")
+    else:
+        if not os.path.exists(options.submitfile):
+            parser.error("Submit file does not exist. Please create.")
+    if options.paxversion is None:
+        parser.error("No URI to file transfer server provided")
     level = {
-        1: logging.ERROR,
-        2: logging.WARNING,
-        3: logging.INFO,
-        4: logging.DEBUG
-    }.get(options.verbosity, logging.DEBUG)
-    logging.basicConfig(level=level)
+        1: log.ERROR,
+        2: log.WARNING,
+        3: log.INFO,
+        4: log.DEBUG
+    }.get(options.verbosity, log.DEBUG)
+    log.basicConfig(level=level)
     main(options, args)
