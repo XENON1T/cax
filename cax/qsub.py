@@ -44,12 +44,11 @@ def submit_job(host,script, name, extra=''):
 
     #Different submit command for using OSG
     if host == 'login':
-        which('condor_submit')
+        which('condor_submit_dag')
         
         # Effect of the arguments for condor_submit:                      
         # http://research.cs.wisc.edu/htcondor/manual/v7.6/condor_submit.html
-
-        submit_command = ('condor_submit {extra} {script}'
+        submit_command = ('condor_submit_dag {extra} {script}'
                           .format(script=fileobj.name,
                                   extra=extra))
 
@@ -78,6 +77,38 @@ def submit_job(host,script, name, extra=''):
     
     delete_script(fileobj)
 
+def submit_dag_job(name, dag_file, inputdir, outputdir, submitscript, paxversion):
+
+    which('condor_submit_dag')
+
+    # create submit file, which in turn is used by dag file.
+    submitfileobj = create_script(submitscript)
+
+    # create dag file
+    dag_maker = "~/cax/osg_scripts/write_xenon_dag.py --inputdir {inputdir}  --names {name} --outputdir {outputdir} --submitfile {submitfile} --paxversion {paxversion} -o {dag_file}"
+
+    os.system(dag_maker.format(inputdir=inputdir,
+                               name=name,
+                               outputdir=outputdir,
+                               submitfile=submitfileobj.name,
+                               paxversion=paxversion,
+                               dag_file=dag_file))
+
+
+    submit_command = ('condor_submit_dag {script}'.format(script=dag_file))
+
+    logging.info('submit job:\n %s' % submit_command)
+
+    try:
+        result = subprocess.check_output(submit_command,
+                                         stderr=subprocess.STDOUT,
+                                         shell=True,
+                                         timeout=120)
+    except subprocess.TimeoutExpired as e:
+        logging.error("Process timeout")
+    except Exception as e:
+        logging.exception(e)
+    # delete_script(fileobj)   
 
 def create_script(script):
     """Create script as temp file to be run on cluster"""

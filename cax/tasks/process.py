@@ -190,7 +190,19 @@ class ProcessBatchQueue(Task):
 
         script = config.processing_script(script_args)
         self.log.info(script)
-        qsub.submit_job(host, script, name + "_" + pax_version)
+
+        if host == 'login':
+            dag_dir = "/xenon/ershockley/cax/{name}/{number}_{pax_version}/".format(name=name,
+                                                                                    number=number,
+                                                                                    pax_version=pax_version)
+            if not os.path.exists(dag_dir):
+                os.makedirs(dag_dir)
+            
+            dag_file = dag_dir + "{name}.dag".format(name=name)
+            qsub.submit_dag_job(name, dag_file, in_location, out_location, script, pax_version)
+
+        else:
+            qsub.submit_job(host, script, name + "_" + pax_version)
 
     def verify(self):
         """Verify processing worked"""
@@ -208,8 +220,8 @@ class ProcessBatchQueue(Task):
         
         if 'gains' not in processing_parameters or \
             'electron_lifetime_liquid' not in processing_parameters:
-            self.log.debug('no gains or electron lifetime!')
-            #return
+            self.log.debug('no gains or electron lifetime! skipping processing')
+            return
 
         thishost = config.get_hostname()
 
@@ -254,7 +266,7 @@ class ProcessBatchQueue(Task):
         for version in versions:
             pax_hash = "n/a"
 
-            out_location = 'output/' #config.get_processing_dir(thishost, version)
+            out_location = '/xenon/ershockley/processed' #config.get_processing_dir(thishost, version)
 
             if have_processed[version]:
                 self.log.info("Skipping %s already processed with %s",

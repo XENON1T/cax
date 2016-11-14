@@ -211,24 +211,22 @@ HOSTNAME={host}
 
 # for OSG
 CONDOR_TEMPLATE = """#!/bin/bash
-executable = /home/ershockley/caxOSG_testing/run_cax.sh                                                                
+executable = /home/ershockley/cax/osg_scripts/run_xenon.sh
 universe = vanilla
-Error = /home/ershockley/caxOSG_testing/log/try8/{name}_{pax_version}_$(Cluster).log
-Output  = /home/ershockley/caxOSG_testing/log/try8/{name}_{pax_version}_$(Cluster).log
-Log     = /home/ershockley/caxOSG_testing/log/try8/joblogs/{name}_{pax_version}_$(Cluster)_JOBLOG.log
+Error = /xenon/ershockley/cax/$(name)/$(cluster)_$(pax_version).error
+Output  = /xenon/ershockley/cax/$(name)/$(cluster)_$(pax_version).log
+Log     = /xenon/ershockley/cax/$(name)/$(cluster)_$(pax_version)_JOBLOG.log
 
-Requirements = (OpSysAndVer =?= "SL6") && (GLIDEIN_ResourceName =!= "BNL-ATLAS") && (GLIDEIN_ResourceName =!= "AGLT2") && (GLIDEIN_ResourceName =!= "Clemson-Palmetto") && ( GLIDEIN_ResourceName =!= "NPX" ) && (GLIDEIN_ResourceName =!= "MIT_CMS") 
-request_cpus = {ncpus}
-request_Memory = 16384
-request_disk=52428800
+Requirements = ((OpSysAndVer == "CentOS6" || OpSysAndVer == "RedHat6" || OpSysAndVer == "SL6") && (GLIDEIN_ResourceName =!= "NPX"))
+request_cpus = $(ncpus)
+transfer_input_files = /home/ershockley/user_cert
+transfer_output_files = ""
 +WANT_RCC_ciconnect = True
-transfer_input_files = /home/ershockley/user_cert,/xenon/ershockley/ziplists/{name}_ziplist.txt
-transfer_output_files = output
 when_to_transfer_output = ON_EXIT
-on_exit_hold = (ExitBySignal == True) || (ExitCode != 0)
+# on_exit_hold = (ExitBySignal == True) || (ExitCode != 0)
 transfer_executable = True
-periodic_release =  (NumJobStarts < 5) && ((CurrentTime - EnteredCurrentStatus) > 600)
-arguments = {name} {base}/{name} {host} {pax_version} {pax_hash} {out_location} {ncpus} {disable_updates}
+# periodic_release =  ((NumJobStarts < 5) && ((CurrentTime - EnteredCurrentStatus) > 600))
+arguments = $(name) $(input_file) $(host) $(pax_version) $(pax_hash) $(out_location) $(ncpus) $(disable_updates)
 queue 1
 """
 
@@ -288,7 +286,7 @@ def processing_script(args={}):
         args = {k:v.format(**args) if isinstance(v, str) else v for k,v in args.items()}
         # os.makedirs(args['base']+"/"+args['use']+("/%d"%args['number'])+"_"+args['pax_version'], exist_ok=True)
         
-        script_template = CONDOR_TEMPLATE.format(**args)
+        script_template = CONDOR_TEMPLATE # .format(**args)
 
     else:
         raise NotImplementedError("Host %s processing not implemented",
