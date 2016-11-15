@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 from __future__ import print_function
 import os
-import urlparse
+# import urlparse
 import logging as log
 from optparse import OptionParser
 
@@ -32,7 +32,7 @@ The scripts has multiple input options:
          or srm server location and the mount point for the data
          on the server
 `--inputfilefilter`: (Required) File identifier, for example XENON1T-
-`--runnumbers`: A list of run numbers, i.e. YYMMDD_HHMM, to process
+`--names`: A list of run numbers, i.e. YYMMDD_HHMM, to process
 `--muonveto`: Process muon veto file
 `--submitfile`: (Required) HTCondor submit file to be used
 `--paxversion`: (Required) pax version to be used
@@ -46,7 +46,7 @@ def get_out_name(filename):
     return os.path.splitext(filename)[0] + ".root"
 
 
-def get_run_number(dir_name):
+def get_run_name(dir_name):
     """
     Getting run number from directory
     """
@@ -80,9 +80,9 @@ def write_dag_file(options):
         for dir_name, subdir_list, file_list in os.walk(options.inputdir):
             if not options.run_muonveto and "MV" in dir_name:
                 continue
-            run_number = get_run_number(dir_name)
-            if (options.runnumbers is not None and
-               run_number not in options.runnumbers):
+            run_name = get_run_name(dir_name)
+            if (options.names is not None and
+               run_name not in options.names):
                 continue
             for infile in file_list:
                 if options.inputfilefilter not in infile:
@@ -90,15 +90,15 @@ def write_dag_file(options):
                 filepath, file_extenstion = os.path.splitext(infile)
                 if file_extenstion != ".zip":
                     continue
-                run_number = get_run_number(dir_name)
+                run_name = get_run_name(dir_name)
                 outfile = get_out_name(infile)
                 infile = os.path.abspath(os.path.join(dir_name, infile))
                 infile = options.uri + infile
                 if not os.path.exists(os.path.join(options.outputdir,
-                                                   run_number)):
-                    os.makedirs(os.path.join(options.outputdir, run_number))
+                                                   run_name)):
+                    os.makedirs(os.path.join(options.outputdir, run_name))
                 outfile = os.path.abspath(os.path.join(options.outputdir,
-                                          run_number, outfile))
+                                          run_name, outfile))
                 outfile = options.uri + outfile
                 dag_file.write("JOB XENON.%d %s\n" % (i, options.submitfile))
                 dag_file.write(("VARS XENON.%d input_file=\"%s\" "
@@ -106,7 +106,7 @@ def write_dag_file(options):
                                 "ncpus=\"1\" disable_updates=\"True\" "
                                 "host=\"login\" pax_version=\"%s\" "
                                 "pax_hash=\"n/a\"\n") % (i, infile,
-                                                         outfile, run_number,
+                                                         outfile, run_name,
                                                          options.paxversion))
                 dag_file.write("Retry XENON.%d 3\n" % i)
                 i += 1
@@ -127,14 +127,14 @@ if __name__ == '__main__':
                             "through and find input files"))
     parser.add_option("--outputdir", dest="outputdir", default=None,
                       help="Force update information")
-    parser.add_option("--uri", dest="uri", default=None,
+    parser.add_option("--uri", dest="uri", default="gsiftp://gridftp.grid.uchicago.edu:2811/cephfs/srm",
                       help="Force update information")
     parser.add_option("--inputfilefilter", dest="inputfilefilter",
                       default="XENON1T-", help=("Filter by which to "
                                                 "limit # of input files"))
-    parser.add_option("--runnumbers", dest="runnumbers", default=None,
+    parser.add_option("--names", dest="names", default=None,
                       action="callback", callback=callback_optparse,
-                      help="Run numbers to consider")
+                      help="Run names to consider")
     parser.add_option("--muonveto", dest="run_muonveto", action="store_true",
                       default=False, help="Process Muon Veto data ")
     parser.add_option("--submitfile", dest="submitfile", default=None,
@@ -146,7 +146,8 @@ if __name__ == '__main__':
         parser.error("No output DAG file provided")
     else:
         if os.path.exists(options.outdagfile):
-            parser.error("Output DAG file exists. Please rename or delete.")
+            print("Output DAG file exists. Overwriting")
+            #parser.error("Output DAG file exists. Please rename or delete.")
     if options.inputdir is None:
         parser.error("No input dir provided")
     if options.outputdir is None:
