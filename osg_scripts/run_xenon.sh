@@ -99,7 +99,7 @@ export GFAL_CONFIG_DIR=$OSG_LOCATION/etc/gfal2.d
 export GFAL_PLUGIN_DIR=$OSG_LOCATION/usr/lib64/gfal2-plugins/
 # else
     # Not ideal but some sites don't have the gfal config and plug directories =(                                                                                          
-if [[ ! -d /etc//etc/gfal2.d ]];
+if [[ ! -d /etc/gfal2.d ]];
 then
     OSG_LOCATION=`source /cvmfs/oasis.opensciencegrid.org/osg-software/osg-wn-client/3.3/current/el6-x86_64/setup.sh; env | grep OSG_LOCATION | cut -f 2 -d=`
     export GFAL_CONFIG_DIR=$OSG_LOCATION/etc/gfal2.d

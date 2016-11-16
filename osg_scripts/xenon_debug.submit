@@ -1,14 +1,14 @@
 #!/bin/bash
-executable = /home/ershockley/cax/osg_scripts/run_xenon.sh
+executable = /home/briedel/Xenon1T/processing_test/run_xenon_debug.sh
 universe = vanilla
-Error = /home/ershockley/caxOSG_testing/single_zip/logs/try1/$(cluster)_$(pax_version).error
-Output  = /home/ershockley/caxOSG_testing/single_zip/logs/try1/$(cluster)_$(pax_version).log
-Log     = /home/ershockley/caxOSG_testing/single_zip/logs/try1/$(cluster)_$(pax_version)_JOBLOG.log
+Error = /local-scratch/briedel/debug/$(cluster)_$(pax_version).error
+Output  = /local-scratch/briedel/debug/$(cluster)_$(pax_version).log
+Log     = /local-scratch/briedel/debug/$(cluster)_$(pax_version)_JOBLOG.log
 
 Requirements = ((OpSysAndVer == "CentOS6" || OpSysAndVer == "RedHat6" || OpSysAndVer == "SL6"))
 # && (GLIDEIN_ResourceName =!= "BNL-ATLAS") && 
 request_cpus = $(ncpus)
-transfer_input_files = /home/ershockley/user_cert
+transfer_input_files = /home/briedel/user_cert
 transfer_output_files = ""
 when_to_transfer_output = ON_EXIT
 # on_exit_hold = (ExitBySignal == True) || (ExitCode != 0)
