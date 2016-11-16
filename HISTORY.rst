@@ -1,7 +1,14 @@
-History
+  History
 =======
 
-4.8.1 (2016-11-09)                                                                           ------------------                                                                           
+4.9.0 (2016-11-15)
+------------------
+* Increase timeout for pax processing
+* Purge Rn220+Kr83m only on Midway
+* Disable iterative mode for massive-cax (for now)
+  
+4.8.1 (2016-11-09)
+------------------                                                                           
 * Fix batch queue checking for MV jobs
   
 4.8.0 (2016-11-07)
