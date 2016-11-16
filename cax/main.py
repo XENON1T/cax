@@ -176,24 +176,24 @@ def massive():
                 ('detector', -1),
                 ('_id', -1))
 
-    dt = datetime.timedelta(days=1)
-    t0 = datetime.datetime.utcnow() - 2*dt
+    #dt = datetime.timedelta(days=1)
+    #t0 = datetime.datetime.utcnow() - 2*dt
 
 
     while True: # yeah yeah
         query = {}
 
-        t1 = datetime.datetime.utcnow()
-        if t1 - t0 < dt:
-            logging.info("Iterative mode")
+        #t1 = datetime.datetime.utcnow()
+        #if t1 - t0 < dt:
+        #    logging.info("Iterative mode")
 
             # See if there is something to do
-            query['start'] = {'$gt' : t0}
+        #    query['start'] = {'$gt' : t0}
 
-            logging.info(query)
-        else:
-            logging.info("Full mode")
-            t0 = t1
+        #    logging.info(query)
+        #else:
+        #    logging.info("Full mode")
+        #    t0 = t1
 
         docs = list(collection.find(query,
                                     sort=sort_key,
