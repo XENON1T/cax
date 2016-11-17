@@ -32,6 +32,7 @@ def verify():
     """
     return True
 
+
 def _process_hax(name, in_location, host, pax_version,
              out_location, detector='tpc'):
     """Called by another command.
@@ -50,12 +51,12 @@ def _process_hax(name, in_location, host, pax_version,
 
     try:
         print('creating hax minitrees', name, in_location)
-        init_hax(in_location, pax_version, out_location) # may initilize once only
-        hax.minitrees.load(name, ['Basics','Fundamentals'])
+        init_hax(in_location, pax_version, out_location)   # may initialize once only
+        hax.minitrees.load(name, ['Basics', 'Fundamentals',
+                                  'DoubleScatter', 'LargestPeakProperties', 'TotalProperties'])
 
     except Exception as exception:
         raise
-
 
 
 class ProcessBatchQueueHax(Task):
