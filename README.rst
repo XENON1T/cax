@@ -93,6 +93,11 @@ For checksumming, cax must be run on the storage server whose IP must be whiteli
 
 Processing is currently implemented for only Midway and Stockholm.
 
+Using ruciax
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The upload
+
+
 Customizing cax
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
