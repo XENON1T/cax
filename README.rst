@@ -98,19 +98,19 @@ Using ruciax
 ruciax is a rucio integration into cax. It allows to upload raw data sets and processed data to a specified rucio storage endpoint (RSE). The upload from e.g. xe1t-datamanager to NIKHEF_USERDISK is defined as "first upload" in the following text and the according RSE is identified as "entrance RSE".
 Once the data are uploaded to the entrance RSE the rucio file catalogue (rucio-server) takes over the distribution of the data sets from one RSE (e.g. NIHKEF_USERDISK) to another (e.g. UC_OSG_USERDISK).
 ruciax runs two configurations: "Uploads" and "Rules". These is controlled by:
-  * cax_ruciax_xe1tdatamanager_verifyruns.json <-> Rules
-  * cax_ruciax_xe1tdatamanager.json <-> Uploads
-  Both are configured with "simple" rules by:
-    "name": "rucio-catalogue",
-    "hostname": "",
-    "username": "",
-    "method": "rucio",
-    "dir_raw": "/data/xenon/raw",
-    "upload_options": null,
-    "download_options": null,
-    "rucio_upload_rse": "NIKHEF_USERDISK", <<-- Entrance RSE
-    "rucio_account": "production",         <<-- Don't change that unless you want to change your rucio upload account.
-    "rucio_transfer": ["UC_OSG_USERDISK"]  <<-- RSE's for rucio transfers
+* cax_ruciax_xe1tdatamanager_verifyruns.json <-> Rules
+ cax_ruciax_xe1tdatamanager.json <-> Uploads
+Both are configured with "simple" rules by:
+  "name": "rucio-catalogue",
+  "hostname": "",
+  "username": "",
+  "method": "rucio",
+  "dir_raw": "/data/xenon/raw",
+  "upload_options": null,
+  "download_options": null,
+  "rucio_upload_rse": "NIKHEF_USERDISK", <<-- Entrance RSE
+  "rucio_account": "production",         <<-- Don't change that unless you want to change your rucio upload account.
+  "rucio_transfer": ["UC_OSG_USERDISK"]  <<-- RSE's for rucio transfers
 
 Here are some examples:
 Run a single upload (e.g. of run XXXX) to the rucio catalogue:
