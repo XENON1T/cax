@@ -130,6 +130,7 @@ Run 'massive-ruciax' for upload continuously::
    [~] massive-ruciax --config cax_ruciax_xe1tdatamanager.json
 
 Run 'massive-ruciax' for rules continuously::
+
    [~] massive-ruciax --config cax_ruciax_xe1tdatamanager_verifyruns.json
 
 Run 'massive-ruciax' for upload once (similar for rules)::
@@ -141,6 +142,9 @@ Run 'massive-ruciax' for upload continuously for a range of tpc runs::
    [~] massive-ruciax --config cax_ruciax_xe1tdatamanager_verifyruns.json --from-run 4455 --to-run 4465
 
 Please note: You need both configurations running for upload and proper registration in the runDB. Use screen or tmux!
+
+###Define complex rules
+A more complex structure for rucio based transfer rules is not yet implemented.
 
 Customizing cax
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
