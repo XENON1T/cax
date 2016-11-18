@@ -102,31 +102,43 @@ ruciax runs two configurations: "Uploads" and "Rules". These is controlled by:
 * cax_ruciax_xe1tdatamanager_verifyruns.json <-> Rules
 * cax_ruciax_xe1tdatamanager.json <-> Uploads
 
-Both are configured with "simple" rules by:
-  "name": "rucio-catalogue",  
-  "hostname": "",  
-  "username": "",  
-  "method": "rucio",  
-  "dir_raw": "/data/xenon/raw",    
-  "upload_options": null,    
-  "download_options": null,   
-  "rucio_upload_rse": "NIKHEF_USERDISK", <<-- Entrance RSE    
-  "rucio_account": "production",         <<-- Don't change that unless you want to change your rucio upload account.    
-  "rucio_transfer": ["UC_OSG_USERDISK"]  <<-- RSE's for rucio transfers    
+Both are configured with "simple" rules by::
+
+   "name": "rucio-catalogue",
+   "hostname": "",  
+   "username": "",  
+   "method": "rucio",  
+   "dir_raw": "/data/xenon/raw",    
+   "upload_options": null,    
+   "download_options": null,   
+   "rucio_upload_rse": "NIKHEF_USERDISK", <<-- Entrance RSE    
+   "rucio_account": "production",         <<-- Don't change that unless you want to change your rucio upload account.    
+   "rucio_transfer": ["UC_OSG_USERDISK"]  <<-- RSE's for rucio transfers    
 
 Here are some examples:
-Run a single upload (e.g. of run XXXX) to the rucio catalogue:
-  [~] ruciax --once --config cax_ruciax_xe1tdatamanager.json --run XXXX --log-file ruciax_log_file.txt
-Run a single rule (e.g. of run XXXX) to verify/update all rucio storage endpoint information in our runDB:
-  [~] ruciax --once --config cax_ruciax_xe1tdatamanager_verifyruns.json --run XXXX --log-file ruciax_log_file_verify.txt
-Run 'massive-ruciax' for upload continuously:
-  [~] massive-ruciax --config cax_ruciax_xe1tdatamanager.json
-Run 'massive-ruciax' for rules continuously:
-  [~] massive-ruciax --config cax_ruciax_xe1tdatamanager_verifyruns.json
-Run 'massive-ruciax' for upload once (similar for rules):
-  [~] massive-ruciax --once --config cax_ruciax_xe1tdatamanager.json
-Run 'massive-ruciax' for upload continuously for a range of tpc runs:
-  [~] massive-ruciax --config cax_ruciax_xe1tdatamanager_verifyruns.json --from-run 4455 --to-run 4465
+
+Run a single upload (e.g. of run XXXX) to the rucio catalogue::
+
+   [~] ruciax --once --config cax_ruciax_xe1tdatamanager.json --run XXXX --log-file ruciax_log_file.txt
+
+Run a single rule (e.g. of run XXXX) to verify/update all rucio storage endpoint information in our runDB::
+
+   [~] ruciax --once --config cax_ruciax_xe1tdatamanager_verifyruns.json --run XXXX --log-file ruciax_log_file_verify.txt
+
+Run 'massive-ruciax' for upload continuously::
+   
+   [~] massive-ruciax --config cax_ruciax_xe1tdatamanager.json
+
+Run 'massive-ruciax' for rules continuously::
+   [~] massive-ruciax --config cax_ruciax_xe1tdatamanager_verifyruns.json
+
+Run 'massive-ruciax' for upload once (similar for rules)::
+   
+   [~] massive-ruciax --once --config cax_ruciax_xe1tdatamanager.json
+
+Run 'massive-ruciax' for upload continuously for a range of tpc runs::
+   
+   [~] massive-ruciax --config cax_ruciax_xe1tdatamanager_verifyruns.json --from-run 4455 --to-run 4465
 
 Please note: You need both configurations running for upload and proper registration in the runDB. Use screen or tmux!
 
