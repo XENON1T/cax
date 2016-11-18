@@ -103,16 +103,16 @@ ruciax runs two configurations: "Uploads" and "Rules". These is controlled by:
 * cax_ruciax_xe1tdatamanager.json <-> Uploads
 
 Both are configured with "simple" rules by:
-  "name": "rucio-catalogue",
-  "hostname": "",
-  "username": "",
-  "method": "rucio",
-  "dir_raw": "/data/xenon/raw",
-  "upload_options": null,
-  "download_options": null,
-  "rucio_upload_rse": "NIKHEF_USERDISK", <<-- Entrance RSE
-  "rucio_account": "production",         <<-- Don't change that unless you want to change your rucio upload account.
-  "rucio_transfer": ["UC_OSG_USERDISK"]  <<-- RSE's for rucio transfers
+  "name": "rucio-catalogue",  
+  "hostname": "",  
+  "username": "",  
+  "method": "rucio",  
+  "dir_raw": "/data/xenon/raw",    
+  "upload_options": null,    
+  "download_options": null,   
+  "rucio_upload_rse": "NIKHEF_USERDISK", <<-- Entrance RSE    
+  "rucio_account": "production",         <<-- Don't change that unless you want to change your rucio upload account.    
+  "rucio_transfer": ["UC_OSG_USERDISK"]  <<-- RSE's for rucio transfers    
 
 Here are some examples:
 Run a single upload (e.g. of run XXXX) to the rucio catalogue:
