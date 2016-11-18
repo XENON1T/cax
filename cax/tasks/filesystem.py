@@ -204,3 +204,49 @@ class StatusSingle(Task):
 
                 # TODO
                 # Add a memberfunction to change the status manually:
+
+class RemoveRucioEntry(Task):
+    """Remove a single file or directory
+
+    This notifies the run database.
+    """
+
+    def __init__(self, location):
+        # Save filesnames to use
+        self.location = location
+        print("delete from database: ", self.location)
+        # Perform base class initialization
+        Task.__init__(self)
+
+    def each_run(self):
+        # For each data location, see if this filename in it
+        #print(self.run_doc)
+        cnt = 0        
+        for data_doc in self.run_doc['data']:
+            # Is not local, skip
+            if data_doc['host'] == "rucio-catalogue":
+                print("found: ", data_doc)
+                cnt+=1
+        
+        for data_doc in self.run_doc['data']:
+            
+            if 'host' not in data_doc or data_doc['host'] != "rucio-catalogue":
+                continue
+
+            if data_doc['location'] != self.location:
+                continue
+            
+            # Notify run database
+            if config.DATABASE_LOG is True:
+              print("Delete this: ", data_doc)
+              res = self.collection.update({'_id': self.run_doc['_id']},
+                                           {'$pull': {'data': data_doc}}
+                                           )
+              for key, value in res.items():
+                print( " * " + str(key) + ": " + str(value) )
+            else:
+              print("This should be deleted:")
+              print(data_doc)
+            break
+        
+        print("There are {a} entries in the runDB with \"rucio-catalogue\" for the same run number or name".format(a=str(cnt)))

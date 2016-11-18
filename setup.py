@@ -56,7 +56,10 @@ setup(
             'cax-mv = cax.main:move',
             'cax-rm = cax.main:remove',
             'cax-stray = cax.main:stray',
-            'cax-status = cax.main:status'
+            'cax-status = cax.main:status',
+            'ruciax = cax.main:ruciax',
+            'massive-ruciax = cax.main:massiveruciax',
+            'ruciax-summary = cax.main:summaryruciax',
         ],
     },
 )
