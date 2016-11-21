@@ -1,7 +1,11 @@
   History
 =======
 
-4.9.1 (2016-21)
+4.10.0 (2016-11-21)
+-------------------
+* Do not table scan run database
+
+4.9.1 (2016-11-21)
 ------------------
 * Increase delay between job submission to 10 s
 
