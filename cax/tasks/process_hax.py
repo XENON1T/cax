@@ -20,7 +20,6 @@ from cax.task import Task
 
 
 def init_hax(in_location, pax_version, out_location):
-    print ("TEST PAX version format:  "+pax_version)
     hax.init(experiment='XENON1T',
          main_data_paths=[in_location+'pax_'+pax_version],
          minitree_paths = [out_location])
@@ -31,6 +30,7 @@ def verify():
     Now is nothing.  Could check number of events later?
     """
     return True
+
 
 def _process_hax(name, in_location, host, pax_version,
              out_location, detector='tpc'):
@@ -49,13 +49,13 @@ def _process_hax(name, in_location, host, pax_version,
     os.makedirs(out_location, exist_ok=True)
 
     try:
-        print('creating hax minitrees', name, in_location)
-        init_hax(in_location, pax_version, out_location) # may initilize once only
-        hax.minitrees.load(name, ['Basics','Fundamentals'])
+        self.log.info('creating hax minitrees', name, in_location)
+        init_hax(in_location, pax_version, out_location)   # may initialize once only
+        hax.minitrees.load(name, ['Basics', 'Fundamentals',
+                                  'DoubleScatter', 'LargestPeakProperties', 'TotalProperties'])
 
     except Exception as exception:
         raise
-
 
 
 class ProcessBatchQueueHax(Task):
@@ -73,7 +73,6 @@ class ProcessBatchQueueHax(Task):
             return
 
         version = 'v%s' % pax.__version__
-        print ("TEST PAX Version format here: "+version)
         have_processed, have_raw = self.local_data_finder(thishost,
                                                           version)
 
