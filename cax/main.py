@@ -212,12 +212,12 @@ def massive():
             job_name = ''
             if doc['detector'] == 'tpc':
                 job_name = str(doc['number'])
+                job = dict(command='cax --once --run {number} '+config_arg,
+                           number=int(job_name))
             elif doc['detector'] == 'muon_veto':
                 job_name = doc['name']
-
-            job = dict(command='cax --once --run {number} '+config_arg,
-                       number=job_name,
-                           )
+                job = dict(command='cax --once --name {number} '+config_arg,
+                           number=job_name)
 
             script = config.processing_script(job)
 
