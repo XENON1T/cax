@@ -230,22 +230,10 @@ class StatusSingle(Task):
 
         # For each data location, see if this filename in it
         for data_doc in self.run_doc['data']:
-            ## Is not local, skip
-            if 'host' not in data_doc or data_doc[
-                'host'] != config.get_hostname():
-                continue
-
+            #Show entries only for requested host
             if self.node == data_doc['host'] and self.status == data_doc[
                 'status']:
                 status_db = data_doc["status"]
                 location_db = data_doc['location']
                 logging.info("Ask for status %s at node %s: %s", self.node,
                              status_db, location_db)
-
-                ## Notify run database
-                # if config.DATABASE_LOG is True:
-                # self.collection.update({'_id': self.run_doc['_id']},
-                # {'$pull': {'data': data_doc}})
-
-                # TODO
-                # Add a memberfunction to change the status manually:

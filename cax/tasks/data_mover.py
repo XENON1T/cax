@@ -255,11 +255,8 @@ class CopyBase(Task):
                 break
                 
             # Download tsm:
-            #if option_type == 'download' and datum_there and datum_here is None and method == "tsm":
-            if option_type == 'download' and datum_there and datum_here is not None and method == "tsm":
-                self.copy_tsm_download(datum_there, config.get_hostname(), method, option_type)
-                print('Download from the tape storage')
-                
+            if option_type == 'download' and datum_there and datum_here is None and method == "tsm":
+                self.copy_tsm_download(datum_there, config.get_hostname(), method, option_type)                
                 break
 
         dataset = None
@@ -380,20 +377,26 @@ class CopyBase(Task):
           logging.info("Checksums do not agree!")
           
         #Notifiy the database for final registration
-        if config.DATABASE_LOG:
-          if checksum_after == datum['checksum']:
+        if checksum_after == datum['checksum']:
+          
+          if config.DATABASE_LOG:
             #Notify the database if everything was fine:
+            logging.info("Notifiy the runDB: transferred")
             self.collection.update({'_id' : self.run_doc['_id'],
                                   'data': {
                                         '$elemMatch': datum_new}},
-                                   {'$set': {'data.$.status': status,
+                                   {'$set': {'data.$.status': "transferred",
                                              'data.$.location': raw_data_path + raw_data_filename,
                                              'data.$.checksum': checksum_after,
                                              }
                                    })
-          
-          elif checksum_after != datum['checksum']:
+          else:
+            logging.info("Database is not notified")
+        
+        elif checksum_after != datum['checksum']:
+          if config.DATABASE_LOG:
             #Notify the database if something went wrong during the download: 
+            logging.info("Notifiy the runDB: error")
             self.collection.update({'_id' : self.run_doc['_id'],
                                   'data': {
                                         '$elemMatch': datum_new}},
@@ -402,6 +405,8 @@ class CopyBase(Task):
                                              'data.$.checksum': "n/a",
                                              }
                                    })
+          else:
+            logging.info("Database is not notified")
         
         return 0
     
@@ -467,6 +472,7 @@ class CopyBase(Task):
         
         if checksum_before_raw != checksum_before_tsm:
           logging.info("Something went wrong during copy & rename")
+          #add data base entry!!!! -> error
           return
         elif checksum_before_raw == checksum_before_tsm:
           logging.info("Copy & rename: [succcessful] -> Checksums agree")
@@ -482,7 +488,7 @@ class CopyBase(Task):
         logging.info("Network transfer rate: %s", tsm_upload_result["tno_network_transfer_rate"])
         logging.info("MD5 Hash (raw data): %s", checksum_before_tsm)
 
-        test_download = "/tmp/tsm"
+        test_download = "/data/xenon/tsm/tsm_verify_download"
         tsm_download_result = self.tsm.download( raw_data_tsm + raw_data_filename, test_download, raw_data_filename)
         if os.path.exists( raw_data_tsm + raw_data_filename ) == False:
           logging.info("Download to %s failed. Checksum will not match", test_download)
@@ -495,8 +501,6 @@ class CopyBase(Task):
         logging.info("Download time: %s", tsm_download_result["tno_data_transfer_time"])
         logging.info("Number of failed downloads: %s", tsm_download_result["tno_failed_objects"])        
         logging.info("MD5 Hash (raw data): %s", checksum_after)
-
-        #print("end")
         
         status = ""
         if checksum_before_tsm == checksum_after:

@@ -20,6 +20,7 @@ import sys
 import time
 import traceback
 import datetime
+import time
 import tarfile
 import copy
 import shutil
@@ -91,12 +92,6 @@ class TSMclient(Task):
       
         stdout_value = stdout_value.decode("utf-8")
         stdout_value = stdout_value.split("\n")
-        
-        #for i in range(0, len(stdout_value)):
-          #if len(stdout_value[i]) == 0:
-            #stdout_value.pop(i)
-            
-        #print( stdout_value)    
 
         return stdout_value, stderr_value
     
@@ -109,10 +104,6 @@ class TSMclient(Task):
         for (dirpath, dirnames, filenames) in os.walk( raw_data_location ):
             filelist.extend(filenames)
             break
-        
-        print(filelist)
-        
-        print( ha)
     
     def download(self, tape_source, dw_destination, raw_data_filename):
         """Download a folder from the tape storage"""
@@ -345,7 +336,7 @@ class AddTSMChecksum(Task):
             raw_data_filename = data_doc['location'].split('/')[-1]
             raw_data_path     = config.get_config( config.get_hostname() )['dir_raw']
             raw_data_tsm      = config.get_config( config.get_hostname() )['dir_tsm']
-            tmp_data_path     = "/tmp/tsm/tmp_checksum_test/"
+            tmp_data_path     = raw_data_tsm + "tmp_checksum_test/"
             logging.info("Raw data location @xe1t-datamanager: %s", raw_data_location)
             logging.info("Path to raw data: %s", raw_data_path)
             logging.info("Path to tsm data: %s", raw_data_tsm)
@@ -356,6 +347,10 @@ class AddTSMChecksum(Task):
             if self.tsm.check_client_installation() == False:
               logging.info("There is a problem with your dsmc client")
               return
+            
+            #Make sure that temp. download directory exists:
+            if not os.path.exists(tmp_data_path):
+                os.makedirs(tmp_data_path)
             
             #Download it to a temp directory
             dfolder = tmp_data_path  + "/" + raw_data_filename 
@@ -448,6 +443,18 @@ class TSMLogFileCheck():
       if t == False:
         return 0, 0
     
+      #extract the when the upload started:
+      #print( logfile.split(".")[0].split("_") )
+      
+      inf_str = logfile.split(".")[0].split("_")
+      #print("a")
+      length = len( inf_str )
+      date_str = str(inf_str[length-2])
+      time_str = str(inf_str[length-1])
+      datetime_str = "{dd}_{tt}".format(dd=date_str,
+                                        tt=time_str)
+      #print(inf_str, length, date_str, time_str, datetime_str)
+      
       nb_uploaded_files = 0
       nb_inspected_files = 0
       
@@ -463,6 +470,9 @@ class TSMLogFileCheck():
       download_time = 0
       total_time = 0
       dataset = ''
+      
+      dataset_time = ''
+      
       for i in ffile:
         if i.find("Number of uploaded files:") >= 0:
           nb_uploaded_files = int(i[i.find("Number of uploaded files:"):].split(":")[1].replace(" ", ""))
@@ -503,7 +513,16 @@ class TSMLogFileCheck():
             dataset = i.split("[INFO]")[1][beg_d:end_d]
             total_time = i.split("took")[1].replace(" ", "").replace("seconds", "")
             total_time = total_time[:len(total_time)-1]
+        
+        if i.find("File/Folder for backup:") >= 0:
+            position = i.split("[INFO]")[1].split(":")[1]
+            if position.find("_MV") >= 0:
+              position = position.split("_MV")[0]
+            dataset_time = position
+            
       subinfo = {}
+      subinfo['dataset_time'] = dataset
+      subinfo['upload_time'] = datetime_str
       subinfo['nb_uploaded_files'] = nb_uploaded_files
       subinfo['nb_inspected_files'] = nb_inspected_files
       subinfo['tr_amount_up'] = tr_amount_up
@@ -517,19 +536,104 @@ class TSMLogFileCheck():
     def read_all_logfiles(self):
       """A function to read all logfile at the same time"""
       print( self.f_folder )
+      import ROOT as root
       
       total_upload_time_per_dataset = 0
       total_upload_volume = 0
       
+      fin = root.TFile("/home/xe1ttransfer/tsm_log/tsm_summary.root", "RECREATE")
+      gr_upload_rate = root.TGraph()
+      gr_upload_rate.SetName("upload_rate")
+      
+      gr_dwload_rate = root.TGraph()
+      gr_dwload_rate.SetName("download_rate")
+
+      gr_upAmount = root.TGraph()
+      gr_upAmount.SetName("Upload_Amount")
+      
+      gr_dwAmount = root.TGraph()
+      gr_dwAmount.SetName("Download_Amount")
+      
+      gr_total_time = root.TGraph()
+      gr_total_time.SetName("total_time")
+      
+      gr_nb_uploaded_files = root.TGraph()
+      gr_nb_uploaded_files.SetName("gr_nb_uploaded_files")
+      
+      i = 0
       for i_file in self.flist:
         #print(i_file)
         try:
           filename, info = self.read_logfile( self.f_folder + i_file, "Upload to tape: [succcessful]")
           total_upload_time_per_dataset += float(info['total_time'])
           total_upload_volume += float(info['tr_amount_up'])
+          print(filename, info)
+          
+          dataset_time      = info['dataset_time']
+          upload_time       = info['upload_time']
+          
+          upload_rate       = float(info['tr_rate_up'])
+          dwload_rate       = float(info['tr_rate_dw'])
+          upAmount          = float(info['tr_amount_up'])
+          dwAmount          = float(info['tr_amount_dw'])
+          total_time        = float(info['total_time'])
+          nb_uploaded_files = float(info['nb_uploaded_files'])      
+          nb_inspected_files = float(info['nb_inspected_files'])
+          
+          #Quick Summary calculation:
+          if nb_uploaded_files > 0 and nb_inspected_files > 0:
+            total_upload_time_per_dataset += total_time #sec
+            total_upload_volume += upAmount             #GB
+          
+          #print(upload_time)
+          x = time.strptime(upload_time,'%Y%m%d_%H%M%S')
+          y = time.mktime( x )
+          x_axis = y    #specify the x axis in seconds
+          #print(upload_time, x, x_axis)
+          
+          if nb_uploaded_files > 0 and nb_inspected_files > 0:
+            gr_upload_rate.SetPoint(i, x_axis, upload_rate )
+            gr_dwload_rate.SetPoint(i, x_axis, dwload_rate)
+            gr_upAmount.SetPoint(i, x_axis, upAmount)
+            gr_dwAmount.SetPoint(i, x_axis, dwAmount)
+            gr_total_time.SetPoint(i, x_axis, total_time)
+            gr_nb_uploaded_files.SetPoint(i, x_axis, nb_uploaded_files)
+          
+          print("-> Output: time vs. uploaded files", x_axis, nb_uploaded_files)
+          i = i + 1
         except:
           pass
-        
+      
+      gr_upload_rate.SetTitle("Upload Rate")
+      gr_upload_rate.GetXaxis().SetTitle("time [s]")
+      gr_upload_rate.GetYaxis().SetTitle("Upload Rate [kB/s]")
+      gr_upload_rate.Write()
+      
+      gr_dwload_rate.SetTitle("Download Rate")
+      gr_dwload_rate.GetXaxis().SetTitle("time [s]")
+      gr_dwload_rate.GetYaxis().SetTitle("Download Rate [kB/s]")
+      gr_dwload_rate.Write()
+      
+      gr_upAmount.SetTitle("Amount of uploaded data")
+      gr_upAmount.GetXaxis().SetTitle("time [s]")
+      gr_upAmount.GetYaxis().SetTitle("Upload [GB]")
+      gr_upAmount.Write()
+      
+      gr_dwAmount.SetTitle("Amount of downloaded data")
+      gr_dwAmount.GetXaxis().SetTitle("time [s]")
+      gr_dwAmount.GetYaxis().SetTitle("Download [GB]")      
+      gr_dwAmount.Write()
+      
+      gr_total_time.SetTitle("Total upload time")
+      gr_total_time.GetXaxis().SetTitle("time [s]")
+      gr_total_time.GetYaxis().SetTitle("UploadTime [s]")
+      gr_total_time.Write()
+      
+      gr_nb_uploaded_files.SetTitle("Number of uploaded files")
+      gr_nb_uploaded_files.GetXaxis().SetTitle("time [s]")
+      gr_nb_uploaded_files.GetYaxis().SetTitle("Files [#]")  
+      gr_nb_uploaded_files.Write()
+
       print("Total upload time: ", total_upload_time_per_dataset/60/60, 'hours')
       print("Total uploaded volume: ", total_upload_volume/1024, "TB")
         
@@ -575,3 +679,49 @@ class TSMDatabaseCheck(Task):
             file_size_run += file_size/1024/1024
         
         return file_size_run
+    
+class TSMStatusCheck(Task):
+    """Check TSM related entries and status messages
+
+    This notifies the run database.
+    """
+
+    def __init__(self, db, status):
+        self.run_doc = db
+        self.status  = status
+
+        Task.__init__(self)
+
+    def each_run(self):
+        # For each data location, see if this filename in it
+        #print(self.run_doc)
+        cnt = 0        
+        for data_doc in self.run_doc['data']:
+            # Is not local, skip
+            if data_doc['host'] == "xe1t-datamanager":
+              data_path_datamanager = data_doc['location']
+              
+            if data_doc['host'] != "tsm-server":
+              continue
+          
+            #if data_doc['status'] == "transferred" and data_doc['checksum'] == None:
+              #print( data_doc['location'], data_doc['status'] , data_doc['checksum'])
+              
+            if data_doc['status'] == self.status:
+              if data_doc['checksum'] != None:
+                cksum = "checksum: YES"
+              else:
+                cksum = "checksum: NO"  
+              
+              file_count = 0  
+              if os.path.exists(data_path_datamanager):
+                filelist = []
+                for (dirpath, dirnames, filenames) in os.walk( data_path_datamanager ):
+                  filelist.extend(filenames)
+                  break  
+                file_count = len( filelist )
+              
+              logging.info( "Run %s/%s at %s: Status: %s, Location: %s, %s, FileCount: %s", self.run_doc['number'], self.run_doc['name'], data_doc['host'], data_doc['status'], data_doc['location'],  cksum, file_count)        
+ 
+        
+    

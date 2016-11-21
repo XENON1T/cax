@@ -51,7 +51,7 @@
     "dir_raw": "/data/xenon/raw/",
     "dir_tsm": "/data/xenon/tsm/",
     "upload_options": ["tsm-server"],
-    "download_options": null,
+    "download_options": null
   },
   {
     "name": "tsm-server",

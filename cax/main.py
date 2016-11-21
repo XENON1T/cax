@@ -293,8 +293,8 @@ def status():
     
     parser = argparse.ArgumentParser(description="Check the database status")
     
-    parser.add_argument('--node', type=str, required=True,
-                        help="Select the node")
+    parser.add_argument('--host', type=str, required=True,
+                        help="Select the host")
     parser.add_argument('--status', type=str, required=True,
                         help="Which status should be asked: error, transferred, none, ")
     parser.add_argument('--disable_database_update', action='store_true',
@@ -329,7 +329,7 @@ def status():
     config.set_database_log(database_log)
     config.mongo_password()
     
-    filesystem.StatusSingle(args.node, args.status).go()
+    filesystem.StatusSingle(args.host, args.status).go()
 
 def remove_from_tsm():
     parser = argparse.ArgumentParser(description="Remove data and notify"
@@ -416,11 +416,15 @@ def massive_tsmclient():
             logging.info("Using custom config file: %s",
                          args.config_file)
             config.set_json(args.config_file)
-            config_arg = '--config ' + os.path.abspath(args.config_file)
+            config_arg = os.path.abspath(args.config_file)
       
     # Setup logging
     log_path = {"xe1t-datamanager": "/home/xe1ttransfer/tsm_log",
-               "midway-login1": "n/a"}
+                "midway-login1": "n/a"}
+    
+    if log_path[config.get_hostname()] == "n/a":
+        print("Modify the log path in main.py")
+        exit()
     
     if not os.path.exists(log_path[config.get_hostname()]):
         os.makedirs(log_path[config.get_hostname()])
@@ -446,17 +450,16 @@ def massive_tsmclient():
 
     # Establish mongo connection
     collection = config.mongo_collection()
-    sort_key = (('number', -1),
+    
+    sort_key = (('start', -1),
+                ('number', -1),
                 ('detector', -1),
                 ('_id', -1))
-
+    
     while True: # yeah yeah
-        #query = {'detector':'tpc'}
+        
         query = {}
-        
         docs = list(collection.find(query))
-        
-        cnt_upload_miss=0
         
         for doc in docs:
             
@@ -469,7 +472,7 @@ def massive_tsmclient():
             if doc['number'] < beg_run or doc['number'] > end_run and run_window == True:
               continue
             
-            #Double check if a 'data' field is defind in doc
+            #Double check if a 'data' field is defind in doc (runDB entry)
             if 'data' not in doc:
               continue
             
@@ -480,20 +483,20 @@ def massive_tsmclient():
                 host_data = True
                 break
             if host_data == False:
-              cnt_upload_miss+=1
+              #Do not try upload data which are not registered in the runDB
               continue
             
             #Detector choice
             local_time = time.strftime("%Y%m%d_%H%M%S", time.localtime())
             if doc['detector'] == 'tpc':
-              job = "{conf} --run {number} --log-file {log_path}/tsm_log_{number}_{timestamp}.txt".format(
+              job = "--config {conf} --run {number} --log-file {log_path}/tsm_log_{number}_{timestamp}.txt".format(
                   conf=config_arg,
                   number=doc['number'],
                   log_path=log_path[config.get_hostname()],
                   timestamp=local_time)
                 
             elif doc['detector'] == 'muon_veto':
-              job = "{conf} --name {number} --log-file {log_path}/tsm_log_{number}_{timestamp}.txt".format(
+              job = "--config {conf} --name {number} --log-file {log_path}/tsm_log_{number}_{timestamp}.txt".format(
                   conf=config_arg,
                   number=doc['name'],
                   log_path=log_path[config.get_hostname()],
@@ -502,16 +505,17 @@ def massive_tsmclient():
             #start the time for an upload:
             time_start = datetime.datetime.utcnow()
             
-            #Create the command
+            #Create the command and execute the job only once
             command="cax --once {job}".format(job=job)
             
+            #Disable runDB notifications
             if args.disable_database_update == True:
               command = command + " --disable_database_update"
             
             #command = general[config.get_hostname()]+command
                         
-            logging.info(command)
-            print(command)
+            logging.info("Command: %s", command)
+            
             command = command.replace("\n", "")
             command = command.split(" ")
             execute = subprocess.Popen( command , 
@@ -528,9 +532,7 @@ def massive_tsmclient():
             
             #Return command output:
             for i in stdout_value:
-              print("out. ", i)
-            
-            
+              logging.info("massive-tsm: %s", i)
             
             #Manage the upload time:
             time_end = datetime.datetime.utcnow()
@@ -542,16 +544,16 @@ def massive_tsmclient():
           break
         else:
           logging.info('Sleeping.')
-          time.sleep(60)  
-        
-        logging.info("There %s files not on xe1t-datamanager", str(cnt_upload_miss) )        
+          time.sleep(60)
 
 def cax_tape_log_file():
     """Analyses the tsm storage"""
     parser = argparse.ArgumentParser(description="These program helps you to watch the tape backup")
 
     parser.add_argument('--monitor', dest='monitor', 
-                        help="Select if you want to monitor database or logfile [database/logfile]")
+                        help="Select if you want to monitor database or logfile [database/logfile/checkstatus]")
+    parser.add_argument('--status', type=str,
+                        help="Select a status you want monitor: [transferred/transferring/error]")
     parser.add_argument('--run', type=int,
                         help="Select a single run")
     parser.add_argument('--name', type=int,
@@ -613,6 +615,21 @@ def cax_tape_log_file():
         
       logging.info("Total amount of uploaded data: %s mb", total_uploaded_amount)
       logging.info("Total amount of uploaded data sets: %s", total_uploaded_datasets)
+
+    elif args.monitor == "checkstatus":
+      if args.status == None:
+        logging.info("ATTENTION: Specify status by --status [transferred/transferring/error]")
+        return 0
+      
+      query = {}  
+      docs = list(collection.find(query))  
+      number_name = None
+      if args.name is not None:
+        number_name = args.name
+      else:
+        number_name = args.run
+        
+      tsm_mover.TSMStatusCheck(docs, args.status).go(number_name)  
 
 if __name__ == '__main__':
     main()
