@@ -234,8 +234,8 @@ def massive():
             print(script)
             qsub.submit_job(script)
 
-            logging.debug("Pace by 1s")
-            time.sleep(1)  # Pace 1s for batch queue
+            logging.debug("Pace by 10 s")
+            time.sleep(10)  # Pace 1s for batch queue
 
         if run_once:
             break
