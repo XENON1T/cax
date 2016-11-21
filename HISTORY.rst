@@ -1,6 +1,10 @@
   History
 =======
 
+4.10.1 (2016-11-21)
+-------------------
+* Add other treemakers to process_hax
+
 4.10.0 (2016-11-21)
 -------------------
 * Do not table scan run database
