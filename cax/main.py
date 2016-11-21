@@ -195,20 +195,19 @@ def massive():
         #    logging.info("Full mode")
         #    t0 = t1
 
+
+        if args.run:
+            query['number'] = args.run
+
+        if args.start:
+            query['number'] = {'$gte' : args.start}
+
         docs = list(collection.find(query,
                                     sort=sort_key,
                                     projection=['start', 'number','name',
                                                 'detector', '_id']))
 
         for doc in docs:
-
-            if args.run:
-                if args.run != doc['number']:
-                    continue
-
-            if args.start:
-                if args.start < doc['number']:
-                    continue
 
             job_name = ''
             if doc['detector'] == 'tpc':
