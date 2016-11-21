@@ -3,7 +3,7 @@
 
 4.9.1 (2016-21)
 ------------------
-* Increase delay between job submission
+* Increase delay between job submission to 10 s
 
 4.9.0 (2016-11-15)
 ------------------
