@@ -9,7 +9,7 @@ from cax import config, qsub
 
 import pax
 
-from cax.tasks import checksum, clear, data_mover, process, filesystem
+from cax.tasks import checksum, clear, data_mover, process, process_hax, filesystem
 from cax.tasks import corrections
 
 
@@ -95,6 +95,7 @@ def main():
         filesystem.SetPermission(),  # Set any permissions (primarily for Tegner) for new data to make sure analysts can access
         clear.BufferPurger(),  # Clear old data at some locations as specified in cax.json
         process.ProcessBatchQueue(),  # Process the data with pax
+        process_hax.ProcessBatchQueueHax()  # Process the data with hax
     ]
 
     # Raises exception if unknown host
@@ -175,24 +176,24 @@ def massive():
                 ('detector', -1),
                 ('_id', -1))
 
-    dt = datetime.timedelta(days=1)
-    t0 = datetime.datetime.utcnow() - 2*dt
+    #dt = datetime.timedelta(days=1)
+    #t0 = datetime.datetime.utcnow() - 2*dt
 
 
     while True: # yeah yeah
         query = {}
 
-        t1 = datetime.datetime.utcnow()
-        if t1 - t0 < dt:
-            logging.info("Iterative mode")
+        #t1 = datetime.datetime.utcnow()
+        #if t1 - t0 < dt:
+        #    logging.info("Iterative mode")
 
             # See if there is something to do
-            query['start'] = {'$gt' : t0}
+        #    query['start'] = {'$gt' : t0}
 
-            logging.info(query)
-        else:
-            logging.info("Full mode")
-            t0 = t1
+        #    logging.info(query)
+        #else:
+        #    logging.info("Full mode")
+        #    t0 = t1
 
         docs = list(collection.find(query,
                                     sort=sort_key,
@@ -209,19 +210,20 @@ def massive():
                 if args.start < doc['number']:
                     continue
 
+            job_name = ''
             if doc['detector'] == 'tpc':
-                job = dict(command='cax --once --run {number} '+config_arg,
-                            number=doc['number'],
-                           )
+                job_name = str(doc['number'])
             elif doc['detector'] == 'muon_veto':
-                job = dict(command='cax --once --name {number} '+config_arg,
-                            number=doc['name'],
+                job_name = doc['name']
+
+            job = dict(command='cax --once --run {number} '+config_arg,
+                       number=job_name,
                            )
 
             script = config.processing_script(job)
 
-            if 'cax_%d_v%s' % (doc['number'], pax.__version__) in qsub.get_queue():
-                logging.debug('Skip: cax_%d_v%s job exists' % (doc['number'], pax.__version__))
+            if 'cax_%s_v%s' % (job_name, pax.__version__) in qsub.get_queue():
+                logging.debug('Skip: cax_%s_v%s job exists' % (job_name, pax.__version__))
                 continue
 
             while qsub.get_number_in_queue() > (500 if config.get_hostname() == 'midway-login1' else 30):
@@ -235,8 +237,8 @@ def massive():
             logging.debug("Pace by 1s")
             time.sleep(1)  # Pace 1s for batch queue
 
-        #if run_once:
-        #    break
+        if run_once:
+            break
         #else:
         #    pace = 5
         #    logging.info("Done, waiting %d minutes" % pace)

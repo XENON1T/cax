@@ -1,10 +1,31 @@
-=======
-History
+  History
 =======
 
+4.9.0 (2016-11-15)
+------------------
+* Increase timeout for pax processing
+* Purge Rn220+Kr83m only on Midway
+* Disable iterative mode for massive-cax (for now)
+  
+4.8.1 (2016-11-09)
+------------------                                                                           
+* Fix batch queue checking for MV jobs
+  
+4.8.0 (2016-11-07)
+------------------
+* Do not purge Kr83m and Rn220 
+  
+4.7.1 (2016-11-03)
+------------------
+* Fix bug in queue checking 
+   
+4.7.0 (2016-11-03)
+------------------
+*  hax minitree production
+   
 4.5.2 (2016-11-01)
 ------------------
-*  Reduce pax queue block size in batch processing #51 
+* Reduce pax queue block size in batch processing #51 
 
 4.5.1 (2016-10-31)
 ------------------
@@ -18,7 +39,7 @@ History
 * Remove "once" functionality from massive-cax (strange error with "watch", and hanging without "watch")
       
 4.4.16 (2016-10-26)
-------------------
+-------------------
 
 * Revert to file:// instead of SRM address for Midway gfal-copy upload
 * Remove extraenous AddChecksum's and put ProcessBatchQueue at the end
@@ -26,38 +47,38 @@ History
 
  
 4.4.15 (2016-10-11)
-------------------
+-------------------
 
 * Do not purge processed files
 * Consider only same file type when counting copies
 * Remove hardcoded midway-srm treatment
 
 4.4.14 (2016-10-10)
-------------------
+-------------------
 
 * Hardcode Midway SRM address for gfal-copy uploads.
 * Switch back to Stash round-robin address.
 * Fix missing "dir_processed" key error.
 
 4.4.13 (2016-10-10)
-------------------
+-------------------
 
 * Change from Stash to Nikhef for Midway GRID upload
 * Specify ADLER32 checksum for gfal-copy
 * Skip "verifying" stage for GRID transfers (assume gfal-copy checksum is sufficient)
   
 4.4.12 (2016-10-06)
-------------------
+-------------------
 
 * Change Stash GSIFTP site to round-robin address 
   
 4.4.11 (2016-10-02)
-------------------
+-------------------
 
 * Change raw directory on nikhef-srm
 
 4.4.10 (2016-10-02)
-------------------
+-------------------
 
 * Fix variable name for GSIFTP source server 
 

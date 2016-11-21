@@ -256,6 +256,16 @@ def get_processing_dir(host, version):
     return os.path.join(get_processing_base_dir(host),
                         'pax_%s' % version)
 
+
+def get_minitrees_base_dir(host=get_hostname()):
+    return get_base_dir('minitrees', host)
+
+
+def get_minitrees_dir(host, version):
+    return os.path.join(get_minitrees_base_dir(host),
+                        'pax_%s' % version)
+
+
 def adjust_permission_base_dir(base_dir, destination):
     """Set ownership and permissons for basic folder of processed data (pax_vX)"""
 
