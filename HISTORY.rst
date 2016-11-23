@@ -1,6 +1,10 @@
   History
 =======
 
+4.10.2 (1026-11-23)
+-------------------
+* Adjust setpermission for PDC and Midway
+
 4.10.1 (2016-11-21)
 -------------------
 * Add other treemakers to process_hax
