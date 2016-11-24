@@ -15,7 +15,7 @@ import checksumdir
 
 from cax import qsub, config
 from cax.task import Task
-
+from cax.api import api
 
 
 def verify():
@@ -52,27 +52,38 @@ def _process(name, in_location, host, pax_version, pax_hash,
              'checksum'      : None,
              'creation_time' : datetime.datetime.utcnow(),
              'creation_place': host}
+    
+    # need an updated datum dict for api.update_location()
+    updatum = datum.copy()
 
-    # Fetch the run doc
-    query = {
-        'detector': detector,
-        'name'    : name
-    }
-    doc = self.api.get_next_run(query)
+    # query used to fetch run doc
+    query = {'detector': detector,
+             'name'    : name}
+
+    # initialize instance of api class
+    API = api()
+
+    # fetch the run doc. If can't find run, quit.
+    doc = API.get_next_run(query)
     if doc is None:
         print("Run name " + name + " not found")
         return 1
 
     # Sorry
+    # if already processed in this configuration, quit
     if any( ( d['host'] == host and d['type'] == 'processed' and
               d['pax_version'] == pax_version ) for d in doc['data'] ):
         print("Already processed %s.  Clear first.  %s" % (name,
                                                            pax_version))
-        return 1
+        #return 1
 
     # Not processed this way already, so notify run DB we will
-    self.api.add_location(doc['_id'], datum)
-    doc = self.api.get_next_run(query)
+    API.add_location(doc['_id'], datum)
+
+    # must initialize another instance of api class
+    API = api()
+    doc = API.get_next_run(query)
+
 
     if doc is None:
         print("Error finding doc after update")
@@ -101,24 +112,27 @@ def _process(name, in_location, host, pax_version, pax_hash,
 
     except Exception as exception:
         # Data processing failed.
-        datum['status'] = 'error'
+        updatum['status'] = 'error'
         if config.DATABASE_LOG == True:
-            self.api.update_location(doc['_id'], datum)
+            API.update_location(doc['_id'], datum, updatum)
+            # update datum to current state
+            datum = updatum.copy()
         raise
 
-    datum['status'] = 'verifying'
+    updatum['status'] = 'verifying'
     if config.DATABASE_LOG == True:
-        self.api.update_location(doc['_id'], datum)
+        API.update_location(doc['_id'], datum, updatum)
+        datum = updatum.copy()
 
-    datum['checksum'] = checksumdir._filehash(datum['location'],
-                                              hashlib.sha512)
+    updatum['checksum'] = checksumdir._filehash(datum['location'],
+                                                hashlib.sha512)
     if verify():
-        datum['status'] = 'transferred'
+        updatum['status'] = 'transferred'
     else:
-        datum['status'] = 'failed'
+        updatum['status'] = 'failed'
 
     if config.DATABASE_LOG == True:
-        self.api.update_location(doc['_id'], datum)
+        API.update_location(doc['_id'], datum, updatum)
 
 
 class ProcessBatchQueue(Task):
