@@ -92,23 +92,27 @@ def write_dag_file(options):
                     continue
                 run_name = get_run_name(dir_name)
                 outfile = get_out_name(infile)
-                infile = os.path.abspath(os.path.join(dir_name, infile))
-                infile = options.uri + infile
+                zip_name = outfile.split(".")[0]
+                infile_local = os.path.abspath(os.path.join(dir_name, infile))
+                infile = options.uri + infile_local
                 if not os.path.exists(os.path.join(options.outputdir,
                                                    run_name)):
                     os.makedirs(os.path.join(options.outputdir, run_name))
+                    os.chmod(os.path.join(options.outputdir, run_name), 0o777)
                 outfile = os.path.abspath(os.path.join(options.outputdir,
                                           run_name, outfile))
-                outfile = options.uri + outfile
+                outfile_full = options.uri + outfile
                 dag_file.write("JOB XENON.%d %s\n" % (i, options.submitfile))
                 dag_file.write(("VARS XENON.%d input_file=\"%s\" "
                                 "out_location=\"%s\" name=\"%s\" "
                                 "ncpus=\"1\" disable_updates=\"True\" "
                                 "host=\"login\" pax_version=\"%s\" "
-                                "pax_hash=\"n/a\"\n") % (i, infile,
-                                                         outfile, run_name,
-                                                         options.paxversion))
-                dag_file.write("Retry XENON.%d 3\n" % i)
+                                "pax_hash=\"n/a\" zip_name=\"%s\" " 
+                                "json_file=\"%s\" \n") % (i, infile,
+                                                         outfile_full, run_name,
+                                                         options.paxversion, zip_name, options.jsonfile))
+                dag_file.write("Retry XENON.%d 10\n" % i)
+                dag_file.write("SCRIPT POST XENON.%d /home/ershockley/hadd_and_upload.sh %s %s %s \n" % (i,run_name,zip_name,dir_name))
                 i += 1
 
 
@@ -141,6 +145,8 @@ if __name__ == '__main__':
                       help="Submit file to be used")
     parser.add_option("--paxversion", dest="paxversion", default=None,
                       help="PAX version to be used")
+    parser.add_option("--jsonfile", dest="jsonfile", default=None,
+                      help="json file containing run doc")
     (options, args) = parser.parse_args()
     if options.outdagfile is None:
         parser.error("No output DAG file provided")
@@ -156,6 +162,8 @@ if __name__ == '__main__':
         parser.error("No URI to file transfer server provided")
     if options.submitfile is None:
         parser.error("No submit file provided")
+    if options.jsonfile is None:
+        parser.error("No json file provided")
     else:
         if not os.path.exists(options.submitfile):
             parser.error("Submit file does not exist. Please create.")

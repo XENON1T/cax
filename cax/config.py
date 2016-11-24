@@ -213,20 +213,20 @@ HOSTNAME={host}
 CONDOR_TEMPLATE = """#!/bin/bash
 executable = /home/ershockley/cax/osg_scripts/run_xenon.sh
 universe = vanilla
-Error = /xenon/ershockley/cax/$(name)/$(cluster)_$(pax_version).error
-Output  = /xenon/ershockley/cax/$(name)/$(cluster)_$(pax_version).log
-Log     = /xenon/ershockley/cax/$(name)/$(cluster)_$(pax_version)_JOBLOG.log
+Error = /xenon/ershockley/cax/$(name)/$(zip_name).log
+Output  = /xenon/ershockley/cax/$(name)/$(zip_name).log
+Log     = /xenon/ershockley/cax/$(name)/joblogs/$(zip_name).joblog
 
-Requirements = ((OpSysAndVer == "CentOS6" || OpSysAndVer == "RedHat6" || OpSysAndVer == "SL6") && (GLIDEIN_ResourceName =!= "NPX"))
+Requirements = ((OpSysAndVer == "CentOS6" || OpSysAndVer == "RedHat6" || OpSysAndVer == "SL6") && (GLIDEIN_ResourceName =!= "NPX")) && (GLIDEIN_ResourceName =!= "BU_ATLAS_Tier2")
 request_cpus = $(ncpus)
-transfer_input_files = /home/ershockley/user_cert
+transfer_input_files = /home/ershockley/user_cert, {json_file}
 transfer_output_files = ""
 +WANT_RCC_ciconnect = True
 when_to_transfer_output = ON_EXIT
 # on_exit_hold = (ExitBySignal == True) || (ExitCode != 0)
 transfer_executable = True
 # periodic_release =  ((NumJobStarts < 5) && ((CurrentTime - EnteredCurrentStatus) > 600))
-arguments = $(name) $(input_file) $(host) $(pax_version) $(pax_hash) $(out_location) $(ncpus) $(disable_updates)
+arguments = $(name) $(input_file) $(host) $(pax_version) $(pax_hash) $(out_location) $(ncpus) $(disable_updates) $(json_file)
 queue 1
 """
 
@@ -238,8 +238,7 @@ def processing_script(args={}):
     midway = (host == 'midway-login1')
     tegner = (host == 'tegner-login1')
     ci = (host == 'login')
-
-    
+ 
     if midway or tegner:
 
         default_args = dict(host=host,
@@ -281,12 +280,12 @@ def processing_script(args={}):
         
         
         fill_args(args, default_args)
-
+        json_file = args['json_file']
         # Evaluate {variables} within strings in the arguments.
         args = {k:v.format(**args) if isinstance(v, str) else v for k,v in args.items()}
         # os.makedirs(args['base']+"/"+args['use']+("/%d"%args['number'])+"_"+args['pax_version'], exist_ok=True)
-        
-        script_template = CONDOR_TEMPLATE # .format(**args)
+        print(args)
+        script_template = CONDOR_TEMPLATE.format(json_file = args['json_file']) # .format(**args)
 
     else:
         raise NotImplementedError("Host %s processing not implemented",

@@ -42,6 +42,8 @@ fi
 
 
 start_dir=$PWD
+echo "start dir:"
+ls
 if [ "${OSG_WN_TMP}" == "" ];
 then
     OSG_WN_TMP=$PWD
@@ -56,15 +58,17 @@ cd ${work_dir}
 # gfal using wrong python version/libraries    
 
 input_file=$2
-processing_path=${work_dir}/$1
-mkdir $processing_path
+rawdata_path=${work_dir}/$1
+mkdir $rawdata_path
 
-cd ${processing_path}
+cd ${rawdata_path}
 pwd
 cd ${work_dir}
 #gfal-copy --cert ${start_dir}/user_cert ${input_files[index]} file://${work_dir}/$input_filename
 
-gfal-copy --cert ${start_dir}/user_cert -T 36000 -t 36000 --checksum md5 $2 file://${processing_path}
+#gfal-copy --cert ${start_dir}/user_cert -T 36000 -t 36000 --checksum md5 $2 file://${rawdata_path}
+
+time gfal-copy -v -f -r -p -t 32400 -K adler32 --cert ${start_dir}/user_cert $2 file://${rawdata_path}
 
 #module load pax/evan-testing
 export PATH=/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/bin:$PATH
@@ -83,12 +87,12 @@ mkdir $start_dir/output/
 echo "output directory: ${start_dir}/output"
 cd $start_dir
 echo 'Processing...'
-cax-process $1 $processing_path $3 $4 $5 output $7 $8
+cax-process $1 $rawdata_path $3 $4 $5 output $7 $8 $start_dir/$1.json
 if [[ $? -ne 0 ]];
 then 
     exit 255
 fi
-# mv ${processing_path}/*.root $start_dir/output/
+# mv ${rawdata_path}/*.root $start_dir/output/
 pwd
 ls output
 echo ${start_dir}/output/$1.root
@@ -111,7 +115,11 @@ then
 fi
 # fi
 
-gfal-copy --cert ${start_dir}/user_cert -T 36000 -t 36000 -f --checksum md5 file://${start_dir}/output/$1.root $6 
+echo "---- Test line ----"
+
+time gfal-copy --cert ${start_dir}/user_cert -T 36000 -t 36000 -f -p --checksum adler32 file://${start_dir}/output/$1.root $6 
+
+
 if [[ $? -ne 0 ]];
 then 
     exit 255

@@ -9,9 +9,10 @@ import subprocess
 import sys
 import os
 from collections import defaultdict
-
+import time
 import pax
 import checksumdir
+import json
 #from pymongo import ReturnDocument
 
 from cax import qsub, config
@@ -27,27 +28,10 @@ def verify():
 
 
 def _process(name, in_location, host, pax_version, pax_hash,
-             out_location, ncpus=1, disable_updates=False):
+             out_location, ncpus=1, disable_updates=False, json_file=""):
     """Called by another command.
     """
     print('Welcome to cax-process, OSG development with pax mod')
-
-    print('disable_updates =', disable_updates)
-    print('disable_updates == True:',  disable_updates=='True')
-
-    if disable_updates == 'True':
-        print("disabling updates")
-        config.set_database_log(False)
-
-    else:
-        print("enabling updates")
-        config.set_database_log(True)
-
-    print("database_log = ",config.DATABASE_LOG)
-
-
-    if pax_version[0] != 'v':
-        pax_version = 'v' + pax_version
 
     # Import pax so can process the data
     from pax import core, configuration   
@@ -70,44 +54,8 @@ def _process(name, in_location, host, pax_version, pax_hash,
              'creation_time' : datetime.datetime.utcnow(),
              'creation_place': host}
 
-    # need an updated datum dict for api.update_location()
-    updatum = datum.copy()
-    
-    # This query is used to find if this run has already processed this data
-    # in the same way.  If so, quit.
-    query = {'detector': 'tpc',
-             'name'    : name
-             }
-
-    # initialize instance of api class
-    API = api()
-    
-    doc = API.get_next_run(query)
-    
-    if doc is None:
-        print("Run name " + name + " not found")
-        return 1
-   
-    # Sorry
-    if any( ( d['host'] == host and d['type'] == 'processed' and
-              d['pax_version'] == pax_version ) for d in doc['data'] ):
-        print("Already processed %s.  Clear first.  %s" % (name,
-                                                           pax_version))
-        #return 1
-    
-    # Not processed this way already, so notify run DB we will
-    print('Not processed yet')
-    if config.DATABASE_LOG == True:
-        API.add_location(doc['_id'], datum)
-        print('location added to database')
-
-    API = api()
-    doc = API.get_next_run(query)
-    
-    if doc is None:
-        print("Error finding doc after update")
-        return 1
-
+    with open(json_file, "r") as doc_file:
+        doc = json.load(doc_file)
     
     # Determine based on run DB what settings to use for processing.
     if doc['reader']['self_trigger']:
@@ -120,15 +68,15 @@ def _process(name, in_location, host, pax_version, pax_hash,
 
     config_dict = {'pax': {'input_name' : in_location,
                            'output_name': output_fullname,
-                           'n_cpus'     : ncpus,
-                           # 'stop_after' : 20,
+                           #'n_cpus'     : ncpus,
+                           #'stop_after' : 20,
                            # 'decoder_plugin' : 'BSON.DecodeZBSON',
                            'look_for_config_in_runs_db' : False
                            }
                    }
 
     mongo_config = doc['processor']
-    config_dict = configuration.combine_configs(mongo_config, override=config_dict)
+    config_dict = configuration.combine_configs(mongo_config,config_dict)
 
     # Add run number and run name to the config_dict
     config_dict.setdefault('DEFAULT', {})
@@ -137,42 +85,22 @@ def _process(name, in_location, host, pax_version, pax_hash,
 
 
     # Try to process data.
-    try:
-        print('processing', name, in_location, pax_config)
-        print('saving to', output_fullname)
-        p = core.Processor(config_names=pax_config,
+    #try:
+    print('processing', name, in_location, pax_config)
+    print('saving to', output_fullname)
+    p = core.Processor(config_names=pax_config,
                            config_dict=config_dict)
-        p.run()
+    p.run()
 
-    except Exception as exception:
+   # except Exception as exception:
         # Data processing failed.
-        updatum['status'] = 'error'
-        if config.DATABASE_LOG == True:
-            API.update_location(doc['_id'], datum, updatum)
-            # update datum to current state
-            datum = updatum.copy()  
-        raise
-
-    updatum['status'] = 'verifying'
-    if config.DATABASE_LOG == True:
-        API.update_location(doc['_id'], datum, updatum)
-        datum = updatum.copy()
-
-    updatum['checksum'] = checksumdir._filehash(datum['location'],
-                                                hashlib.sha512)
-    if verify():
-        updatum['status'] = 'transferred'
-    else:
-        updatum['status'] = 'failed'
-        
-    if config.DATABASE_LOG == True:
-        API.update_location(doc['_id'], datum, updatum)
+       # print("Processing failed")
         
 class ProcessBatchQueue(Task):
     "Create and submit job submission script."
 
     def submit(self, in_location, host, pax_version, pax_hash, out_location,
-               ncpus, disable_updates):
+               ncpus, disable_updates, json_file):
         '''Submission Script
         '''
 
@@ -185,7 +113,8 @@ class ProcessBatchQueue(Task):
                            number=number,
                            out_location = out_location,
                            ncpus = ncpus,
-                           disable_updates = disable_updates
+                           disable_updates = disable_updates,
+                           json_file = json_file
                            )
 
         script = config.processing_script(script_args)
@@ -197,9 +126,13 @@ class ProcessBatchQueue(Task):
                                                                                     pax_version=pax_version)
             if not os.path.exists(dag_dir):
                 os.makedirs(dag_dir)
+
+            joblog_dir = "/xenon/ershockley/cax/{name}/joblogs".format(name=name)
+            if not os.path.exists(joblog_dir):
+                os.mkdir(joblog_dir)
             
             dag_file = dag_dir + "{name}.dag".format(name=name)
-            qsub.submit_dag_job(name, dag_file, in_location, out_location, script, pax_version)
+            qsub.submit_dag_job(name, dag_file, in_location, out_location, script, pax_version, json_file)
 
         else:
             qsub.submit_job(host, script, name + "_" + pax_version)
@@ -289,10 +222,62 @@ class ProcessBatchQueue(Task):
             # _process(self.run_doc['name'], have_raw['location'], thishost,
                      # version, pax_hash, out_location, ncpus)
 
+            name = self.run_doc['name']
+
+            # New data location
+            datum = {'host'          : thishost,
+                     'type'          : 'processed',
+                     'pax_hash'      : pax_hash,
+                     'pax_version'   : version,
+                     'status'        : 'transferring',
+                     'location'      : out_location + "/" + str(name) + '.root',
+                     'checksum'      : None,
+                     'creation_time' : datetime.datetime.utcnow(),
+                     'creation_place': thishost}
+
+            # need an updated datum dict for api.update_location()
+            updatum = datum.copy()
+
+            # This query is used to find if this run has already processed this data
+            # in the same way.  If so, quit.
+            name = self.run_doc['name']
+            query = {'detector': 'tpc',
+                     'name'    : name
+                     }
+            # initialize instance of api class
+            API = api()
+
+            doc = API.get_next_run(query)
+
+            if doc is None:
+                print("Run name " + name + " not found")
+                return 1
+
+            # Sorry
+            if any( ( d['host'] == thishost and d['type'] == 'processed' and
+                      d['pax_version'] == pax_version ) for d in doc['data'] ):
+                print("Already processed %s.  Clear first.  %s" % (name,
+                                                                   pax_version))
+                #return 1
+
+            # Not processed this way already, so notify run DB we will
+
+            json_file = "/xenon/ershockley/jsons/" + str(name) + ".json"
+            with open(json_file, "w") as f:
+                json.dump(doc, f)
 
             self.submit(have_raw['location'], thishost, version,
-                        pax_hash, out_location, ncpus, disable_updates)
+                        pax_hash, out_location, ncpus, disable_updates, json_file)
 
+            if config.DATABASE_LOG == True:
+                API.add_location(doc['_id'], datum)
+                print('location added to database')
+
+            if doc is None:
+                print("Error finding doc")
+                return 1
+
+            time.sleep(5)
 
     def local_data_finder(self, thishost, versions):
         have_processed = defaultdict(bool)

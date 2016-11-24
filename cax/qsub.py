@@ -77,7 +77,7 @@ def submit_job(host,script, name, extra=''):
     
     delete_script(fileobj)
 
-def submit_dag_job(name, dag_file, inputdir, outputdir, submitscript, paxversion):
+def submit_dag_job(name, dag_file, inputdir, outputdir, submitscript, paxversion, json_file):
 
     which('condor_submit_dag')
 
@@ -85,17 +85,18 @@ def submit_dag_job(name, dag_file, inputdir, outputdir, submitscript, paxversion
     submitfileobj = create_script(submitscript)
 
     # create dag file
-    dag_maker = "~/cax/osg_scripts/write_xenon_dag.py --inputdir {inputdir}  --names {name} --outputdir {outputdir} --submitfile {submitfile} --paxversion {paxversion} -o {dag_file}"
+    dag_maker = "~/cax/osg_scripts/write_xenon_dag.py --inputdir {inputdir}  --names {name} --outputdir {outputdir} --submitfile {submitfile} --paxversion {paxversion} --jsonfile {json_file} -o {dag_file}"
 
     os.system(dag_maker.format(inputdir=inputdir,
                                name=name,
                                outputdir=outputdir,
                                submitfile=submitfileobj.name,
                                paxversion=paxversion,
+                               json_file=json_file,
                                dag_file=dag_file))
 
 
-    submit_command = ('condor_submit_dag {script}'.format(script=dag_file))
+    submit_command = ('condor_submit_dag -f {script}'.format(script=dag_file))
 
     logging.info('submit job:\n %s' % submit_command)
 

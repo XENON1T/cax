@@ -1,6 +1,6 @@
 import logging
 from json import loads
-
+import time 
 import pymongo
 from bson.json_util import dumps
 
@@ -63,7 +63,6 @@ class Task():
                     continue
 
             self.each_run()
-
         self.shutdown()
 
     def each_run(self):
