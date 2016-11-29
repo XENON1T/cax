@@ -79,7 +79,9 @@ def _process(name, in_location, host, pax_version, pax_hash,
     # Determine based on run DB what settings to use for processing.
     if doc['detector'] == 'muon_veto':
         pax_config = 'XENON1T_MV'
+        decoder = 'BSON.DecodeZBSON'
     elif doc['detector'] == 'tpc':
+        decoder = 'Pickle.DecodeZPickle'
         if doc['reader']['self_trigger']:
             pax_config = 'XENON1T'
         else:
@@ -90,9 +92,11 @@ def _process(name, in_location, host, pax_version, pax_hash,
         print('processing', name, in_location, pax_config)
         pax_kwargs = dict(config_names=pax_config,
                           config_dict={'pax': {'input_name' : in_location,
-                                               'output_name': output_fullname},
+                                               'output_name': output_fullname,
+                                               'decoder_plugin': decoder},
                                        'DEFAULT': {'lock_breaking_timeout': 600},
                                        'Queues': {'event_block_size': 1,
+                                                  'max_blocks_on_heap': 1000,
                                                   'timeout_after_sec': 600}})
         if ncpus > 1:
             parallel.multiprocess_locally(n_cpus=ncpus, **pax_kwargs)
