@@ -75,7 +75,6 @@ then
 fi 
 source activate evan-testing
 
-#export MONGO_PASSWORD=luxstinks
 export API_USER='ci-connect'
 export API_KEY=5ac3ed84c1ed8210c84f4d70f194161a64758e29
 
