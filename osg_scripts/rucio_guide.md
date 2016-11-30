@@ -43,7 +43,7 @@ The replication rules (aka rules) define how a DID should be or is replicated am
 
 # Getting an Account
 
-You must already have an account in the Xenon VOMS server and have accepted the Acceptable Use Policy (email ???? if you have questions). To obtain a Rucio account, email the Rucio admin (?????) with the following information:
+To get an account within rucion you need your grid certificate and to have your grid certifcate added to the Xenon VO. For instrustions in how to get a grid certificate and add yourself to the Xenon VO, see [the instructions on the Xenon1t wiki](https://xecluster.lngs.infn.it/dokuwiki/doku.php?id=xenon:xenon1t:sim:grid). Once you have your grid certificate all set up, you need to email the Rucio admin (?????) with the following information:
 
 * Preferred username for the account
 
@@ -214,9 +214,50 @@ The subdirectories (ZZ/AA, BB/CC, etc.) for every scope in the above example are
 # Endpoints
 
 
+# Tutorial
 
+Note: This tutorial assumes you are on `login.ci-connect.uchicago.edu`
 
+Given that you have your grid certificate, are a memeber of the Xenon VO, and have an account in Rucio, we can now do some simple tasks with rucio. Before we start you have to get a voms or grid proxy. This is the active part of your grid certificate and will allow you to initiate transfers. First we need to setup the enviroment to get the grid tools and rucio. To use the grid tools for RHEL6 and derivatives from the the OSG OASIS CVMFS repository run: 
 
+`source /cvmfs/oasis.opensciencegrid.org/osg-software/osg-wn-client/3.3/current/el6-x86_64/setup.sh`
 
+To get the grid tools for RHEL6 and derivatives from the Xenon OASIS CVMFS repository run: 
 
+`<insert command here>`
 
+Once you are in the desired environment initiate the proxy run: 
+
+`voms-proxy-init -voms xenon.biggrid.nl -valid 720:00`
+
+Now lets try downloading a single file: 
+
+`rucio download user.briedel:test_rucio.dummy`
+
+This should download the file `test_rucio.dummy` into `$PWD/user.briedel`. If we now try to download a dataset with 
+
+`rucio download user.briedel:tutorial`
+
+It will put the files in that dataset into `$PWD/tutorial`. Now to upload a file, take a random file (you can generate a 100 MB test file using `dd if=/dev/urandom of=test_rucio.dummy bs=100M count=1`). Now run 
+
+`rucio -v upload --rse UC_OSG_USERDISK --scope user.<your_Rucio_username> user.<your_Rucio_username>:tutorial_rucio /path/to/test/file` 
+
+to upload a file. If the file has been uploaded successfully, run the command `rucio list-dids user.<your_Rucio_username>:tutorial_rucio` this should print something like:
+
+```
++-------------------------------------------+--------------+
+| SCOPE:NAME                                | [DID TYPE]   |
+|-------------------------------------------+--------------|
+| user.<your_Rucio_username>:tutorial_rucio | DATASET      |
++-------------------------------------------+--------------+
+```
+
+Now run `rucio list-file-replicas user.<your_Rucio_username>:tutorial`, this should prompt something like:
+
+``` 
++----------------------------+------------------+------------+-----------+---------------------------------------------------------------------------------------------------------------------+
+| SCOPE                      | NAME             | FILESIZE   | ADLER32   | RSE: REPLICA                                                                                                        |
+|----------------------------+------------------+------------+-----------+---------------------------------------------------------------------------------------------------------------------|
+| user.<your_Rucio_username> | test_rucio.dummy | 33.6 MB    | checksum  | UC_OSG_USERDISK: gsiftp://gridftp.grid.uchicago.edu:2811/cephfs/srm/xenon/rucio/user/briedel/XX/YY/test_rucio.dummy |
++----------------------------+------------------+------------+-----------+---------------------------------------------------------------------------------------------------------------------+
+```
