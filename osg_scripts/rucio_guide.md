@@ -218,13 +218,27 @@ The subdirectories (ZZ/AA, BB/CC, etc.) for every scope in the above example are
 
 Note: This tutorial assumes you are on `login.ci-connect.uchicago.edu`
 
-Given that you have your grid certificate, are a memeber of the Xenon VO, and have an account in Rucio, we can now do some simple tasks with rucio. Before we start you have to get a voms or grid proxy. This is the active part of your grid certificate and will allow you to initiate transfers. First we need to setup the enviroment to get the grid tools and rucio. To use the grid tools for RHEL6 and derivatives from the the OSG OASIS CVMFS repository run: 
+Given that you have your grid certificate, are a memeber of the Xenon VO, and have an account in Rucio, we can now do some simple tasks with rucio. 
 
-`source /cvmfs/oasis.opensciencegrid.org/osg-software/osg-wn-client/3.3/current/el6-x86_64/setup.sh`
+Before we can do anything with rucio, you have to get your grid certicate setup on the machine you are using. You should have a PKCS12 (it should look something like `user_certificate_and_key.UXXXX.p12`) file that you got when your grid certificate was approved. Copy the PKCS12 file to your home directory on the server you are using. Now create 
 
-To get the grid tools for RHEL6 and derivatives from the Xenon OASIS CVMFS repository run: 
+`mkdir $HOME/.globus`
 
-`<insert command here>`
+then run
+
+`openssl pkcs12 -in <PKCS12_filename> -clcerts -nokeys -out $HOME/.globus/usercert.pem`
+`openssl pkcs12 -in <PKCS12_filename> -nocerts -out $HOME/.globus/userkey.pem`
+
+and finally we need to change the permissions:
+
+`chmod 0600 $HOME/.globus/usercert.pem`
+`chmod 0400 $HOME/.globus/userkey.pem`
+
+Now we can generate a VOMs or grid proxy. This is the active part of your grid certificate and will allow you to initiate transfers. 
+
+First we need to setup the enviroment to get the grid tools and rucio. To use the grid tools for RHEL6 and derivatives rucio from the the Xenon OASIS CVMFS repository run:
+
+`source /cvmfs/xenon.opensciencegrid.org/software/rucio-py26/setup_rucio_1_8_3.sh`
 
 Once you are in the desired environment initiate the proxy run: 
 
