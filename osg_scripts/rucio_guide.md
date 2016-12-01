@@ -227,11 +227,13 @@ Before we can do anything with rucio, you have to get your grid certicate setup 
 then run
 
 `openssl pkcs12 -in <PKCS12_filename> -clcerts -nokeys -out $HOME/.globus/usercert.pem`
+
 `openssl pkcs12 -in <PKCS12_filename> -nocerts -out $HOME/.globus/userkey.pem`
 
 and finally we need to change the permissions:
 
 `chmod 0600 $HOME/.globus/usercert.pem`
+
 `chmod 0400 $HOME/.globus/userkey.pem`
 
 Now we can generate a VOMs or grid proxy. This is the active part of your grid certificate and will allow you to initiate transfers. 
