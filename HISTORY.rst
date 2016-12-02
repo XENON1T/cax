@@ -1,6 +1,12 @@
   History
 =======
 
+4.10.4 (1026-12-02)
+-------------------
+* Fix hax logging bug (was preventing all minitree creation)
+* Delay error'ed purging on xe1t-datamanager
+* Reduce massive-cax job submission delay back to 1 second
+
 4.10.3 (1026-11-29)
 -------------------
 * Fix pax input type for MV 
