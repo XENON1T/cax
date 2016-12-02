@@ -49,7 +49,7 @@ def _process_hax(name, in_location, host, pax_version,
     os.makedirs(out_location, exist_ok=True)
 
     try:
-        self.log.info('creating hax minitrees', name, in_location)
+        print ('creating hax minitrees', name, in_location)
         init_hax(in_location, pax_version, out_location)   # may initialize once only
         hax.minitrees.load(name, ['Basics', 'Fundamentals',
                                   'DoubleScatter', 'LargestPeakProperties', 'TotalProperties'])
