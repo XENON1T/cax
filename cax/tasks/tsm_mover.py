@@ -67,10 +67,18 @@ class TSMclient(Task):
           return False
         else:
           return True        
-        
+    
+    def delete_script(self, fileobj):
+        """Delete script after submitting to cluster
+
+        :param script_path: path to the script to be removed
+
+        """
+        fileobj.close()
+    
     def create_script(self, script):
         """Create script as temp file to be run on cluster"""
-        fileobj = tempfile.NamedTemporaryFile(delete=False,
+        fileobj = tempfile.NamedTemporaryFile(delete=True,
                                             suffix='.sh',
                                             mode='wt',
                                             buffering=1)
@@ -92,7 +100,8 @@ class TSMclient(Task):
       
         stdout_value = stdout_value.decode("utf-8")
         stdout_value = stdout_value.split("\n")
-
+        self.delete_script( sc )
+        
         return stdout_value, stderr_value
     
     def get_checksum_folder( self, raw_data_location ):
