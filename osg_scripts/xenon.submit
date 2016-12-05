@@ -1,13 +1,13 @@
 #!/bin/bash
-executable = /home/ershockley/cax/osg_scripts/run_xenon.sh
+executable = /home/briedel/Xenon1T/processing_test/run_xenon.sh
 universe = vanilla
-Error = /home/ershockley/caxOSG_testing/single_zip/logs/try1/$(name)/$(cluster)_$(pax_version).error
-Output  = /home/ershockley/caxOSG_testing/single_zip/logs/try1/$(name)/$(cluster)_$(pax_version).log
-Log     = /home/ershockley/caxOSG_testing/single_zip/logs/try1/$(name)/$(cluster)_$(pax_version)_JOBLOG.log
+Error = /local-scratch/briedel/test_xenon_processing/$(name)/$(cluster)_$(pax_version).error
+Output  = /local-scratch/briedel/test_xenon_processing/$(name)/$(cluster)_$(pax_version).log
+Log     = /local-scratch/briedel/test_xenon_processing/$(name)/$(cluster)_$(pax_version)_JOBLOG.log
 
 Requirements = ((OpSysAndVer == "CentOS6" || OpSysAndVer == "RedHat6" || OpSysAndVer == "SL6") && (GLIDEIN_ResourceName =!= "NPX"))
 request_cpus = $(ncpus)
-transfer_input_files = /home/ershockley/user_cert
+transfer_input_files = /home/briedel/user_cert
 transfer_output_files = ""
 +WANT_RCC_ciconnect = True
 when_to_transfer_output = ON_EXIT
