@@ -68,7 +68,7 @@ cd ${work_dir}
 
 #gfal-copy --cert ${start_dir}/user_cert -T 36000 -t 36000 --checksum md5 $2 file://${rawdata_path}
 
-time gfal-copy -v -f -r -p -t 32400 -K adler32 --cert ${start_dir}/user_cert $2 file://${rawdata_path}
+time gfal-copy -v -f -p -t 36000 -T 18000 -K md5 -n 4 --cert ${start_dir}/user_cert $2 file://${rawdata_path}
 
 #module load pax/evan-testing
 export PATH=/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/bin:$PATH
@@ -79,7 +79,6 @@ then
 fi 
 source activate evan-testing
 
-#export MONGO_PASSWORD=luxstinks
 export API_USER='ci-connect'
 export API_KEY=5ac3ed84c1ed8210c84f4d70f194161a64758e29
 
@@ -117,8 +116,7 @@ fi
 
 echo "---- Test line ----"
 
-time gfal-copy --cert ${start_dir}/user_cert -T 36000 -t 36000 -f -p --checksum adler32 file://${start_dir}/output/$1.root $6 
-
+time gfal-copy --cert ${start_dir}/user_cert -T 36000 -t 18000 -f -p -n 4 --checksum md5 file://${start_dir}/output/$1.root $6 
 
 if [[ $? -ne 0 ]];
 then 

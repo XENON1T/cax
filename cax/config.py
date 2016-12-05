@@ -47,6 +47,8 @@ def get_hostname():
     """Get hostname of the machine we're running on.
     """
     global HOST
+    if '.' in HOST:
+        HOST = HOST.split('.')[0]
     return HOST
 
 
@@ -213,9 +215,9 @@ HOSTNAME={host}
 CONDOR_TEMPLATE = """#!/bin/bash
 executable = /home/ershockley/cax/osg_scripts/run_xenon.sh
 universe = vanilla
-Error = /xenon/ershockley/cax/$(name)/$(zip_name).log
-Output  = /xenon/ershockley/cax/$(name)/$(zip_name).log
-Log     = /xenon/ershockley/cax/$(name)/joblogs/$(zip_name).joblog
+Error = /xenon/ershockley/cax/$(pax_version)/$(name)/$(zip_name).log
+Output  = /xenon/ershockley/cax/$(pax_version)/$(name)/$(zip_name).log
+Log     = /xenon/ershockley/cax/$(pax_version)/$(name)/joblogs/$(zip_name).joblog
 
 Requirements = ((OpSysAndVer == "CentOS6" || OpSysAndVer == "RedHat6" || OpSysAndVer == "SL6") && (GLIDEIN_ResourceName =!= "NPX")) && (GLIDEIN_ResourceName =!= "BU_ATLAS_Tier2")
 request_cpus = $(ncpus)

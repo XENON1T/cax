@@ -1,5 +1,4 @@
 """ Access the cluster.
-1;2c
     Easy to use functions to make use of the cluster facilities.
     This checks the available slots on the requested queue, creates the
     scripts to submit, submits the jobs, and cleans up afterwards.
@@ -77,26 +76,29 @@ def submit_job(host,script, name, extra=''):
     
     delete_script(fileobj)
 
-def submit_dag_job(name, dag_file, inputdir, outputdir, submitscript, paxversion, json_file):
+def submit_dag_job(run_number, outer_dag, inner_dag, outputdir, submitscript, paxversion, json_file):
+    
+    from cax.dag_writer import dag_writer
 
     which('condor_submit_dag')
 
     # create submit file, which in turn is used by dag file.
     submitfileobj = create_script(submitscript)
 
-    # create dag file
-    dag_maker = "~/cax/osg_scripts/write_xenon_dag.py --inputdir {inputdir}  --names {name} --outputdir {outputdir} --submitfile {submitfile} --paxversion {paxversion} --jsonfile {json_file} -o {dag_file}"
+    # check if inner dag file exists already
+    if not os.path.isfile(inner_dag):
+        print("No INNER dag file exists, writing one now")
+        # create inner dag file. In creation of instance, must put run number in a list
+        DAG = dag_writer([run_number], paxversion)
+        DAG.write_inner_dag(run_number, inner_dag, outputdir, submitfileobj.name, json_file)
+      
+    # now check if outer dag exists
+    if not os.path.isfile(outer_dag):
+        print("No OUTER dag file exists, writing one now")
+        DAG = dag_writer([run_number], paxversion)
+        DAG.write_outer_dag(outer_dag, inner_dag)
 
-    os.system(dag_maker.format(inputdir=inputdir,
-                               name=name,
-                               outputdir=outputdir,
-                               submitfile=submitfileobj.name,
-                               paxversion=paxversion,
-                               json_file=json_file,
-                               dag_file=dag_file))
-
-
-    submit_command = ('condor_submit_dag -f {script}'.format(script=dag_file))
+    submit_command = ('condor_submit_dag {script}'.format(script=outer_dag))
 
     logging.info('submit job:\n %s' % submit_command)
 
@@ -109,7 +111,6 @@ def submit_dag_job(name, dag_file, inputdir, outputdir, submitscript, paxversion
         logging.error("Process timeout")
     except Exception as e:
         logging.exception(e)
-    # delete_script(fileobj)   
 
 def create_script(script):
     """Create script as temp file to be run on cluster"""
@@ -139,17 +140,22 @@ def get_number_in_queue(host=config.get_hostname()):
 def get_queue(host=config.get_hostname()):
     """Get list of jobs in queue"""
 
+    if host != "login":
+        if host == "midway-login1":
+            args = {'partition': 'xenon1t',
+                    'user' : 'tunnell'}
+        elif host == 'tegner-login-1':
+            args = {'partition': 'main',
+                    'user' : 'bobau'}
+            
+        else:
+            raise ValueError()
 
-    if host == "midway-login1":
-        args = {'partition': 'xenon1t',
-                'user' : 'tunnell'}
-    elif host == 'tegner-login-1':
-        args = {'partition': 'main',
-                'user' : 'bobau'}
+        command = 'squeue --partition={partition} --user={user} -o "%.30j"'.format(**args)
+    
     else:
-        raise ValueError()
+        command = 'condor_q ershockley -format "%d\n" ClusterID'
 
-    command = 'squeue --partition={partition} --user={user} -o "%.30j"'.format(**args)
     try:
         queue = subprocess.check_output(command,
                                         shell=True,

@@ -48,7 +48,7 @@ class api():
             api_try = 1
             while api_try <= 3:
                 try:
-                    db_request = requests.get(self.api_url, params = params).text
+                    db_request = requests.get(self.api_url, params = params, json=params).text
                     break
                 except:
                     time.sleep(5)
@@ -57,9 +57,9 @@ class api():
                     print("Error: API call to database failed!")
                     return None
             
-            print("\nAPI call returns:")
-            print(db_request)
-            print("\n")
+            #print("\nAPI call returns:")
+            #print(db_request)
+            #print("\n")
 
             ret = json_util.loads(db_request)
 

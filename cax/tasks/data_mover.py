@@ -14,7 +14,7 @@ from paramiko import SSHClient, util
 
 from cax import config
 from cax.task import Task
-
+import pax
 import subprocess
 
 class CopyBase(Task):
@@ -190,8 +190,15 @@ class CopyBase(Task):
         client.close()
 
     def each_run(self):
-        for data_type in ['raw', 'processed']:
-            self.log.debug("%s" % data_type)
+        print("got to each run")
+        try:
+            data_types = config.get_config()["data_types"]
+        except KeyError:
+            self.log.info("JSON does not contain data_types field.")
+            data_types = ["raw", "processed"]
+
+        for data_type in data_types:
+            self.log.info("%s" % data_type)
             self.do_possible_transfers(option_type=self.option_type,
                                        data_type=data_type)
 
@@ -225,12 +232,14 @@ class CopyBase(Task):
                 print ("Must specify transfer protocol (method) for "+remote_host)
                 raise
 
+            print("local_data_finder")
             datum_here, datum_there = self.local_data_finder(data_type,
                                                              option_type,
                                                              remote_host)
 
             # Upload logic
             if option_type == 'upload' and datum_here and datum_there is None:
+                print("performing handshake")
                 self.copy_handshake(datum_here, remote_host, method, option_type)
                 break
 
@@ -254,6 +263,9 @@ class CopyBase(Task):
         datum_here = None  # Information about data here
         datum_there = None  # Information about data there
         # Iterate over data locations to know status
+
+        pax_version_here = pax.__version__
+
         for datum in self.run_doc['data']:
 
             # Is host known?
@@ -268,7 +280,7 @@ class CopyBase(Task):
                 if option_type == 'upload' and not transferred:
                     continue
                 datum_here = datum.copy()
-            elif datum['host'] == remote_host:  # This the remote host?
+            elif datum['host'] == remote_host and datum["pax_version"] == pax_version_here:  # This the remote host?
                 # If downloading, they should have data
                 if option_type == 'download' and not transferred:
                     continue

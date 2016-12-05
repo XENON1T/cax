@@ -54,14 +54,29 @@ def _process(name, in_location, host, pax_version, pax_hash,
              'creation_time' : datetime.datetime.utcnow(),
              'creation_place': host}
 
-    with open(json_file, "r") as doc_file:
-        doc = json.load(doc_file)
+
+    if json_file == "":
+        print("No JSON file supplied.")
+        return 1
+
+    # if processing on OSG
+    elif json_file != "":
+        with open(json_file, "r") as doc_file:
+            doc = json.load(doc_file)
+        
     
     # Determine based on run DB what settings to use for processing.
-    if doc['reader']['self_trigger']:
-        pax_config = 'XENON1T'
-    else:
-        pax_config = 'XENON1T_LED'
+
+    if doc['detector'] == 'muon_veto':
+        pax_config = 'XENON1T_MV'
+        decoder = 'BSON.DecodeZBSON'
+
+    elif doc['detector'] == 'tpc':
+        #decoder = 'Pickle.DecodeZPickle'
+        if doc['reader']['self_trigger']:
+            pax_config = 'XENON1T'
+        else:
+            pax_config = 'XENON1T_LED'
     
     if host == 'login':
         output_fullname = 'output/' + name
@@ -70,10 +85,13 @@ def _process(name, in_location, host, pax_version, pax_hash,
                            'output_name': output_fullname,
                            #'n_cpus'     : ncpus,
                            #'stop_after' : 20,
-                           # 'decoder_plugin' : 'BSON.DecodeZBSON',
+                           #'decoder_plugin' : decoder,
                            'look_for_config_in_runs_db' : False
-                           }
-                   }
+                           },
+                   'DEFAULT': {'lock_breaking_timeout': 600},
+                   'Queues': {'event_block_size': 1,
+                              'max_blocks_on_heap': 1000,
+                              'timeout_after_sec': 600}}
 
     mongo_config = doc['processor']
     config_dict = configuration.combine_configs(mongo_config,config_dict)
@@ -85,16 +103,16 @@ def _process(name, in_location, host, pax_version, pax_hash,
 
 
     # Try to process data.
-    #try:
-    print('processing', name, in_location, pax_config)
-    print('saving to', output_fullname)
-    p = core.Processor(config_names=pax_config,
+    try:
+        print('processing', name, in_location, pax_config)
+        print('saving to', output_fullname)
+        p = core.Processor(config_names=pax_config,
                            config_dict=config_dict)
-    p.run()
+        p.run()
 
-   # except Exception as exception:
-        # Data processing failed.
-       # print("Processing failed")
+    except Exception as exception:
+        # processing failed
+        raise
         
 class ProcessBatchQueue(Task):
     "Create and submit job submission script."
@@ -121,18 +139,22 @@ class ProcessBatchQueue(Task):
         self.log.info(script)
 
         if host == 'login':
-            dag_dir = "/xenon/ershockley/cax/{name}/{number}_{pax_version}/".format(name=name,
-                                                                                    number=number,
-                                                                                    pax_version=pax_version)
-            if not os.path.exists(dag_dir):
-                os.makedirs(dag_dir)
+            outer_dag_dir = "/xenon/ershockley/cax/{pax_version}/{name}/dags".format(name=name,
+                                                                                      pax_version=pax_version)
+            inner_dag_dir = outer_dag_dir + "/inner_dags"
 
-            joblog_dir = "/xenon/ershockley/cax/{name}/joblogs".format(name=name)
+            if not os.path.exists(inner_dag_dir):
+                os.makedirs(inner_dag_dir)
+
+            joblog_dir = "/xenon/ershockley/cax/{pax_version}/{name}/joblogs".format(name=name, pax_version=pax_version)
+
             if not os.path.exists(joblog_dir):
                 os.mkdir(joblog_dir)
             
-            dag_file = dag_dir + "{name}.dag".format(name=name)
-            qsub.submit_dag_job(name, dag_file, in_location, out_location, script, pax_version, json_file)
+            outer_dag_file = outer_dag_dir + "/{name}_outer.dag".format(name=name)
+            inner_dag_file = inner_dag_dir + "/{name}_inner.dag".format(name=name)
+
+            qsub.submit_dag_job(number, outer_dag_file, inner_dag_file, out_location, script, pax_version, json_file)
 
         else:
             qsub.submit_job(host, script, name + "_" + pax_version)
@@ -142,6 +164,78 @@ class ProcessBatchQueue(Task):
         return True  # yeah... TODO.
 
     def each_run(self):
+        # check if too many jobs on grid 
+        if len(qsub.get_queue()) > 1000:
+            self.log.info("Too many jobs in queue, wait 2 minutes and try again")
+            time.sleep(120)
+            return
+
+        thishost = config.get_hostname()
+
+        version = 'v%s' % pax.__version__
+
+        # Specify number of cores for pax multiprocess
+        ncpus = 1
+
+        disable_updates = not config.DATABASE_LOG
+
+        pax_hash = "n/a"
+        
+        out_location = config.get_processing_dir(thishost, version)
+        if not os.path.exists(out_location):
+            os.makedirs(out_location)
+            
+        name = self.run_doc['name']
+            
+        # New data location
+        datum = {'host'          : thishost,
+                 'type'          : 'processed',
+                 'pax_hash'      : pax_hash,
+                 'pax_version'   : version,
+                 'status'        : 'transferring',
+                 'location'      : out_location + "/" + str(name),
+                 'checksum'      : None,
+                 'creation_time' : datetime.datetime.utcnow(),
+                 'creation_place': thishost}
+        
+
+        # This query is used to find if this run has already processed this data
+        # in the same way.  If so, quit.
+        query = {'detector': 'tpc',
+                 'name'    : name
+                 #"data" : {"$not" : {"$elemMatch" : {"host" : thishost,
+                 #                                    "type" : "processed",
+                 #                                    "pax_version" : version}
+                 #                    },
+                 #          "$elemMatch" : {"host" : thishost,
+                 #                          "type" : "raw"}
+                 #          },
+                 #'reader.ini.write_mode' : 2,
+                 #'trigger.events_built' : {"$gt" : 0},
+                 #'processor.DEFAULT.gains' : {'$exists' : True},
+                 #'processor.DEFAULT.electron_lifetime_liquid' : {'$exists' : True},
+                 #'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess'}}},
+                 }
+        #from pprint import pprint
+        #pprint(query)
+        # initialize instance of api class
+        API = api()
+        doc = API.get_next_run(query)
+        
+        #print()
+        #pprint(doc["data"])
+        #print()
+        
+        # Check if suitable run found (i.e. no other processing or error, etc)
+        if doc is None:
+            print("Run name " + name + " not suitable")
+            return 1
+
+        if doc["reader"]["ini"]["write_mode"] != 2:
+            return 1
+        if doc["trigger"]["events_built"] == 0:
+            return 1
+
         if self.has_tag('donotprocess'):
             self.log.debug("Do not process tag found")
             return
@@ -156,128 +250,40 @@ class ProcessBatchQueue(Task):
             self.log.debug('no gains or electron lifetime! skipping processing')
             return
 
-        thishost = config.get_hostname()
-
-        versions = ['v%s' % pax.__version__]
-
-        have_processed, have_raw = self.local_data_finder(thishost,
-                                                          versions)
-
-        # Skip if no raw data
-        if not have_raw:
-            self.log.debug("Skipping %s with no raw data",
-                           self.run_doc['name'])
-            return
-        print('raw data present')
-
-        if self.run_doc['reader']['ini']['write_mode'] != 2:
+        if any( ( d['host'] == thishost and d['type'] == 'processed' and
+                  d['pax_version'] == version ) for d in doc['data'] ):
+            print("Already processed %s.  Clear first.  %s" % (name,
+                                                               version))
             return
 
-        print('rundoc write mode != 2')
 
-        # Get number of events in data set (not set for early runs <1000)
-        events = self.run_doc.get('trigger', {}).get('events_built', -1)
+        json_file = "/xenon/ershockley/jsons/" + str(name) + ".json"
+        with open(json_file, "w") as f:
+            json.dump(doc, f)
 
-        # Skip if 0 events in dataset
-        if events == 0:
-            self.log.debug("Skipping %s with 0 events", self.run_doc['name'])
-            return
+        self.log.info("Processing %s with pax_%s (%s), output to %s",
+                      self.run_doc['name'], version, pax_hash,
+                      out_location)
 
-        # Specify number of cores for pax multiprocess
-        if events < 1000:
-            # Reduce to 1 CPU for small number of events (sometimes pax stalls
-            # with too many CPU)
-            ncpus = 1
-        else:
-            ncpus = 8  # based on Figure 2 here https://xecluster.lngs.infn.it/dokuwiki/doku.php?id=xenon:xenon1t:shockley:performance#automatic_processing
+        
+        # get raw data path for this run
+        raw_location = None
+        for entry in doc["data"]:
+            if (entry["host"] == thishost and entry["type"] == "raw"):
+                raw_location = entry["location"]
 
+        if raw_location is None:
+            print("Couldn't find raw data location for " + str(name))
+            return 1 
 
-        disable_updates = not config.DATABASE_LOG
-
-        print(versions)
-        # Process all specified versions
-        for version in versions:
-            pax_hash = "n/a"
-
-            out_location = '/xenon/ershockley/processed' #config.get_processing_dir(thishost, version)
-
-            if have_processed[version]:
-                self.log.info("Skipping %s already processed with %s",
-                               self.run_doc['name'],
-                               version)
-                continue
+        self.submit(raw_location, thishost, version,
+                    pax_hash, out_location, ncpus, disable_updates, json_file)
+        
+        if config.DATABASE_LOG == True:
+            API.add_location(doc['_id'], datum)
+            print('location added to database')
             
-            #queue_list = qsub.get_queue(thishost)
-            # Should check version here too
-            #if self.run_doc['name'] in queue_list:
-               # self.log.debug("Skipping %s currently in queue",
-                 #              self.run_doc['name'])
-                #continue
-
-            self.log.info("Processing %s with pax_%s (%s), output to %s",
-                          self.run_doc['name'], version, pax_hash,
-                          out_location)
-
-
-            # _process(self.run_doc['name'], have_raw['location'], thishost,
-                     # version, pax_hash, out_location, ncpus)
-
-            name = self.run_doc['name']
-
-            # New data location
-            datum = {'host'          : thishost,
-                     'type'          : 'processed',
-                     'pax_hash'      : pax_hash,
-                     'pax_version'   : version,
-                     'status'        : 'transferring',
-                     'location'      : out_location + "/" + str(name) + '.root',
-                     'checksum'      : None,
-                     'creation_time' : datetime.datetime.utcnow(),
-                     'creation_place': thishost}
-
-            # need an updated datum dict for api.update_location()
-            updatum = datum.copy()
-
-            # This query is used to find if this run has already processed this data
-            # in the same way.  If so, quit.
-            name = self.run_doc['name']
-            query = {'detector': 'tpc',
-                     'name'    : name
-                     }
-            # initialize instance of api class
-            API = api()
-
-            doc = API.get_next_run(query)
-
-            if doc is None:
-                print("Run name " + name + " not found")
-                return 1
-
-            # Sorry
-            if any( ( d['host'] == thishost and d['type'] == 'processed' and
-                      d['pax_version'] == pax_version ) for d in doc['data'] ):
-                print("Already processed %s.  Clear first.  %s" % (name,
-                                                                   pax_version))
-                #return 1
-
-            # Not processed this way already, so notify run DB we will
-
-            json_file = "/xenon/ershockley/jsons/" + str(name) + ".json"
-            with open(json_file, "w") as f:
-                json.dump(doc, f)
-
-            self.submit(have_raw['location'], thishost, version,
-                        pax_hash, out_location, ncpus, disable_updates, json_file)
-
-            if config.DATABASE_LOG == True:
-                API.add_location(doc['_id'], datum)
-                print('location added to database')
-
-            if doc is None:
-                print("Error finding doc")
-                return 1
-
-            time.sleep(5)
+        time.sleep(5)
 
     def local_data_finder(self, thishost, versions):
         have_processed = defaultdict(bool)
@@ -306,7 +312,7 @@ class ProcessBatchQueue(Task):
             # Check if processed data already exists in DB
             if datum['type'] == 'processed':
                 for version in versions:
-                    if version == datum['pax_version']:
+                    if version == datum['pax_version'] and datum['status'] == 'transferred':
                         have_processed[version] = True
 
         return have_processed, have_raw

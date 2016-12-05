@@ -17,7 +17,6 @@ class Task():
 
     def go(self, specify_run = None):
         """Run this periodically"""
-        print('welcome to GO')
         query = {'detector': 'tpc'}
         if specify_run is not None:
             query['number'] = specify_run
@@ -39,7 +38,7 @@ class Task():
             self.log.warning("Curson not found exception.  Skipping")
             return
 
-        print('iterating over each run')
+        print("iterating over each run")
         # Iterate over each run
         for id in ids:
             # Make sure up to date
@@ -51,6 +50,7 @@ class Task():
 
 
             if 'data' not in self.run_doc:
+                print("data not in run doc")
                 continue
 
             # DAQ experts only:
@@ -60,8 +60,9 @@ class Task():
             # Operate on only user-specified datasets
             if datasets:
                 if self.run_doc['name'] not in datasets:
+                    print("run not in dataset list")
                     continue
-
+                
             self.each_run()
         self.shutdown()
 

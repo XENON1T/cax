@@ -112,7 +112,7 @@ def write_dag_file(options):
                                                          outfile_full, run_name,
                                                          options.paxversion, zip_name, options.jsonfile))
                 dag_file.write("Retry XENON.%d 10\n" % i)
-                dag_file.write("SCRIPT POST XENON.%d /home/ershockley/hadd_and_upload.sh %s %s %s \n" % (i,run_name,zip_name,dir_name))
+                dag_file.write("SCRIPT POST XENON.%d /home/ershockley/hadd_and_upload.sh %s %s %s $RETURN\n" % (i,run_name,zip_name,dir_name))
                 i += 1
 
 
