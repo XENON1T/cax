@@ -54,7 +54,8 @@
     "upload_options": ["rucio-catalogue"],
     "download_options": null,
     "pax_processing_versions": null,
-    "task_list": ["RucioRule"]
+    "task_list": ["RucioRule"],
+    "data_type": ["raw"]
   },
   {
     "name": "rucio-catalogue",

@@ -18,13 +18,16 @@ DATA_GROUP_PDC = 'xenon-users'
 
 RUCIO_RSE = ''
 RUCIO_SCOPE = ''
-RUCIO_UPLOAD = 'rundb'
+RUCIO_UPLOAD = None
 RUCIO_CAMPAIGN = ''
 
 PAX_DEPLOY_DIRS = {
     'midway-login1' : '/project/lgrandi/deployHQ/pax',
     'tegner-login-1': '/afs/pdc.kth.se/projects/xenon/software/pax'
 }
+
+RUCIO_RULE = ''
+
 
 
 def mongo_password():
@@ -46,22 +49,22 @@ def get_hostname():
     """Get hostname of the machine we're running on.
     """
     global HOST
+    if '.' in HOST:
+        HOST = HOST.split('.')[0]
     return HOST
 
-
+   
 def set_json(config):
     """Set the cax.json file at your own
     """
     global CAX_CONFIGURE
     CAX_CONFIGURE = config
 
-
 def set_database_log(config):
     """Set the database update
     """
     global DATABASE_LOG
     DATABASE_LOG = config
-
 
 def load():
     # User-specified config file
@@ -329,3 +332,8 @@ def set_rucio_upload( rucio_upload ):
 def set_rucio_campaign( rucio_campaign ):
     global RUCIO_CAMPAIGN
     RUCIO_CAMPAIGN = rucio_campaign
+
+def set_rucio_rules( config_rule ):
+    """Set the according config file to define the rules for transfer"""
+    global RUCIO_RULE
+    RUCIO_RULE = config_rule

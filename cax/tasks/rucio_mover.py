@@ -27,6 +27,7 @@ import shutil
 import tempfile
 import io
 import locale
+import json
 
 import scp
 from paramiko import SSHClient, util
@@ -148,8 +149,9 @@ class RucioBase(Task):
       i_path    = None  
         
     
-    def set_rule(self, location, rse_remote):
-        
+    def set_rule(self, location, rse_remote, lifetime = "-1"):
+      """ A general approach to define a rule """
+      
       #1) Check for rules: scope:did at rse  
       i_rule_id = None
       i_rule_status = None
@@ -201,13 +203,23 @@ class RucioBase(Task):
             
       elif i_rule_id == "n/a":
         logging.info("No ruleID definied - We should create one!")
-        trrule = self.RucioCommandLine( self.host,
-                                        "add-rule",
-                                        filelist = None,
-                                        metakey  = None).format(rucio_account=config.get_config( self.remote_host )["rucio_account"],
-                                                                location=location,
-                                                                rse_remote=rse_remote)
-      
+        
+        if lifetime == "-1":
+          trrule = self.RucioCommandLine( self.host,
+                                          "add-rule",
+                                          filelist = None,
+                                          metakey  = None).format(rucio_account=config.get_config( self.remote_host )["rucio_account"],
+                                                                  location=location,
+                                                                  rse_remote=rse_remote)
+        elif lifetime != "-1":
+          trrule = self.RucioCommandLine( self.host,
+                                          "add-rule-lifetime",
+                                          filelist = None,
+                                          metakey  = None).format(rucio_account=config.get_config( self.remote_host )["rucio_account"],
+                                                                  location=location,
+                                                                  rse_remote=rse_remote,
+                                                                  dataset_lifetime=lifetime)
+        
         logging.debug( trrule )
         print("old summary: ", rule_summary, location, rse_remote)
         msg_std, msg_err = self.doRucio( trrule )
@@ -284,13 +296,14 @@ class RucioBase(Task):
       logging.debug( host_installed )
 
       msg_std, msg_err = self.doRucio( host_installed )
-      
+
       version = 0
       for i in msg_std:
         if i.find("rucio: command not found") >= 0:
           version = False
         if i.find("rucio") == 0 and len(i.split(" ")[0]) == 5:
           version = i.split(" ")[1]
+
       return version
       
     def check_rucio_account(self):
@@ -302,7 +315,6 @@ class RucioBase(Task):
                                        metakey  = None).format(rucio_account=config.get_config( self.remote_host )["rucio_account"])
       
       logging.debug( check_account )
-
       msg_std, msg_err = self.doRucio( check_account )
       
       account_exists = False
@@ -344,7 +356,7 @@ class RucioBase(Task):
           transfer_tags.append( ifile )
           
       #add the date of creation
-      tag_created_at            = tags_all["comments"][0]["date"]
+      tag_created_at            = tags_all["start"]
       transfer_tag_created_at   = tag_created_at.date().strftime("%Y%m%d")[2:]+"_"+tag_created_at.time().strftime("%H%M")
       transfer_tags[0].update( {"created_at": transfer_tag_created_at} )
       
@@ -356,7 +368,7 @@ class RucioBase(Task):
       #data base entry according the run
       tags_all = self.run_doc
       meta_tags = []
-
+      #print( tags_all )
       #Gather basic meta data:
       meta_tag_shifter      = tags_all["user"]
       meta_tag_name         = tags_all["name"]              #just an option, not used in meta data set (see w)
@@ -364,7 +376,7 @@ class RucioBase(Task):
       meta_tag_runnumber    = tags_all["number"]
       meta_tag_sub_detector = tags_all["detector"]
       meta_tag_trigger_events_built = tags_all["trigger"]["events_built"]
-      tag_created_at        = tags_all["comments"][0]["date"]
+      tag_created_at        = tags_all["start"]
       meta_tag_created_at   = tag_created_at.date().strftime("%Y%m%d")[2:]+"_"+tag_created_at.time().strftime("%H%M")
       
       #define the muon veto short term 'mv' (hardcoded)
@@ -391,15 +403,6 @@ class RucioBase(Task):
       meta_tags[0].update( {"version" : self.get_software_version( location, ttype)} )
 
       return meta_tags
-    
-    #def create_script(self, scriptname, code):
-        #"""Create script as temp file to be run on cluster"""
-        
-        #f = open( scriptname, "w")
-        #f.write(code)
-        #f.close()
-        
-        #os.chmod(scriptname, 0o774)
 
     def create_script(self, script):
         """Create script as temp file to be run on cluster"""
@@ -412,14 +415,14 @@ class RucioBase(Task):
 
         return fileobj
 
-    def delete_script(self, scriptname):
+    def delete_script(self, fileobj):
         """Delete script after submitting to cluster
 
         :param script_path: path to the script to be removed
 
         """
-        subprocess.Popen(['rm', '-f', scriptname], stdout=subprocess.PIPE)
-
+        fileobj.close()
+        
     def get_python_version(self):
       """Check for the right python version. Assure that rucio is executed under python <=2.7"""
       sc = "/tmp/{sc_name}.sh".format(sc_name="python_check")
@@ -474,7 +477,7 @@ python -V
             
       #1) Check if the specified rucio account exists  
       elif self.check_rucio_account() == False:
-        logging.info("Sanity check: The specified account %s does not exists in the current rucio list", config.get_config( remote_host )["rucio_account"] )
+        logging.info("Sanity check: The specified account %s does not exists in the current rucio list", config.get_config( self.remote_host )["rucio_account"] )
         logging.info("Sanity check: Use \'rucio-admin account list\' manually!")
         return False
 
@@ -575,9 +578,10 @@ python -V
           logging.debug( checksum_name)     
           msg_std, msg_err = self.doRucio( checksum_name )
 
+
           for i in msg_std:
             for irse in rse_list:
-              if i.find(irse) >= 0:
+              if i.find(irse) >= 0 and i.find("|") == 0:
                 ii = i.split("|")
                 for j in ii:
                   if j.find( irse ) >= 0:
@@ -675,6 +679,7 @@ python -V
       stdout_value = stdout_value.decode("utf-8")
       stdout_value = stdout_value.split("\n")
       stdout_value = list(filter(None, stdout_value)) # fastest way to remove '' from list
+      self.delete_script(sc)
       return stdout_value, stderr_value
     
     def copyRucio(self, datum_original, datum_destination, option_type):
@@ -732,7 +737,7 @@ python -V
         self.return_rucio['checksum'] = "n/a"
         self.return_rucio['location'] = "n/a"
         self.return_rucio['rse']      = []
-        self.return_rucio['status'] = "error"
+        self.return_rucio['status'] = "RSEreupload"
         return 0
       logging.info("Upload type: %s", gtype)
       
@@ -845,15 +850,18 @@ python -V
         logging.info("Rucio (add-dataset into %s): %s", rscope_upload, i)
             
       #1) Upload the raw/processed data and set the meta tags:
-      #-----------------------------------------------------------------      
+      #-----------------------------------------------------------------    
+      print("test")
       if data_type == "raw":
         upload_file_s = files
+        print("testraw")
       elif data_type == "processed":
         upload_file_s = [files]
+        print("testpr")
       else:
         logging.info("No files for upload are specified")
         return 0
-    
+      print("testafter")
       #1.1) Upload      
       upload_name = self.RucioCommandLine(self.host, 
                                           "upload-advanced", 
@@ -862,31 +870,49 @@ python -V
                                                                  scope=rscope_upload,
                                                                  dataset=dataset_name,
                                                                  rse=rrse)
-      logging.debug( upload_name )     
+      logging.debug( upload_name )
+      print(upload_name)
       msg_std, msg_err = self.doRucio( upload_name )
       for i in msg_std:
         logging.info("Rucio (upload-advanced): %s", i)
         
       for i in msg_std:
         if i.find("ERROR [The requested service is not available at the moment.") >= 0:
+          logging.info("ERROR: Rucio service is not available")
           self.return_rucio['checksum'] = "n/a"
           self.return_rucio['location'] = "n/a"
           self.return_rucio['rse']      = []
-          self.return_rucio['status'] = "RSEerror"
+          self.return_rucio['status'] = "RSEreupload"
           return
         elif i.find("ERROR [There is not enough quota left to fulfil the operation.") >= 0:
+          logging.info("ERROR: Not enough quota left")
           self.return_rucio['checksum'] = "n/a"
           self.return_rucio['location'] = "n/a"
           self.return_rucio['rse']      = []
           self.return_rucio['status'] = "RSEquota"
           return
         elif i.find("ERROR [('Connection aborted.', BadStatusLine('',))]") >= 0:
+          logging.info("ERROR: Connection aborted")
           self.return_rucio['checksum'] = "n/a"
           self.return_rucio['location'] = "n/a"
           self.return_rucio['rse']      = []
           self.return_rucio['status'] = "RSEreupload"
           return
-            
+        elif i.find("Details: Missing dependency : gfal2]") >= 0:
+          logging.info("ERROR: Missing gfal2 dependency")
+          self.return_rucio['checksum'] = "n/a"
+          self.return_rucio['location'] = "n/a"
+          self.return_rucio['rse']      = []
+          self.return_rucio['status'] = "RSEreupload"
+          return        
+        elif i.find("SSL routines:SSL3_READ_BYTES:sslv3 alert certificate expired]") >= 0:
+          logging.info("ERROR: Certificate expired")
+          self.return_rucio['checksum'] = "n/a"
+          self.return_rucio['location'] = "n/a"
+          self.return_rucio['rse']      = []
+          self.return_rucio['status'] = "RSEreupload"
+          return  
+
         #Not yet sure if necessary:
         #elif i.find("ERROR [The file already exists.") >=0:
           #self.return_rucio['checksum'] = "n/a"
@@ -1025,7 +1051,7 @@ python -V
         self.return_rucio['location'] = "{scope}:{filename}".format(scope=rscope_upload,
                                                                   filename=dataset_name)
         self.return_rucio['rse']      = []
-        self.return_rucio['status'] = "error"
+        self.return_rucio['status'] = "RSEreupload"
         logging.info("Upload status: error - Files or checksums do not agree!")
         return
       
@@ -1065,7 +1091,7 @@ python -V
             return 
 
 
-        for data_type in ['raw', 'processed']:
+        for data_type in config.get_config( config.get_hostname() )['data_type']:
             logging.debug("%s" % data_type)
             self.do_possible_transfers(option_type=self.option_type, data_type=data_type)
       
@@ -1100,7 +1126,23 @@ export RUCIO_ACCOUNT={rucio_account}
       """
       
       general_string_tegner = """#!/bin/bash
-source /afs/pdc.kth.se/projects/xenon/software/rucio/rucio.sh
+
+#export PATH="/cfs/klemming/nobackup/b/bobau/ToolBox/TestEnv/Anaconda3/bin:$PATH"
+source deactivate
+source activate rucio_p2
+export PATH=~/.local/bin:$PATH
+cd /cfs/klemming/nobackup/b/bobau/ToolBox/gfal-tools
+source /cfs/klemming/nobackup/b/bobau/ToolBox/gfal-tools/setup.sh
+cd
+export RUCIO_HOME=~/.local/rucio
+export RUCIO_ACCOUNT={rucio_account}
+echo "Rucio load"
+      """
+
+      general_string_stash = """#!/bin/bash
+module load python/2.7
+source /cvmfs/xenon.opensciencegrid.org/software/rucio-py27/setup_rucio_1_8_3.sh
+export RUCIO_HOME=/cvmfs/xenon.opensciencegrid.org/software/rucio-py27/1.8.3/
 export RUCIO_ACCOUNT={rucio_account}
       """
 
@@ -1120,7 +1162,8 @@ source /cvmfs/oasis.opensciencegrid.org/osg-software/osg-wn-client/3.3/current/e
       general = {
           "xe1t-datamanager": general_string_xe1tdata,
           "tegner-login-1": general_string_tegner,
-          "midway-login1": general_string_midway
+          "midway-login1": general_string_midway,
+          "login": general_string_stash
                  }
       
       upload_simple = """
@@ -1198,6 +1241,11 @@ rucio list-file-replicas {scope}:{dataset}
       add_rule = """
 rucio add-rule {location} 1 {rse_remote}
       """
+
+      add_rule_lifetime = """
+rucio add-rule --lifetime {dataset_lifetime} {location} 1 {rse_remote}
+      """
+      
       
       list_rules = """
 rucio list-rules {location}
@@ -1252,6 +1300,8 @@ rucio list-files {scope}:{dataset}
           return general[host] + list_files
       elif method == "add-rule":
           return general[host] + add_rule
+      elif method == "add-rule-lifetime":
+          return general[host] + add_rule_lifetime
       elif method == "list-rules":
           return general[host] + list_rules
       elif method == "ping-rucio":
@@ -1404,6 +1454,35 @@ class RucioRule(Task):
       
       logging.info("Define the transfer rules")
       
+      if config.RUCIO_RULE == None:
+        return 0
+      
+      t = json.loads(open(config.RUCIO_RULE, 'r').read())
+
+      run_nb = t[0]['run_nb'].split(",")
+      runNB = []
+      for i in run_nb:
+        i = i.replace(" ", "")
+        if i.find("-") >= 0:
+          a = i.split("-")[0]
+          b = i.split("-")[1]
+          for j in range( int(a), int(b) ):
+            runNB.append( j )
+                  
+        else:
+          runNB.append( i )
+              
+      destination_rse       = t[0]['destination_rse']
+      destination_livetime  = t[0]['destination_livetime']
+      destination_condition = t[0]['destination_condition']
+      remove_rse            = t[0]['remove_rse']
+
+      print( runNB )
+      print( destination_rse )
+      print( destination_livetime )
+      print( destination_condition )
+      print( remove_rse )
+
       self.the_mighty_rule = []
     
     def each_run(self):
@@ -1412,7 +1491,7 @@ class RucioRule(Task):
       #load the transfer rules definitions for each data set:
       self.rule_definition()
 
-      for data_type in ['raw', 'processed']:
+      for data_type in config.get_config( config.get_hostname() )['data_type']:
          
          logging.info("Set rules for data type: %s" % data_type)
          self.set_possible_rules( data_type=data_type,
@@ -1464,7 +1543,7 @@ class RucioRule(Task):
           print("Rucio location from runDB: ", rucio_location)
           
           #initiate the the transfer and add the rse + path to the runDB
-          rule_result = self.rucio.set_rule( rucio_location, i_rse )
+          rule_result = self.rucio.set_rule( rucio_location, i_rse, "-1" )
           logging.info(" * Status rule/transfer: %s", rule_result['rule_status'])
           logging.info(" * RSE: %s", rule_result['rule_rse'])
           logging.info(" * RuleID: %s", rule_result['rule_id'])
@@ -1522,7 +1601,8 @@ class RucioRule(Task):
       transfer_list = config.get_config("rucio-catalogue")['rucio_transfer']
       transfer_list.append( config.get_config("rucio-catalogue")['rucio_upload_rse'] ) 
       method = config.get_config("rucio-catalogue")['method'] 
-      
+      print("sc: ", transfer_list )
+      print("th: ", there)
       logging.info("Nothing yet done here to delete rules and files !<code>")
       # WRITE SOME CODE TO DELTE TRANFER RULES AND FILES
       # according to self.the_mighty_rule

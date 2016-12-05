@@ -250,3 +250,50 @@ class RemoveRucioEntry(Task):
             break
         
         print("There are {a} entries in the runDB with \"rucio-catalogue\" for the same run number or name".format(a=str(cnt)))
+        
+class RuciaxTest(Task):
+    """Remove a single file or directory
+
+    This notifies the run database.
+    """
+
+    def __init__(self, mode, location):
+        # Save filesnames to use
+        self.location = location
+        self.mode = mode
+        
+        # Perform base class initialization
+        Task.__init__(self)
+
+    def each_run(self):
+        # For each data location, see if this filename in it
+        #print(self.run_doc)
+        cnt = 0
+
+        #for data_doc in self.run_doc['data']:
+            ## Is not local, skip
+            #if data_doc['host'] == "rucio-catalogue":
+                #print("found: ", data_doc)
+                #cnt+=1
+        
+        cnt_rucio = 0
+        locArra = []
+        for data_doc in self.run_doc['data']:
+            
+          if 'host' not in data_doc or data_doc['host'] != "rucio-catalogue":
+            continue
+
+            #if data_doc['location'] != self.location:
+                #continue
+          if all (k in data_doc for k in ("rucio-catalogue")):
+            print( "They're there!", k )
+          
+          if data_doc['host'] == "rucio-catalogue":
+            cnt_rucio += 1
+            locArra.append( data_doc['location'] )
+        
+        #if das != None and cnt_rucio > 1:  
+          print(locArra, cnt_rucio, data_doc['status'])
+          print(" ")
+        
+        #print("There are {a} entries in the runDB with \"rucio-catalogue\" for the same run number or name".format(a=str(cnt)))

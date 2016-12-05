@@ -58,8 +58,9 @@ setup(
             'cax-stray = cax.main:stray',
             'cax-status = cax.main:status',
             'ruciax = cax.main:ruciax',
+            'ruciax-rm = cax.main:remove_from_rucio',
             'massive-ruciax = cax.main:massiveruciax',
-            'ruciax-summary = cax.main:summaryruciax',
+            'ruciax-check = cax.main:ruciax_status',
         ],
     },
 )

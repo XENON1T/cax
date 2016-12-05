@@ -349,6 +349,10 @@ def ruciax():
                         dest='config_file',
                         help="Load a custom .json config file into cax")
     
+    parser.add_argument('--rucio-rule', type=str,
+                        dest='config_rule',
+                        help="Load the a rule file") 
+    
     parser.add_argument('--log', dest='log', type=str, default='info',
                         help="Logging level e.g. debug")
     
@@ -379,17 +383,7 @@ def ruciax():
     
     
     args = parser.parse_args()
-
-    if args.host:
-        config.HOST = args.host
-
-    print(args.run, config.get_hostname())
-    
-    #These are optional and needs to be reviewed:
-    config.set_rucio_rse( args.rucio_rse)
-    config.set_rucio_scope( args.rucio_scope)
-    config.set_rucio_upload( args.rucio_upload )
-    
+   
     #This one is mandatory: hardcoded science run number!
     config.set_rucio_campaign("000")
 
@@ -405,6 +399,9 @@ def ruciax():
 
     # Check passwords and API keysspecified
     config.mongo_password()
+
+    # Set information for rucio transfer rules (config file)
+    config.set_rucio_rules( args.config_rule)
 
     # Setup logging
     cax_version = 'ruciax_v%s - ' % __version__
@@ -530,7 +527,8 @@ def massiveruciax():
       
     # Setup logging
     log_path = {"xe1t-datamanager": "/home/xe1ttransfer/rucio_log",
-               "midway-login1": "/home/bauermeister/rucio_log"}
+               "midway-login1": "/home/bauermeister/rucio_log",
+               "tegner-login-1": "/afs/pdc.kth.se/home/b/bobau/rucio_log"}
     
     if not os.path.exists(log_path[config.get_hostname()]):
         os.makedirs(log_path[config.get_hostname()])
@@ -566,9 +564,28 @@ export PATH=~/.local/bin:$PATH
 export RUCIO_HOME=~/.local/rucio
 export RUCIO_ACCOUNT={account}
     """.format( account=config.get_config("rucio-catalogue")['rucio_account'] )
+
+    osgchicago="""#!/bin/bash
+voms-proxy-init -voms xenon.biggrid.nl -valid 168:00
+export PATH="/home/bauermeister/anaconda2/bin:$PATH"
+source activate rucio_p3
+    """
+    
+    tegner = """#!/bin/bash
+export PATH="/cfs/klemming/nobackup/b/bobau/ToolBox/TestEnv/Anaconda3/bin:$PATH"
+source activate rucio_p3
+export PATH=~/.local/bin:$PATH
+cd /cfs/klemming/nobackup/b/bobau/ToolBox/gfal-tools
+source /cfs/klemming/nobackup/b/bobau/ToolBox/gfal-tools/setup.sh
+cd
+export RUCIO_HOME=~/.local/rucio
+export RUCIO_ACCOUNT={account}
+      """.format( account=config.get_config("rucio-catalogue")['rucio_account'] )
     
     general = {"xe1t-datamanager": xe1tdatam,
-               "midway-login1": midwayrcc}
+               "midway-login1": midwayrcc,
+               "tegner-login-1": tegner,
+               "login": osgchicago}
 
     while True: # yeah yeah
         #query = {'detector':'tpc'}
@@ -613,7 +630,7 @@ export RUCIO_ACCOUNT={account}
                   timestamp=local_time)
                 
             elif doc['detector'] == 'muon_veto':
-              job = "{conf} --run {number} --log-file {log_path}/ruciax_log_{number}_{timestamp}.txt".format(
+              job = "{conf} --name {number} --log-file {log_path}/ruciax_log_{number}_{timestamp}.txt".format(
                   conf=config_arg,
                   number=doc['name'],
                   log_path=log_path[config.get_hostname()],
@@ -640,27 +657,6 @@ ruciax --once {job}
             stdout_value, stderr_value = execute.communicate()
             stdout_value = stdout_value.decode("utf-8")
             stdout_value = stdout_value.split("\n")
-
-            
-            #scname = "massive_rucio_call_{runnumber}".format(runnumber=doc['name'] )
-            #sc = "/tmp/{sc_name}.sh".format(sc_name=scname)
-
-            #f = open( sc, "w")
-            #f.write(command)
-            #f.close()
-            #os.chmod(sc, 0o774)
-           
-            #execute = subprocess.Popen( ['sh', sc] , 
-                                  #stdin=subprocess.PIPE,
-                                  #stdout=subprocess.PIPE,
-                                  #stderr=subprocess.STDOUT, shell=False )
-            #stdout_value, stderr_value = execute.communicate()
-            #stdout_value = stdout_value.decode()
-      
-            #stdout_value = str(stdout_value).split("\n")
-            #stderr_value = str(stderr_value).split("\n")
-      
-            #stdout_value.remove('') #remove '' entries from an array
             
             #Return command output:
             for i in stdout_value:
@@ -709,6 +705,43 @@ def remove_from_rucio():
       number_name = args.run
 
     filesystem.RemoveRucioEntry(args.location).go(number_name)
+
+def ruciax_status():
+    parser = argparse.ArgumentParser(description="Allow to check the run database for rucio entries")
+    
+    parser.add_argument('--location', type=str, required=False,
+                        dest='location', default=None,
+                        help="Location of file or folder to be removed")
+    parser.add_argument('--disable_database_update', action='store_true',
+                        help="Disable the update function the run data base")
+    parser.add_argument('--run', type=int, required=False,
+                        dest='run', default=None,
+                        help="Select a single run by number")
+    parser.add_argument('--name', type=str, required=False,
+                        dest='name', default=None,
+                        help="Select a single run by name")
+    
+    parser.add_argument('--mode', type=str, required=True,
+                        dest='mode',
+                        help="Choose the kind of test you want to run")
+    
+    args = parser.parse_args()
+
+    database_log = not args.disable_database_update
+
+    # Set information to update the run database
+    config.set_database_log(database_log)
+    config.mongo_password()
+    
+    number_name = None
+    if args.name is not None:
+      number_name = args.name
+    else:
+      number_name = args.run
+      
+    if args.mode == "DoubleEntries":
+      print("Check if there are more than one entries in the runDB")
+      filesystem.RuciaxTest(args.mode, args.location).go(number_name)
 
 if __name__ == '__main__':
     main()

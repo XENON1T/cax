@@ -227,7 +227,7 @@ class CopyBase(Task):
         client.close()
 
     def each_run(self):
-        for data_type in ['raw', 'processed']:
+        for data_type in config.get_config( config.get_hostname() )['data_type']:
             self.log.debug("%s" % data_type)
             self.do_possible_transfers(option_type=self.option_type,
                                        data_type=data_type)
@@ -317,7 +317,6 @@ class CopyBase(Task):
                 continue
 
             transferred = (datum['status'] == 'transferred')
-
             # If the location refers to here
             if datum['host'] == config.get_hostname():
                 # If uploading, we should have data
@@ -394,6 +393,7 @@ class CopyBase(Task):
             self.rucio.set_remote_host( destination )
             #Sanity check for rucio client
             if self.rucio.sanity_checks() == False:
+              logging.info("!!! <<The sanity checks fail>>  !!!")
               return 0
             #Add two further database entries for rucio related uploads
             datum_new['rse'] = []
