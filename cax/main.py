@@ -178,7 +178,7 @@ def massive():
                 ('_id', -1))
 
     dt = datetime.timedelta(days=1)
-    t0 = datetime.datetime.utcnow() - 2*dt
+    t0 = datetime.datetime.utcnow() - 2 * dt
 
 
     while True: # yeah yeah
@@ -196,6 +196,13 @@ def massive():
             logging.info("Full mode")
             t0 = t1
 
+
+        if args.run:
+            query['number'] = args.run
+
+        if args.start:
+            query['number'] = {'$gte' : args.start}
+
         docs = list(collection.find(query,
                                     sort=sort_key,
                                     projection=['start', 'number','name',
@@ -203,27 +210,20 @@ def massive():
 
         for doc in docs:
 
-            if args.run:
-                if args.run != doc['number']:
-                    continue
-
-            if args.start:
-                if args.start < doc['number']:
-                    continue
-
+            job_name = ''
             if doc['detector'] == 'tpc':
+                job_name = str(doc['number'])
                 job = dict(command='cax --once --run {number} '+config_arg,
-                            number=doc['number'],
-                           )
+                           number=int(job_name))
             elif doc['detector'] == 'muon_veto':
+                job_name = doc['name']
                 job = dict(command='cax --once --name {number} '+config_arg,
-                            number=doc['name'],
-                           )
+                           number=job_name)
 
             script = config.processing_script(job)
 
-            if 'cax_%d_v%s' % (doc['number'], pax.__version__) in qsub.get_queue():
-                logging.debug('Skip: cax_%d_v%s job exists' % (doc['number'], pax.__version__))
+            if 'cax_%s_v%s' % (job_name, pax.__version__) in qsub.get_queue():
+                logging.debug('Skip: cax_%s_v%s job exists' % (job_name, pax.__version__))
                 continue
 
             while qsub.get_number_in_queue() > (500 if config.get_hostname() == 'midway-login1' else 30):
@@ -234,15 +234,23 @@ def massive():
             print(script)
             qsub.submit_job(script)
 
-            logging.debug("Pace by 1s")
+            logging.debug("Pace by 10 s")
             time.sleep(1)  # Pace 1s for batch queue
 
         if run_once:
+<<<<<<< HEAD
            break
         else:
            pace = 5
            logging.info("Done, waiting %d minutes" % pace)
            time.sleep(60*pace) # Pace 5 minutes
+=======
+            break
+        #else:
+        #    pace = 5
+        #    logging.info("Done, waiting %d minutes" % pace)
+        #    time.sleep(60*pace) # Pace 5 minutes
+>>>>>>> f99383fad5a2e50f76f4127c624d6569d6b6fe8e
 
 
 def move():

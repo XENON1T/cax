@@ -275,6 +275,7 @@ def get_minitrees_dir(host, version):
     return os.path.join(get_minitrees_base_dir(host),
                         'pax_%s' % version)
 
+<<<<<<< HEAD
 
 def adjust_permission_base_dir(base_dir, destination):
     """Set ownership and permissons for basic folder of processed data (pax_vX)"""
@@ -329,3 +330,5 @@ def set_rucio_upload( rucio_upload ):
 def set_rucio_campaign( rucio_campaign ):
     global RUCIO_CAMPAIGN
     RUCIO_CAMPAIGN = rucio_campaign
+=======
+>>>>>>> f99383fad5a2e50f76f4127c624d6569d6b6fe8e
