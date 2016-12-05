@@ -81,7 +81,6 @@ def get_config(hostname=get_hostname()):
     NB this currently reloads the cax.json file every time it is called!!
     """
     for doc in load():
-        #print( doc['name'], hostname)
         if doc['name'] == hostname:
             return doc
         elif hostname == "upload_tsm":
@@ -98,7 +97,6 @@ def get_transfer_options(transfer_kind='upload', transfer_method=None):
     try:
         transfer_options = get_config(get_hostname())[
             '%s_options' % transfer_kind]
-        #print('T:', transfer_options)
     except LookupError:
         logging.info("Host %s has no known transfer options.",
                      get_hostname())
@@ -260,11 +258,3 @@ def adjust_permission_base_dir(base_dir, destination):
 
       subprocess.Popen( ["setfacl", "-R", "-M", "/cfs/klemming/projects/xenon/misc/basic", base_dir],
                         stdout=subprocess.PIPE )
-
-
-    
-    
-    
-    
-    
-    

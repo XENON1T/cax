@@ -47,10 +47,10 @@
     "name": "xe1t-datamanager",
     "hostname": "xe1t-datamanager.lngs.infn.it",
     "username": "xe1ttransfer",
-    "method": "tsm",
+    "method": "scp",
     "dir_raw": "/data/xenon/raw/",
     "dir_tsm": "/data/xenon/tsm/",
-    "upload_options": ["tsm-server"],
+    "upload_options": null,
     "download_options": null
   },
   {

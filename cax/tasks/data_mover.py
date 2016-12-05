@@ -300,8 +300,7 @@ class CopyBase(Task):
         """A dedicated download function for downloads from tape storage"""
         self.tsm = TSMclient()
         
-        logging.info('Tape Backup to PDC STOCKHOLM (Download)')
-        #print( datum, destination, method, option_type)        
+        logging.info('Tape Backup to PDC STOCKHOLM (Download)')       
         
         raw_data_location = datum['location']
         raw_data_filename = datum['location'].split('/')[-1]
@@ -472,7 +471,16 @@ class CopyBase(Task):
         
         if checksum_before_raw != checksum_before_tsm:
           logging.info("Something went wrong during copy & rename")
-          #add data base entry!!!! -> error
+          if config.DATABASE_LOG:
+            self.collection.update({'_id' : self.run_doc['_id'],
+                                  'data': {
+                                        '$elemMatch': datum_new}},
+                                   {'$set': {'data.$.status': "error",
+                                             'data.$.location': "n/a",
+                                             'data.$.checksum': "n/a",
+                                             }
+                                   })
+          
           return
         elif checksum_before_raw == checksum_before_tsm:
           logging.info("Copy & rename: [succcessful] -> Checksums agree")
