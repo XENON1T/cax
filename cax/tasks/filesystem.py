@@ -162,6 +162,51 @@ class RemoveSingle(Task):
 
             break
 
+class RemoveTSMEntry(Task):
+    """Remove a single file or directory
+
+    This notifies the run database.
+    """
+
+    def __init__(self, location):
+        # Save filesnames to use
+        self.location = location
+        print("delete from database: ", self.location)
+        # Perform base class initialization
+        Task.__init__(self)
+
+    def each_run(self):
+        # For each data location, see if this filename in it
+        #print(self.run_doc)
+        cnt = 0        
+        for data_doc in self.run_doc['data']:
+            # Is not local, skip
+            if data_doc['host'] == "tsm-server":
+                print("found: ", data_doc)
+                cnt+=1
+        
+        for data_doc in self.run_doc['data']:
+            
+            if 'host' not in data_doc or data_doc['host'] != "tsm-server":
+                continue
+
+            if data_doc['location'] != self.location:
+                continue
+            
+            # Notify run database
+            if config.DATABASE_LOG is True:
+              print("Delete this: ", data_doc)
+              res = self.collection.update({'_id': self.run_doc['_id']},
+                                           {'$pull': {'data': data_doc}}
+                                           )
+              for key, value in res.items():
+                print( " * " + str(key) + ": " + str(value) )
+            else:
+              print("This should be deleted:")
+              print(data_doc)
+            break
+        
+        print("There are {a} entries in the runDB with \"tsm-server\" for the same run number or name".format(a=str(cnt)))   
 
 class FindStrays(Task):
     """Remove a single file or directory
@@ -214,22 +259,10 @@ class StatusSingle(Task):
 
         # For each data location, see if this filename in it
         for data_doc in self.run_doc['data']:
-            ## Is not local, skip
-            if 'host' not in data_doc or data_doc[
-                'host'] != config.get_hostname():
-                continue
-
+            #Show entries only for requested host
             if self.node == data_doc['host'] and self.status == data_doc[
                 'status']:
                 status_db = data_doc["status"]
                 location_db = data_doc['location']
                 logging.info("Ask for status %s at node %s: %s", self.node,
                              status_db, location_db)
-
-                ## Notify run database
-                # if config.DATABASE_LOG is True:
-                # self.collection.update({'_id': self.run_doc['_id']},
-                # {'$pull': {'data': data_doc}})
-
-                # TODO
-                # Add a memberfunction to change the status manually:

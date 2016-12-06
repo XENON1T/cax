@@ -120,4 +120,3 @@ def get_queue(host=config.get_hostname()):
     if len(queue_list) > 1:
         return queue_list[1:]
     return []
-

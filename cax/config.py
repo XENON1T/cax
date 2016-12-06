@@ -91,6 +91,8 @@ def get_config(hostname=get_hostname()):
     for doc in load():
         if doc['name'] == hostname:
             return doc
+        elif hostname == "upload_tsm":
+            return hostname
     raise LookupError("Unknown host %s" % hostname)
 
 
