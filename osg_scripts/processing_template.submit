@@ -1,9 +1,9 @@
 #!/bin/bash
 executable = /home/ershockley/cax/osg_scripts/run_xenon.sh
 universe = vanilla
-Error = /xenon/ershockley/reprocessing2/$(pax_version)/$(name)/$(zip_name)_$(cluster).err
-Output  = /xenon/ershockley/reprocessing2/$(pax_version)/$(name)/$(zip_name)_$(cluster).out
-Log     = /xenon/ershockley/reprocessing2/$(pax_version)/$(name)/joblogs/$(zip_name)_$(cluster).joblog
+Error = /xenon/ershockley/reprocessing/$(pax_version)/$(name)/$(zip_name)_$(cluster).err
+Output  = /xenon/ershockley/reprocessing/$(pax_version)/$(name)/$(zip_name)_$(cluster).out
+Log     = /xenon/ershockley/reprocessing/$(pax_version)/$(name)/joblogs/$(zip_name)_$(cluster).joblog
 
 Requirements = ((OpSysAndVer == "CentOS6" || OpSysAndVer == "RedHat6" || OpSysAndVer == "SL6") && (GLIDEIN_ResourceName =!= "NPX")) && (GLIDEIN_ResourceName =!= "BU_ATLAS_Tier2")
 request_cpus = $(ncpus)

@@ -29,4 +29,5 @@ fi
 source deactivate
 source activate evan-testing
 export PYTHONPATH=/home/ershockley/cax/lib/python3.4/site-packages/:$PYTHONPATH
+cd ~/cax
 python ~/cax/setup.py install --prefix /home/ershockley/cax

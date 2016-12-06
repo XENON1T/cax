@@ -69,11 +69,11 @@ class dag_writer():
 
                 # write inner dag info to outer dag
                 outer_dag_file.write("SUBDAG EXTERNAL %s %s \n" % (inner_dagname, inner_dagfile))
-                outer_dag_file.write("RETRY %s 5\n" % inner_dagname)
+                #outer_dag_file.write("RETRY %s 5\n" % inner_dagname)
                 if self.reprocessing:
                     outer_dag_file.write("SCRIPT PRE %s /home/ershockley/cax/osg_scripts/pre_script.sh "
                                          "%s %s %s %s \n" % (inner_dagname, rawdir, self.pax_version, run, self.logdir))
-                outer_dag_file.write("SCRIPT POST %s /home/ershockley/cax/osg_scripts/post_script.sh "
+                outer_dag_file.write("SCRIPT POST %s /home/ershockley/cax/osg_scripts/hadd_and_upload.sh "
                                      "%s %s $RETURN %s %s \n" % (inner_dagname, rawdir, self.pax_version, run, self.logdir))
 
     def write_inner_dag(self, run_number, inner_dag, outputdir, submitfile, jsonfile, doc, 

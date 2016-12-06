@@ -10,7 +10,7 @@ run="${1##*/}"
 post_log=$5/$2/$run/POST_LOG
 
 if [[ $4 -eq "-1004" ]]; then
-    echo "Job did not run. Skipping post script"
+    echo "Job did not run. Skipping post script" >> $post_log
     exit 1
 fi
 

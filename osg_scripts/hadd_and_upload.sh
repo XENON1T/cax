@@ -4,27 +4,35 @@
 # 2: pax version
 # 3: Job exit code
 # 4: run number
+# 5: general log directory
 
-#/xenon/ershockley/organize_errors_single.sh $1 $2
 run="${1##*/}"
-post_log=/xenon/ershockley/cax/$2/$run/POST_LOG
-echo $@ #>> $post_log
+post_log=$5/$2/$run/POST_LOG
+echo "------ Start of post script ---------" >> $post_log
+date >> $post_log
+
+echo $@ >> $post_log
+
+if [[ $4 -eq "-1004" ]]; then
+    echo "Job did not run. Skipping post script" >> $post_log
+    exit 0
+fi
 
 rawdir=$1
-run="${1##*/}" # crazy bash expression that extracts run name
-echo $run #>> $post_log
-echo "Job exit code is $3" #>> $post_log
 
-#if [[ $3 -ne 0 ]]; then 
-#    exit 255
-#fi
-#source activate evan-testing >> $post_log
+python /home/ershockley/cax/osg_scripts/upload.py $1 $2 >> $post_log
 
-python /home/ershockley/cax/osg_scripts/upload.py $1 $2 # >> $post_log
-
-if [[ $? -neq 0 ]]; then
+if [[ $? -ne 0 ]]; then
     exit 1
 fi
     
 # transfer to midway
-/home/ershockley/cax/bin/cax --once --run $4 --config /home/ershockley/cax/cax/cax_transfer.json #>> $post_log
+echo "Beginning cax transfer to midway" >> $post_log
+/home/ershockley/cax/bin/cax --once --run $4 --config /home/ershockley/cax/cax/cax_transfer.json >> $post_log
+
+ex=$?
+
+echo "exiting with status $ex" >> $post_log
+echo
+
+exit $ex
