@@ -35,14 +35,22 @@ class CopyBase(Task):
             server = config_original['hostname']
             username = config_original['username']
 
-        nstreams = 16
+        if config.nstream_settings() == None:
+            nstreams = 1
+        else:
+            nstreams = config.nstream_settings()
+
+        if config.get_cert() == None:
+            grid_cert = ''
+        else:
+            grid_cert = config.get_cert()
 
         # Determine method for remote site
         if method == 'scp':
             self.copySCP(datum_original, datum_destination, server, username, option_type)
 
         elif method == 'gfal-copy':
-            self.copyGFAL(datum_original, datum_destination, server, option_type, nstreams)
+            self.copyGFAL(datum_original, datum_destination, server, option_type, nstreams, grid_cert)
 
         elif method == 'lcg-cp':
             self.copyLCGCP(datum_original, datum_destination, server, option_type, nstreams)
@@ -107,7 +115,7 @@ class CopyBase(Task):
             #               "file://"+datum_destination['location']
 
 
-    def copyGFAL(self, datum_original, datum_destination, server, option_type, nstreams):
+    def copyGFAL(self, datum_original, datum_destination, server, option_type, nstreams, grid_cert):
         """Copy data via GFAL function
         WARNING: Only SRM<->Local implemented (not yet SRM<->SRM)
         """
@@ -117,7 +125,10 @@ class CopyBase(Task):
         #   -f: overwrite 
         #   -r: recursive
         #   -n: number of streams (4 for now, but doesn't work on xe1t-datamanager so use lcg-cp instead)
-        command = "time gfal-copy -v -f -r -p -n %d " % nstreams
+        #   -t: timeout in seconds
+        #   -K: specify checksum algorithm
+        # --cert: path to initialized GRID certificate (voms-proxy-init  -voms xenon.biggrid.nl -valid 168:00 -out user_cert)
+        command = "time gfal-copy -v -f -r -p -t 32400 -K adler32 --cert %s -n %d " % (grid_cert, nstreams)
 
         status = -1
 
@@ -126,15 +137,33 @@ class CopyBase(Task):
                                             server+datum_destination['location']))
 
             # Simultaneous LFC registration
-            lfc_config = config.get_config("lfc")
+            #lfc_config = config.get_config("lfc")
 
             # Warning: Processed data dir not implemented for LFC here
-            lfc_address = lfc_config['hostname']+lfc_config['dir_'+datum_original['type']]
+            #lfc_address = lfc_config['hostname']+lfc_config['dir_'+datum_original['type']]
 
-            full_command = command+ \
+            # Use GSIFTP address instead of POSIX from Stash (to avoid login node)
+            if config.get_hostname() == 'login':
+                config_original = config.get_config(datum_original['host'])
+                server_original = config_original['hostname']
+                full_command = command+ \
+                           server_original+datum_original['location']+" "+ \
+                           server+datum_destination['location'] #+" "+ \
+                           #lfc_address+"/"+dataset                  
+
+            # Use SRM address instead of POSIX from Midway (to avoid worker nodes)
+            #elif config.get_hostname() == 'midway-login1':
+            #    server_original = 'srm://srm1.rcc.uchicago.edu:8443/srm/v2/server?SFN='
+            #    full_command = command+ \
+            #               server_original+datum_original['location']+" "+ \
+            #               server+datum_destination['location'] #+" "+ \
+                           #lfc_address+"/"+dataset                  
+           
+            else:
+                full_command = command+ \
                            "file://"+datum_original['location']+" "+ \
-                           server+datum_destination['location']+" "+ \
-                           lfc_address+"/"+dataset                  
+                           server+datum_destination['location'] #+" "+ \
+                           #lfc_address+"/"+dataset                  
 
         else: # download
             logging.info(option_type+": %s to %s" % (server+datum_original['location'],
@@ -568,8 +597,6 @@ class CopyBase(Task):
 
             # Recursively make directories
             os.makedirs(base_dir)
-            # Adjust permissions via config.py
-            config.adjust_permission_base_dir(base_dir, destination)
 
         # Directory or filename to be copied
         filename = datum['location'].split('/')[-1]
@@ -608,7 +635,15 @@ class CopyBase(Task):
                       datum_new, 
                       method, 
                       option_type)
-            status = 'verifying'
+            # Checksumming to follow on local site
+            if method == 'scp':
+                status = 'verifying'
+
+            # Cannot do cax-checksum on GRID sites, 
+            # so assume gfal-copy/lcg-cp checksum is sufficient
+            else:
+                status = 'verifying'
+                # TO DO: Manually copy checksum to DB entry here
 
         except scp.SCPException as e:
             self.log.exception(e)

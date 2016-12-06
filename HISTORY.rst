@@ -1,6 +1,171 @@
-`=======
-History
+  History
 =======
+
+4.10.4 (1026-12-02)
+-------------------
+* Fix hax logging bug (was preventing all minitree creation)
+* Delay error'ed purging on xe1t-datamanager
+* Reduce massive-cax job submission delay back to 1 second
+
+4.10.3 (1026-11-29)
+-------------------
+* Fix pax input type for MV 
+* Increase pax max_blocks_on_heap
+  
+4.10.2 (1026-11-23)
+-------------------
+* Adjust setpermission for PDC and Midway
+
+4.10.1 (2016-11-21)
+-------------------
+* Add other treemakers to process_hax
+
+4.10.0 (2016-11-21)
+-------------------
+* Do not table scan run database
+
+4.9.1 (2016-11-21)
+------------------
+* Increase delay between job submission to 10 s
+
+4.9.0 (2016-11-15)
+------------------
+* Increase timeout for pax processing
+* Purge Rn220+Kr83m only on Midway
+* Disable iterative mode for massive-cax (for now)
+  
+4.8.1 (2016-11-09)
+------------------                                                                           
+* Fix batch queue checking for MV jobs
+  
+4.8.0 (2016-11-07)
+------------------
+* Do not purge Kr83m and Rn220 
+  
+4.7.1 (2016-11-03)
+------------------
+* Fix bug in queue checking 
+   
+4.7.0 (2016-11-03)
+------------------
+*  hax minitree production
+   
+4.5.2 (2016-11-01)
+------------------
+* Reduce pax queue block size in batch processing #51 
+
+4.5.1 (2016-10-31)
+------------------
+
+* Fix pax queue size configuration option
+ 
+4.5.0 (2016-10-31)
+------------------
+
+* Remove gfal environment setup (may be clashing with pax) 
+* Remove "once" functionality from massive-cax (strange error with "watch", and hanging without "watch")
+      
+4.4.16 (2016-10-26)
+-------------------
+
+* Revert to file:// instead of SRM address for Midway gfal-copy upload
+* Remove extraenous AddChecksum's and put ProcessBatchQueue at the end
+* Reduce max_queue_blocks from 100 to 50 (otherwise AmBe hits memory limit)
+
+ 
+4.4.15 (2016-10-11)
+-------------------
+
+* Do not purge processed files
+* Consider only same file type when counting copies
+* Remove hardcoded midway-srm treatment
+
+4.4.14 (2016-10-10)
+-------------------
+
+* Hardcode Midway SRM address for gfal-copy uploads.
+* Switch back to Stash round-robin address.
+* Fix missing "dir_processed" key error.
+
+4.4.13 (2016-10-10)
+-------------------
+
+* Change from Stash to Nikhef for Midway GRID upload
+* Specify ADLER32 checksum for gfal-copy
+* Skip "verifying" stage for GRID transfers (assume gfal-copy checksum is sufficient)
+  
+4.4.12 (2016-10-06)
+-------------------
+
+* Change Stash GSIFTP site to round-robin address 
+  
+4.4.11 (2016-10-02)
+-------------------
+
+* Change raw directory on nikhef-srm
+
+4.4.10 (2016-10-02)
+-------------------
+
+* Fix variable name for GSIFTP source server 
+
+4.4.9 (2016-10-02)
+------------------
+
+* Extend gfal-copy time even more (to 9 hours)
+* Should cover typical 40 GB file and slow 3 MB/s speed
+* Use GSIFTP address of Stash (login) as source with gfal-copy
+* Upload to nikhef-srm from Stash (login)
+* Switch from lcg-cp to gfal-copy in cax.json
+
+4.4.8 (2016-09-29)
+------------------
+
+* Purge using gfal-rm on Stash
+  
+4.4.7 (2016-09-29)
+------------------
+
+* Pass GRID certificate for worker nodes.
+* Change raw directory for Stash GRID copy.
+  
+4.4.6 (2016-09-28)
+------------------
+
+* Load GRID tools within job on Midway
+	
+4.4.5 (2016-09-28)
+------------------
+
+* Switch Stash SRM address to gsiftp address
+* Allow specification in cax.json for number of streams in GRID copy
+* Increase gfal-copy timeout  to 3 hours (-t 10800)
+* Disable LFC registration (Rucio should pick up the bookkeeping later)
+
+4.4.4 (2016-09-26)
+------------------
+
+* Gains less than 1 are set exactly to zero.
+
+
+4.4.3 (2016-09-23)
+------------------
+
+* Another bug fix (forgot a :)
+  
+4.4.2 (2016-09-23)
+------------------
+
+* Bug fix (commented wrong line in job script in previous commit)
+
+4.4.1 (2016-09-23)
+------------------
+
+* Command-line option to specify one run or starting run with massive-cax
+* Hardcoded (commented out) option to switch to Midway sandyb (public) partition
+* Check queue in all partitions on Midway instead of just xenon1t
+* Add "login" (Stash/ci-connect) to Midway upload option (remove Midway from Stash download)
+* Do not recheck checksums on Stash ("login"), too slow since no batch queue for massive-cax
 
 4.4.0 (2016-09-20)
 ------------------

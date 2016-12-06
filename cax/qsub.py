@@ -102,7 +102,8 @@ def get_queue(host=config.get_hostname()):
     else:
         raise ValueError()
 
-    command = 'squeue --partition={partition} --user={user} -o "%.30j"'.format(**args)
+#    command = 'squeue --partition={partition} --user={user} -o "%.30j"'.format(**args)
+    command = 'squeue --user={user} -o "%.30j"'.format(**args)
     try:
         queue = subprocess.check_output(command,
                                         shell=True,

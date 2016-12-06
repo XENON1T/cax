@@ -76,6 +76,14 @@ def purge_settings(hostname=get_hostname()):
     return get_config(hostname).get('purge',
                                     None)
 
+def nstream_settings(hostname=get_hostname()):
+    return get_config(hostname).get('nstreams',
+                                    None)
+
+def get_cert(hostname=get_hostname()):
+    return get_config(hostname).get('grid_cert',
+                                    None)
+
 def get_config(hostname=get_hostname()):
     """Returns the cax configuration for a particular hostname
     NB this currently reloads the cax.json file every time it is called!!
@@ -181,14 +189,18 @@ def processing_script(args={}):
                         number=333,
                         ncpus=4 if midway else 1,
                         pax_version=(('v%s' % pax.__version__) if midway else 'head'),
+#                        partition='sandyb' if midway else 'main',
                         partition='xenon1t' if midway else 'main',
+#                        partition='kicp' if midway else 'main',
                         base='/project/lgrandi/xenon1t' if midway else '/cfs/klemming/projects/xenon/xenon1t',
                         account='pi-lgrandi' if midway else 'xenon',
                         anaconda='/project/lgrandi/anaconda3/bin' if midway else '/afs/pdc.kth.se/projects/xenon/software/Anaconda3/bin',
                         extra='#SBATCH --mem-per-cpu=2000\n#SBATCH --qos=xenon1t' if midway else '#SBATCH -t 72:00:00',
-                        stats=''
+#                        extra='#SBATCH --mem-per-cpu=2000\n#SBATCH --qos=xenon1t-kicp' if midway else '#SBATCH -t 72:00:00',
+#                        extra2='source /cvmfs/oasis.opensciencegrid.org/osg-software/osg-wn-client/3.3/current/el6-x86_64/setup.sh' if midway else '',
+#                        extra='#SBATCH --mem-per-cpu=2000' if midway else '#SBATCH -t 72:00:00',
+                        stats='sacct -j $SLURM_JOB_ID --format="JobID,NodeList,Elapsed,AllocCPUS,CPUTime,MaxRSS"' if midway else ''
                         )
-#                        stats='sacct -j $SLURM_JOB_ID --format="JobID,Elapsed,AllocCPUS,CPUTime,MaxRSS"' if midway else '',
 
     for key, value in default_args.items():
         if key not in args:
@@ -220,6 +232,7 @@ cd ${{JOB_WORKING_DIR}}
 rm -f pax_event_class*
 source activate pax_{pax_version}
 
+
 HOSTNAME={host} {command}
 
 {stats}
@@ -245,16 +258,12 @@ def get_processing_dir(host, version):
     return os.path.join(get_processing_base_dir(host),
                         'pax_%s' % version)
 
-def adjust_permission_base_dir(base_dir, destination):
-    """Set ownership and permissons for basic folder of processed data (pax_vX)"""
 
-    if destination=="tegner-login-1":
-      #Change group and set permissions for PDC Stockholm
-      user_group = DATA_USER_PDC + ":" + DATA_GROUP_PDC
-      
-      subprocess.Popen( ["chown", "-R", user_group, base_dir],
-                        stdout=subprocess.PIPE )
-                             
+def get_minitrees_base_dir(host=get_hostname()):
+    return get_base_dir('minitrees', host)
 
-      subprocess.Popen( ["setfacl", "-R", "-M", "/cfs/klemming/projects/xenon/misc/basic", base_dir],
-                        stdout=subprocess.PIPE )
+
+def get_minitrees_dir(host, version):
+    return os.path.join(get_minitrees_base_dir(host),
+                        'pax_%s' % version)
+

@@ -6,6 +6,7 @@ import os
 
 import checksumdir
 import shutil
+import subprocess
 
 from cax import config
 from ..task import Task
@@ -24,7 +25,8 @@ class AddChecksum(Task):
             self.log.debug('Location does not qualify')
             return
         
-        if data_doc['status'] == 'transferred' and config.get_hostname() == 'xe1t-datamanager':
+        if data_doc['status'] == 'transferred' and \
+           (config.get_hostname() == 'xe1t-datamanager' or config.get_hostname() == 'login'):
             return
         
 
@@ -103,7 +105,7 @@ class CompareChecksums(Task):
         self.log.debug("Missing checksum within %d" % self.run_doc['number'])
         return None
 
-    def check(self,
+    def check(self, type='raw',
               warn=True):
         """Returns number of verified data locations
 
@@ -117,15 +119,14 @@ class CompareChecksums(Task):
             if 'host' not in data_doc or \
                             data_doc['status'] != 'transferred' or \
                             data_doc['type'] == 'untriggered' or \
+                            data_doc['type'] != type or \
                             'checksum' not in data_doc:
                 continue
 
             # Grab main checksum.
             if data_doc['checksum'] != self.get_main_checksum(**data_doc):
 
-                # Special case of midway-srm accessible via POSIX on midway-login1
-                if data_doc['host'] == config.get_hostname() \
-                   or (data_doc['host'] == "midway-srm" and config.get_hostname() == "midway-login1"):
+                if data_doc['host'] == config.get_hostname():
                     error = "Local checksum error " \
                             "run %d" % self.run_doc['number']
                     if warn:
@@ -142,15 +143,49 @@ class CompareChecksums(Task):
 
     def purge(self, data_doc):
         self.log.info("Deleting %s" % data_doc['location'])
-        if os.path.isdir(data_doc['location']):
-            shutil.rmtree(data_doc['location'])
-            self.log.info('Deleted, notify run database.')
-        elif os.path.isfile(data_doc['location']):
-            os.remove(data_doc['location'])
+
+        # Temporary hardcoded check for gfal-rm removal
+        if config.get_hostname() == 'login' and 'raw' in data_doc['location']:
+            config_original = config.get_config('login')
+            server = config_original['hostname']
+            if config.get_cert() == None:
+                grid_cert = ''
+            else:
+                grid_cert = config.get_cert()
+
+            full_command = "gfal-rm -v -r --cert %s " % grid_cert + \
+                           server+data_doc['location']
+
+            self.log.info(full_command)
+
+            try:
+                gfal_out = subprocess.check_output(full_command, stderr=subprocess.STDOUT, shell=True)
+
+            except subprocess.CalledProcessError as gfal_exec:
+                self.log.error(gfal_exec.output.rstrip().decode('ascii'))
+                self.log.error("Error: gfal-rm status = %d\n" % gfal_exec.returncode)
+                raise
+
+            gfal_out_ascii = gfal_out.rstrip().decode('ascii')
+            if "error" in gfal_out_ascii.lower(): # Some errors don't get caught above
+                self.log.error(gfal_out_ascii)
+                raise
+
+            else:
+                self.log.info(gfal_out_ascii) # To print timing
+
+        # Default POSIX removal        
         else:
-            self.log.error('did not exist, notify run database.')
+            if os.path.isdir(data_doc['location']):
+                shutil.rmtree(data_doc['location'])
+                self.log.info('Deleted, notify run database.')
+            elif os.path.isfile(data_doc['location']):
+                os.remove(data_doc['location'])
+            else:
+                self.log.error('did not exist, notify run database.')
+
         if config.DATABASE_LOG == True:
             resp = self.collection.update({'_id': self.run_doc['_id']},
                                           {'$pull': {'data': data_doc}})
-        self.log.info('Removed from run database.')
-        self.log.debug(resp)
+            self.log.info('Removed from run database.')
+            self.log.debug(resp)
