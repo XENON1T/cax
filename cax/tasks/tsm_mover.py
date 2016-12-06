@@ -36,8 +36,6 @@ from cax.task import Task
 
 
 class TSMclient(Task):
-    #def __init__(self, rd):
-        #self.run_doc = rd
 
     def __init__(self):
         """init"""
@@ -88,8 +86,6 @@ class TSMclient(Task):
         return fileobj
     
     def doTSM(self, upload_string ):
-        #scname = "tsm_call_{id}".format(id=self.run_doc['name'] )
-        #sc = "/tmp/{sc_name}.sh".format(sc_name=scname)
         
         sc = self.create_script( upload_string )
         execute = subprocess.Popen( ['sh', sc.name] , 
@@ -243,7 +239,6 @@ class TSMclient(Task):
                                                         i.split(":")[3].replace(" ", "") )
                                 
 
-        #print("readout: ", tno_dict )
         return tno_dict
         
         
@@ -318,12 +313,6 @@ class AddTSMChecksum(Task):
         #print("each location")
         hostname = config.get_hostname()
         destination = config.get_config("tsm-server")
-        #print( hostname, destination)
-        #print( data_doc )
-        #Only make these cross check if you are at xe1t-datamanager (adjust later?)
-        
-        #if config.get_hostname() != 'xe1t-datamanager':
-            #logging.info("Required location xe1t-datamanager not given")
         
         if data_doc['host'] == "xe1t-datamanager":
             self.checksum_xe1t = data_doc['checksum']
@@ -594,11 +583,9 @@ class TSMLogFileCheck():
             total_upload_time_per_dataset += total_time #sec
             total_upload_volume += upAmount             #GB
           
-          #print(upload_time)
           x = time.strptime(upload_time,'%Y%m%d_%H%M%S')
           y = time.mktime( x )
           x_axis = y    #specify the x axis in seconds
-          #print(upload_time, x, x_axis)
           
           if nb_uploaded_files > 0 and nb_inspected_files > 0:
             gr_upload_rate.SetPoint(i, x_axis, upload_rate )
@@ -703,7 +690,6 @@ class TSMStatusCheck(Task):
 
     def each_run(self):
         # For each data location, see if this filename in it
-        #print(self.run_doc)
         cnt = 0        
         for data_doc in self.run_doc['data']:
             # Is not local, skip
