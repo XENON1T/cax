@@ -48,7 +48,7 @@ class api():
             api_try = 1
             while api_try <= 3:
                 try:
-                    db_request = requests.get(self.api_url, params = params, json=params).text
+                    db_request = requests.get(self.api_url, params = params).text
                     break
                 except:
                     time.sleep(5)

@@ -201,60 +201,60 @@ class ProcessBatchQueue(Task):
 
         # This query is used to find if this run has already processed this data
         # in the same way.  If so, quit.
+
         query = {'detector': 'tpc',
-                 'name'    : name
-                 #"data" : {"$not" : {"$elemMatch" : {"host" : thishost,
-                 #                                    "type" : "processed",
-                 #                                    "pax_version" : version}
-                 #                    },
-                 #          "$elemMatch" : {"host" : thishost,
-                 #                          "type" : "raw"}
-                 #          },
-                 #'reader.ini.write_mode' : 2,
-                 #'trigger.events_built' : {"$gt" : 0},
-                 #'processor.DEFAULT.gains' : {'$exists' : True},
-                 #'processor.DEFAULT.electron_lifetime_liquid' : {'$exists' : True},
-                 #'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess'}}},
+                 'name'    : name,
+                 "data" : {"$not" : {"$elemMatch" : {"host" : thishost,
+                                                     "type" : "processed",
+                                                     "pax_version" : version
+                                                     }
+                                     },
+                           "$elemMatch" : {"host" : 'login',
+                                           "type" : "raw"}
+                           },
+                 'reader.ini.write_mode' : 2,
+                 'trigger.events_built' : {"$gt" : 0},
+                 'processor.DEFAULT.gains' : {'$exists' : True},
+                 'processor.DEFAULT.electron_lifetime_liquid' : {'$exists' : True},
+                 'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess'}}},
                  }
-        #from pprint import pprint
-        #pprint(query)
+
+        query = {'query' : json.dumps(query)}
+
         # initialize instance of api class
         API = api()
         doc = API.get_next_run(query)
-        
-        #print()
-        #pprint(doc["data"])
-        #print()
+    
         
         # Check if suitable run found (i.e. no other processing or error, etc)
         if doc is None:
             print("Run name " + name + " not suitable")
             return 1
 
-        if doc["reader"]["ini"]["write_mode"] != 2:
-            return 1
-        if doc["trigger"]["events_built"] == 0:
-            return 1
+        #if doc["reader"]["ini"]["write_mode"] != 2:
+        #    return 1
+        #if doc["trigger"]["events_built"] == 0:
+        #    return 1
 
-        if self.has_tag('donotprocess'):
-            self.log.debug("Do not process tag found")
-            return
+        #if self.has_tag('donotprocess'):
+        #    self.log.debug("Do not process tag found")
+        #    return
 
-        if 'processor' not in self.run_doc or 'DEFAULT' not in self.run_doc['processor']:
-            return
+        #if 'processor' not in self.run_doc or 'DEFAULT' not in self.run_doc['processor']:
+        #    return
 
-        processing_parameters = self.run_doc['processor']['DEFAULT']
+        #processing_parameters = self.run_doc['processor']['DEFAULT']
         
-        if 'gains' not in processing_parameters or \
-            'electron_lifetime_liquid' not in processing_parameters:
-            self.log.debug('no gains or electron lifetime! skipping processing')
-            return
+        #if 'gains' not in processing_parameters or \
+        #    'electron_lifetime_liquid' not in processing_parameters:
+        #    self.log.debug('no gains or electron lifetime! skipping processing')
+        #    return
 
-        if any( ( d['host'] == thishost and d['type'] == 'processed' and
-                  d['pax_version'] == version ) for d in doc['data'] ):
-            print("Already processed %s.  Clear first.  %s" % (name,
-                                                               version))
-            return
+        #if any( ( d['host'] == thishost and d['type'] == 'processed' and
+        #          d['pax_version'] == version ) for d in doc['data'] ):
+        #    print("Already processed %s.  Clear first.  %s" % (name,
+        #                                                       version))
+        #    return
 
 
         json_file = "/xenon/ershockley/jsons/" + str(name) + ".json"

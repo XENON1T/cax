@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 from __future__ import print_function
 import os
+# import urlparse
+#import logging as log
+#from optparse import OptionParser
 from cax.api import api
 from cax import config
 import json
@@ -61,7 +64,6 @@ class dag_writer():
                     os.chmod(inner_dagdir, 0o777)
                 outputdir = config.get_processing_dir('login',self.pax_version)
                 json_file = self.write_json_file(doc)
-                print(json_file)
                 if not os.path.exists(os.path.join(self.logdir, self.pax_version, run_name, "joblogs")):
                     os.makedirs(os.path.join(self.logdir, self.pax_version, run_name, "joblogs"))
                 self.write_submit_script(self.submitfile, self.logdir, json_file)
@@ -69,7 +71,7 @@ class dag_writer():
 
                 # write inner dag info to outer dag
                 outer_dag_file.write("SUBDAG EXTERNAL %s %s \n" % (inner_dagname, inner_dagfile))
-                outer_dag_file.write("RETRY %s 5\n" % inner_dagname)
+                outer_dag_file.write("RETRY %s 3\n" % inner_dagname)
                 if self.reprocessing:
                     outer_dag_file.write("SCRIPT PRE %s /home/ershockley/cax/osg_scripts/pre_script.sh "
                                          "%s %s %s %s \n" % (inner_dagname, rawdir, self.pax_version, run, self.logdir))
@@ -119,7 +121,7 @@ class dag_writer():
                                     "json_file=\"%s\" \n") % (run_number, i, infile,
                                                               outfile_full, run_name,
                                                               self.pax_version, zip_name, jsonfile))
-                    inner_dag.write("Retry %s.%d 12\n" % (run_number, i))
+                    inner_dag.write("Retry %s.%d 10\n" % (run_number, i))
                     i += 1
 
 
@@ -139,13 +141,14 @@ class dag_writer():
         template = """#!/bin/bash
 executable = /home/ershockley/cax/osg_scripts/run_xenon.sh
 universe = vanilla
-Error = {logdir}/$(pax_version)/$(name)/$(zip_name)_$(cluster).err
-Output  = {logdir}/$(pax_version)/$(name)/$(zip_name)_$(cluster).out
-Log     = {logdir}/$(pax_version)/$(name)/joblogs/$(zip_name)_$(cluster).joblog
+Error = {logdir}/$(pax_version)/$(name)/$(zip_name).log
+Output  = {logdir}/$(pax_version)/$(name)/$(zip_name).log
+Log     = {logdir}/$(pax_version)/$(name)/joblogs/$(zip_name).joblog
 
-Requirements = ((OpSysAndVer == "CentOS6" || OpSysAndVer == "RedHat6" || OpSysAndVer == "SL6") && (GLIDEIN_ResourceName =!= "NPX")) && (GLIDEIN_ResourceName =!= "BU_ATLAS_Tier2")
+Requirements = ((OpSysAndVer == "CentOS6" || OpSysAndVer == "RedHat6" || OpSysAndVer == "SL6") && (GLIDEIN_ResourceName =!= "NPX")) &&
+ (GLIDEIN_ResourceName =!= "BU_ATLAS_Tier2")
 request_cpus = $(ncpus)
-transfer_input_files = /home/ershockley/user_cert, $(json_file)
+transfer_input_files = /home/ershockley/user_cert, {json_file}
 transfer_output_files = ""
 +WANT_RCC_ciconnect = True
 when_to_transfer_output = ON_EXIT

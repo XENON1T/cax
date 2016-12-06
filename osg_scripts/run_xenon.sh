@@ -12,7 +12,7 @@
   # 8 - disable_updates  
 
 echo $HOSTNAME
-env
+#env
 # df -h
 
 
@@ -42,8 +42,11 @@ fi
 
 
 start_dir=$PWD
-echo "start dir:"
-ls
+
+echo "start dir is $start_dir. Here's whats inside"
+ls -l *user_cert*
+ls -l  *.json
+echo ""
 if [ "${OSG_WN_TMP}" == "" ];
 then
     OSG_WN_TMP=$PWD
@@ -68,7 +71,7 @@ cd ${work_dir}
 
 #gfal-copy --cert ${start_dir}/user_cert -T 36000 -t 36000 --checksum md5 $2 file://${rawdata_path}
 
-time gfal-copy -v -f -p -t 36000 -T 18000 -K md5 -n 4 --cert ${start_dir}/user_cert $2 file://${rawdata_path}
+time gfal-copy -v -f -p -t 36000 -T 36000 -K md5 --cert ${start_dir}/user_cert $2 file://${rawdata_path}
 
 #module load pax/evan-testing
 export PATH=/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/bin:$PATH
@@ -116,7 +119,7 @@ fi
 
 echo "---- Test line ----"
 
-time gfal-copy --cert ${start_dir}/user_cert -T 36000 -t 18000 -f -p -n 4 --checksum md5 file://${start_dir}/output/$1.root $6 
+time gfal-copy --cert ${start_dir}/user_cert -T 36000 -t 36000 -f -p --checksum md5 file://${start_dir}/output/$1.root $6 
 
 if [[ $? -ne 0 ]];
 then 

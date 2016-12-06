@@ -26,40 +26,40 @@ def has_tag(doc, name):
 
 def pre_script(run_number, pax_version, update_database=True):
 
-    query = {'detector' : 'tpc',
-             'number' : run_number}
+    # query that checks if it's okay that we process this run
+    query = {'detector': 'tpc',
+             'number'    : int(run_number),
+             "data" : {"$not" : {"$elemMatch" : {"host" : 'login',
+                                                 "type" : "processed",
+                                                 "pax_version" : pax_version
+                                                 }
+                                 },
+                       "$elemMatch" : {"host" : 'login',
+                                       "type" : "raw"}
+                       },
+             'reader.ini.write_mode' : 2,
+             'trigger.events_built' : {"$gt" : 0},
+             'processor.DEFAULT.gains' : {'$exists' : True},
+             'processor.DEFAULT.electron_lifetime_liquid' : {'$exists' : True},
+             'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess'}}},
+             }
     
+    query = {'query' : json.dumps(query)}
+
     # initialize api instance
     API = api()
     doc = API.get_next_run(query)
+    print(query)
+    print(doc)
+    # if run doesn't satisfy above query, we don't process
+    if doc is None:
+        print("Run %d is not suitable for OSG processing. Check run doc" % run_number)
+        sys.exit(1)
 
     name = doc["name"]
     
-    # Check if suitable run found (i.e. no other processing or error, etc)
-    if doc is None:
-        print("Run name " + name + " not suitable")
-        return 1
-    
-    if doc["reader"]["ini"]["write_mode"] != 2:
-        return 1
-    if doc["trigger"]["events_built"] == 0:
-        return 1
-    
-    if has_tag(doc, 'donotprocess'):
-        print("Do not process tag found, skip processing")
-        return 1
-    
-    if 'processor' not in doc or 'DEFAULT' not in doc['processor']:
-        return 1
-    
-    processing_parameters = doc['processor']['DEFAULT']
-    
-    if 'gains' not in processing_parameters or \
-            'electron_lifetime_liquid' not in processing_parameters:
-        print('no gains or electron lifetime! skipping processing')
-        return 1
-
     procdir = config.get_processing_dir("login", pax_version) + "/" + name
+
     datum = {'host'          : 'login',
              'type'          : 'processed',
              'pax_version'   : pax_version,

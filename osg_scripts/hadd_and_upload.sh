@@ -21,6 +21,10 @@ echo "Job exit code is $3" #>> $post_log
 #source activate evan-testing >> $post_log
 
 python /home/ershockley/cax/osg_scripts/upload.py $1 $2 # >> $post_log
+
+if [[ $? -neq 0 ]]; then
+    exit 1
+fi
     
 # transfer to midway
 /home/ershockley/cax/bin/cax --once --run $4 --config /home/ershockley/cax/cax/cax_transfer.json #>> $post_log

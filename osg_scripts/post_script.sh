@@ -9,4 +9,9 @@
 run="${1##*/}"
 post_log=$5/$2/$run/POST_LOG
 
+if [[ $4 -eq "-1004" ]]; then
+    echo "Job did not run. Skipping post script"
+    exit 1
+fi
+
 /home/ershockley/cax/osg_scripts/hadd_and_upload.sh $1 $2 $3 $4 >> $post_log

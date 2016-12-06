@@ -1,6 +1,5 @@
-"""Process raw data into processed data
-
-Performs batch queue operations to run pax.
+"""
+Called in DAG post script to do ROOT hadd and DB handling
 """
 
 import datetime
@@ -29,19 +28,28 @@ def verify():
 
 
 def _upload(rawdir, pax_version, update_database=True):
-
+    
+    # get run name from raw directory
     name = rawdir.split('/')[-1]
+
+    # check how many processed zip files we have back 
     procdir = config.get_processing_dir("login", pax_version) + "/" + name
     n_processed = len(os.listdir(procdir))
     print("Processed files: ",n_processed)
+
+    # does number of processed files match the raw zip files?
     n_zips = len([f for f in os.listdir(rawdir) if f.startswith("XENON")])
     print("nzips: ", n_zips)
+
+
+    # do we want a fancier query here? Could clean up below slightly then.
     query = {'detector' : 'tpc',
              'name' : name}
     
     API = api()
     doc = API.get_next_run(query)
 
+    # entry we will add/update
     updatum = {'host'          : 'login',
                'type'          : 'processed',
                'pax_version'   : pax_version,
@@ -50,24 +58,20 @@ def _upload(rawdir, pax_version, update_database=True):
                'checksum'      : None,
                'creation_time' : datetime.datetime.utcnow(),
                'creation_place': 'OSG'}
-
-    print("Number: ", doc["number"])
-
+    
     datum = None
     for entry in doc["data"]:
         if (entry["host"] == 'login' and entry["type"] == 'processed' and
             entry["pax_version"] == pax_version):
             datum = entry
 
-    #if not jobs_successful:
-    #    print("There was an error during processing")
-    #    updatum["status"] = 'error'
 
+    # if we don't have expected number of root files back, tell DB there was an error
     if n_processed != n_zips:
         print("There was an error during processing. Missing root files")
         updatum["status"] = 'error'
 
-    # if we do, then perform hadd, verify, and register to database
+    # if all root files present, then perform hadd, checksum, and register to database
     else:
         print("merging %s" % name)
         subprocess.Popen("/home/ershockley/cax/osg_scripts/merge_roots.sh " + procdir, 
@@ -81,12 +85,19 @@ def _upload(rawdir, pax_version, update_database=True):
         updatum['checksum'] = checksum
         updatum['location'] = final_location
         
+    # if there is no entry for this site/pax_version, add a new location
     if datum is None:
         API.add_location(doc['_id'], updatum)
         print('new entry added to database')
+    # if there is already an entry, update it
     else:
         API.update_location(doc['_id'], datum, updatum)
         print('entry updated in database')
+
+    # if there was an error (we're missing root files), 
+    # exit with code 1 so that DAG sees this node as a failure
+    if updatum["status"] == 'error':
+        sys.exit(1)
 
 
 def main():
