@@ -14,7 +14,6 @@ from paramiko import SSHClient, util
 
 from cax import config
 from cax.task import Task
-from cax.tasks.rucio_mover import RucioBase, RucioRule
 
 import subprocess
 
@@ -26,10 +25,6 @@ class CopyBase(Task):
             config_destination = config.get_config(datum_destination['host'])
             server = config_destination['hostname']
             username = config_destination['username']
-            #Check if necessary:
-            #if config_destination['method'] == "rucio":
-              #remote_host = datum_destination['host']
-              #host        = datum_original['host']
 
         else:
             config_original = config.get_config(datum_original['host'])
@@ -55,9 +50,6 @@ class CopyBase(Task):
 
         elif method == 'lcg-cp':
             self.copyLCGCP(datum_original, datum_destination, server, option_type, nstreams)
-        
-        elif method == 'rucio':
-            self.rucio.copyRucio(datum_original, datum_destination, option_type)
 
         else:
             print (method+" not implemented")
@@ -231,7 +223,6 @@ class CopyBase(Task):
             self.log.debug("%s" % data_type)
             self.do_possible_transfers(option_type=self.option_type,
                                        data_type=data_type)
-            
 
     def do_possible_transfers(self,
                               option_type='upload',
@@ -268,25 +259,9 @@ class CopyBase(Task):
             datum_here, datum_there = self.local_data_finder(data_type,
                                                              option_type,
                                                              remote_host)
-            
-            logging.info("Do possible transfers: (data type %s)", data_type)
-            print("Host DB entry: ", datum_here)
-            print("Aim DB entry: ", datum_there)
-            
-            #Delete the old data base entry if rucio transfers are requested
-            #and an old upload failed by a bad connection error.
-            if method == "rucio" and datum_there != None and datum_there['status'] == 'RSEreupload' and config.DATABASE_LOG == True:
-              self.log.info("Former upload of %s failed with ERROR", datum_here['location'])
-              self.log.info("[('Connection aborted.', BadStatusLine('',))] -> Delete runDB status and start again")
-              
-              self.collection.update({'_id': self.run_doc['_id']},
-                                     {'$pull': {'data': datum_there}})
-            
-            
+
             # Upload logic
-            #(attention "upload status error is a very general one to trigger the upload once more -> do better in next version)
-            if option_type == 'upload' and datum_here and (datum_there is None or
-                                                           datum_there['status'] == 'RSEreupload'):
+            if option_type == 'upload' and datum_here and datum_there is None:
                 self.copy_handshake(datum_here, remote_host, method, option_type)
                 break
 
@@ -384,19 +359,6 @@ class CopyBase(Task):
             for variable in ('pax_version', 'pax_hash', 'creation_place'):
                 datum_new[variable] = datum.get(variable)
 
-        if method == "rucio":
-            #Init the rucio module when method==rucio is requested
-            self.log.info("Init rucio_mover module for Rucio transfers")
-            self.rucio = RucioBase(self.run_doc)
-            self.rucio.set_host( config.get_hostname() )
-            self.rucio.set_remote_host( destination )
-            #Sanity check for rucio client
-            if self.rucio.sanity_checks() == False:
-              return 0
-            #Add two further database entries for rucio related uploads
-            datum_new['rse'] = []
-            datum_new['location'] = "n/a"
-
         if config.DATABASE_LOG == True:
             result = self.collection.update_one({'_id': self.run_doc['_id'],
                                                  },
@@ -434,56 +396,12 @@ class CopyBase(Task):
             status = 'error'
 
         self.log.debug(method+" done, telling run database")
-        
+
         if config.DATABASE_LOG:
-          if method == "rucio":
-            logging.info("following entries are added to the runDB:")
-            logging.info("Status: %s", self.rucio.get_rucio_info()['status'] )
-            logging.info("Location: %s", self.rucio.get_rucio_info()['location'] )
-            logging.info("Checksum: %s", self.rucio.get_rucio_info()['checksum'] )
-            logging.info("RSE: %s", self.rucio.get_rucio_info()['rse'] )
-            
             self.collection.update({'_id' : self.run_doc['_id'],
                                     'data': {
-                                    '$elemMatch': datum_new}},
-                                 {'$set': {
-                                      'data.$.status': self.rucio.get_rucio_info()['status'],
-                                      'data.$.location': self.rucio.get_rucio_info()['location'],
-                                      'data.$.checksum': self.rucio.get_rucio_info()['checksum'],
-                                      'data.$.rse': self.rucio.get_rucio_info()['rse']
-                                          }
-                                })
-          
-          else:
-          #Fill the data if method is not rucio
-            if config.DATABASE_LOG:  
-              self.collection.update({'_id' : self.run_doc['_id'],
-                                    'data': {
                                         '$elemMatch': datum_new}},
-                                   {'$set': {
-                                        'data.$.status': status
-                                            }
-                                   })
-        
-
-        if method == "rucio":
-          #Rucio 'side load' to set the transfer rules directly after the file upload
-          if self.rucio.get_rucio_info()['status'] == "transferred":
-            self.log.info("Initiate the RucioRule for a first set of transfer rules")
-            #Add: Outcome of the rucio transfers to the new database entry
-            #     without read the runDB again.
-            datum_new['status'] = self.rucio.get_rucio_info()['status'] 
-            datum_new['location'] = self.rucio.get_rucio_info()['location']
-            datum_new['checksum'] = self.rucio.get_rucio_info()['checksum']
-            datum_new['rse'] = self.rucio.get_rucio_info()['rse']  
-            #Init the RucioRule module and set its runDB entry manually
-            self.rucio_rule = RucioRule()
-            self.rucio_rule.set_db_entry_manually( self.run_doc )
-            #Perform the initial rule setting:
-            self.rucio_rule.set_possible_rules(data_type=datum['type'], dbinfo = datum_new)
-            self.log.info("Status: transferred -> Transfer rules are set")
-          else:
-            self.log.info("Something went wrong during the upload (error). No rules are set")
+                                   {'$set': {'data.$.status': status}})
 
         self.log.debug(method+" done, telling run database")
 

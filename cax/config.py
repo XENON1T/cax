@@ -6,7 +6,7 @@ import logging
 import os
 import pax
 import socket
-from zlib import adler32
+
 import pymongo
 
 # global variable to store the specified .json config file
@@ -15,11 +15,6 @@ DATABASE_LOG = True
 HOST = os.environ.get("HOSTNAME") if os.environ.get("HOSTNAME") else socket.gethostname().split('.')[0]
 DATA_USER_PDC = 'bobau'
 DATA_GROUP_PDC = 'xenon-users'
-
-RUCIO_RSE = ''
-RUCIO_SCOPE = ''
-RUCIO_UPLOAD = 'rundb'
-RUCIO_CAMPAIGN = ''
 
 PAX_DEPLOY_DIRS = {
     'midway-login1' : '/project/lgrandi/deployHQ/pax',
@@ -88,11 +83,6 @@ def nstream_settings(hostname=get_hostname()):
 def get_cert(hostname=get_hostname()):
     return get_config(hostname).get('grid_cert',
                                     None)
-def get_registered_hostnames():
-    host_names = []
-    for doc in load():
-      host_names.append( doc["name"] )
-    return host_names
 
 def get_config(hostname=get_hostname()):
     """Returns the cax configuration for a particular hostname
@@ -275,60 +265,3 @@ def get_minitrees_dir(host, version):
     return os.path.join(get_minitrees_base_dir(host),
                         'pax_%s' % version)
 
-<<<<<<< HEAD
-
-def adjust_permission_base_dir(base_dir, destination):
-    """Set ownership and permissons for basic folder of processed data (pax_vX)"""
-
-    if destination=="tegner-login-1":
-      #Change group and set permissions for PDC Stockholm
-      user_group = DATA_USER_PDC + ":" + DATA_GROUP_PDC
-      
-      subprocess.Popen( ["chown", "-R", user_group, base_dir],
-                        stdout=subprocess.PIPE )
-                             
-
-      subprocess.Popen( ["setfacl", "-R", "-M", "/cfs/klemming/projects/xenon/misc/basic", base_dir],
-                        stdout=subprocess.PIPE )
-
-
-def get_adler32( fname ):
-  """Calcualte an Adler32 checksum in python
-     Used for cross checks with Rucio
-  """
-  
-  BLOCKSIZE=256*1024*1024
-  asum = 1
-  with open(fname, "rb") as f:
-    while True:
-      data = f.read(BLOCKSIZE)
-      if not data:
-        break
-      asum = adler32(data, asum)
-      if asum < 0:
-        asum += 2**32
-
-  return hex(asum)[2:10].zfill(8).lower()
-
-#Rucio stuff:
-def set_rucio_rse( rucio_rse):
-    """Set the rucio rse information manually
-    """
-    global RUCIO_RSE
-    RUCIO_RSE = rucio_rse
-
-def set_rucio_scope( rucio_scope):
-    """Set the rucio scope information manually
-    """
-    global RUCIO_SCOPE
-    RUCIO_SCOPE = rucio_scope
-
-def set_rucio_upload( rucio_upload ):
-    global RUCIO_UPLOAD
-    RUCIO_UPLOAD = rucio_upload
-
-def set_rucio_campaign( rucio_campaign ):
-    global RUCIO_CAMPAIGN
-    RUCIO_CAMPAIGN = rucio_campaign
-=======
->>>>>>> f99383fad5a2e50f76f4127c624d6569d6b6fe8e
