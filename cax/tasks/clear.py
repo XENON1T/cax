@@ -53,7 +53,8 @@ class RetryStalledTransfer(checksum.CompareChecksums):
                                           self.run_doc['number'],
                                           self.run_doc['name']))
 
-        if difference > datetime.timedelta(hours=24):  # If stale transfer
+        if difference > datetime.timedelta(hours=24) or \  # If stale transfer
+                        (data_doc['host'] != 'xe1t-datamanager' and data_doc["status"] == 'error'):
             self.give_error("Transfer lasting more than 24 hours "
                             "or errored, retry.")
 
