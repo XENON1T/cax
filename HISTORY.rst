@@ -1,6 +1,10 @@
   History
 =======
 
+4.10.5 (2016-12-06)
+------------------
+* Added tape backup upload (TSM) to master branch
+
 4.10.4 (1026-12-02)
 -------------------
 * Fix hax logging bug (was preventing all minitree creation)
