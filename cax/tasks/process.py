@@ -156,7 +156,7 @@ def _process(name, in_location, host, pax_version,
                 collection.update(query, {'$set': {'data.$': datum}})
         raise
 
-    if json_file != "":
+    if json_file == "":
 
         datum['status'] = 'verifying'
         if config.DATABASE_LOG == True:
