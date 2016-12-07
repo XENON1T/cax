@@ -3,7 +3,7 @@
 from setuptools import setup, find_packages
 
 PROJECT = 'cax'
-VERSION = '4.8.0'
+VERSION = '4.10.4'
 
 with open('README.rst') as readme_file:
     readme = readme_file.read()
@@ -57,6 +57,9 @@ setup(
             'cax-rm = cax.main:remove',
             'cax-stray = cax.main:stray',
             'cax-status = cax.main:status',
+            'massive-tsm = cax.main:massive_tsmclient',
+            'cax-tsm-remove = cax.main:remove_from_tsm',
+            'cax-tsm-watch = cax.main:cax_tape_log_file',
             'ruciax = cax.main:ruciax',
             'ruciax-rm = cax.main:remove_from_rucio',
             'massive-ruciax = cax.main:massiveruciax',

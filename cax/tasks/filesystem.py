@@ -17,41 +17,70 @@ class SetPermission(Task):
     """Set the correct permissions at the PDC in Stockholm"""
 
     def __init__(self):
-        self.chmod_file = '/cfs/klemming/projects/xenon/misc/basic_file'
-        self.chmod_folder = '/cfs/klemming/projects/xenon/misc/basic'
+
+        self.raw_data = {"tegner-login-1": "/cfs/klemming/projects/xenon/xenon1t/raw/",
+                    "midway-login1": "/project/lgrandi/xenon1t/raw/"}
+
+        self.proc_data = {"tegner-login-1": "/cfs/klemming/projects/xenon/xenon1t/processed/",
+                    "midway-login1": "/project/lgrandi/xenon1t/processed/"}
+
+        self.chown_user = {"tegner-login-1": "bobau",
+                           "midway-login1": "tunnell"}
+
+        self.chown_group = {"tegner-login-1": "xenon-users",
+                            "midway-login1": "xenon1t-admins"}
+
+        self.chmod = {"tegner-login-1": '750',
+                      "midway-login1": '755'}
 
         Task.__init__(self)
-        self.destination_config = config.get_config(config.get_hostname())
-        self.set_rec = "-R"
+        self.hostname_config = config.get_config(config.get_hostname())
+        self.hostname = config.get_hostname()
 
     def each_run(self):
         """Set ownership and permissons for files/folders"""
         for data_doc in self.run_doc['data']:
             # Is not local, skip
-            if 'host' not in data_doc or \
-                            data_doc['host'] != config.get_hostname() or \
-                            data_doc['host'] != 'tegner-login-1':
+            if 'host' not in data_doc or data_doc['host'] != config.get_hostname():
                 continue
 
-            self.log.info("Set owner and group via chmod %s",
-                          config.get_hostname())
-            subprocess.Popen(["chown", self.set_rec, "bobau:xenon-users",
-                              data_doc['location']],
-                             stdout=subprocess.PIPE)
 
-            self.log.info("Set permissions via setfacl %s",
-                          config.get_hostname())
+            #extract path:
+            f_path = data_doc['location']
+            f_type = data_doc['type']
 
-            if data_doc['type'] == 'raw':
-                subprocess.Popen(["setfacl", self.set_rec, "-M",
-                                  self.chmod_folder,
-                                  data_doc['location']],
-                                 stdout=subprocess.PIPE)
+            #apply changes according to processed/raw and analysis facility
+            if f_type == 'processed':
+              logging.info('Change ownership and permission for %s', f_path)
+              logging.info('Change to username %s and group %s', self.chown_user[self.hostname], self.chown_group[self.hostname])
+              logging.info('Set permission: %s', self.chmod[self.hostname] )
+              logging.info('Set ownership and permissions at %s', config.get_hostname() )
+              if config.get_hostname() == "midway-login1":
+                subprocess.call(['chmod', self.chmod[self.hostname], f_path])
+                subprocess.call(['chown', str(self.chown_user[self.hostname]+":"+self.chown_group[self.hostname]), f_path])
+              elif config.get_hostname() == "tegner-login-1":
+                subprocess.call(['chmod', self.chmod[self.hostname], f_path])
+                subprocess.call(['chown', str(self.chown_user[self.hostname]+":"+self.chown_group[self.hostname]), f_path])
+                subprocess.call(['setfacl', '-R', '-M', '/cfs/klemming/projects/xenon/misc/basic_file', f_path])
+              else:
+                logging.info('Analysis facility does not match')
+            elif f_type == 'raw':
+              logging.info('Change ownership and permission for %s', f_path)
+              logging.info('Change to username %s and group %s', self.chown_user[self.hostname], self.chown_group[self.hostname])
+              logging.info('Set permission: %s', self.chmod[self.hostname] )
+              logging.info('Set ownership and permissions at %s', config.get_hostname() )
+              if config.get_hostname() == "midway-login1":
+                subprocess.call(['chmod', '-R', self.chmod[self.hostname], f_path])
+                subprocess.call(['chown', '-R', str(self.chown_user[self.hostname]+":"+self.chown_group[self.hostname]), f_path])
+              elif config.get_hostname() == "tegner-login-1":
+                subprocess.call(['chmod', self.chmod[self.hostname], f_path])
+                subprocess.call(['chown', str(self.chown_user[self.hostname]+":"+self.chown_group[self.hostname]), f_path])
+                subprocess.call(['setfacl', '-R', '-M', '/cfs/klemming/projects/xenon/misc/basic', f_path])
+              else:
+                logging.info('Analysis facility does not match')
+
             else:
-                subprocess.Popen(["setfacl", self.set_rec, "-M",
-                                  self.chmod_file,
-                                  data_doc['location']],
-                                 stdout=subprocess.PIPE)
+              logging.info("Nothing to change: Ownership/Permission")
 
 
 class RenameSingle(Task):
@@ -133,6 +162,51 @@ class RemoveSingle(Task):
 
             break
 
+class RemoveTSMEntry(Task):
+    """Remove a single file or directory
+
+    This notifies the run database.
+    """
+
+    def __init__(self, location):
+        # Save filesnames to use
+        self.location = location
+        print("delete from database: ", self.location)
+        # Perform base class initialization
+        Task.__init__(self)
+
+    def each_run(self):
+        # For each data location, see if this filename in it
+        #print(self.run_doc)
+        cnt = 0
+        for data_doc in self.run_doc['data']:
+            # Is not local, skip
+            if data_doc['host'] == "tsm-server":
+                print("found: ", data_doc)
+                cnt+=1
+
+        for data_doc in self.run_doc['data']:
+
+            if 'host' not in data_doc or data_doc['host'] != "tsm-server":
+                continue
+
+            if data_doc['location'] != self.location:
+                continue
+
+            # Notify run database
+            if config.DATABASE_LOG is True:
+              print("Delete this: ", data_doc)
+              res = self.collection.update({'_id': self.run_doc['_id']},
+                                           {'$pull': {'data': data_doc}}
+                                           )
+              for key, value in res.items():
+                print( " * " + str(key) + ": " + str(value) )
+            else:
+              print("This should be deleted:")
+              print(data_doc)
+            break
+
+        print("There are {a} entries in the runDB with \"tsm-server\" for the same run number or name".format(a=str(cnt)))
 
 class FindStrays(Task):
     """Remove a single file or directory
@@ -185,22 +259,13 @@ class StatusSingle(Task):
 
         # For each data location, see if this filename in it
         for data_doc in self.run_doc['data']:
-            ## Is not local, skip
-            if 'host' not in data_doc or data_doc[
-                'host'] != config.get_hostname():
-                continue
-
+            #Show entries only for requested host
             if self.node == data_doc['host'] and self.status == data_doc[
                 'status']:
                 status_db = data_doc["status"]
                 location_db = data_doc['location']
                 logging.info("Ask for status %s at node %s: %s", self.node,
                              status_db, location_db)
-
-                ## Notify run database
-                # if config.DATABASE_LOG is True:
-                # self.collection.update({'_id': self.run_doc['_id']},
-                # {'$pull': {'data': data_doc}})
 
                 # TODO
                 # Add a memberfunction to change the status manually:
@@ -221,21 +286,21 @@ class RemoveRucioEntry(Task):
     def each_run(self):
         # For each data location, see if this filename in it
         #print(self.run_doc)
-        cnt = 0        
+        cnt = 0
         for data_doc in self.run_doc['data']:
             # Is not local, skip
             if data_doc['host'] == "rucio-catalogue":
                 print("found: ", data_doc)
                 cnt+=1
-        
+
         for data_doc in self.run_doc['data']:
-            
+
             if 'host' not in data_doc or data_doc['host'] != "rucio-catalogue":
                 continue
 
             if data_doc['location'] != self.location:
                 continue
-            
+
             # Notify run database
             if config.DATABASE_LOG is True:
               print("Delete this: ", data_doc)
@@ -248,9 +313,9 @@ class RemoveRucioEntry(Task):
               print("This should be deleted:")
               print(data_doc)
             break
-        
+
         print("There are {a} entries in the runDB with \"rucio-catalogue\" for the same run number or name".format(a=str(cnt)))
-        
+
 class RuciaxTest(Task):
     """Remove a single file or directory
 
@@ -261,7 +326,7 @@ class RuciaxTest(Task):
         # Save filesnames to use
         self.location = location
         self.mode = mode
-        
+
         # Perform base class initialization
         Task.__init__(self)
 
@@ -275,11 +340,11 @@ class RuciaxTest(Task):
             #if data_doc['host'] == "rucio-catalogue":
                 #print("found: ", data_doc)
                 #cnt+=1
-        
+
         cnt_rucio = 0
         locArra = []
         for data_doc in self.run_doc['data']:
-            
+
           if 'host' not in data_doc or data_doc['host'] != "rucio-catalogue":
             continue
 
@@ -287,13 +352,13 @@ class RuciaxTest(Task):
                 #continue
           if all (k in data_doc for k in ("rucio-catalogue")):
             print( "They're there!", k )
-          
+
           if data_doc['host'] == "rucio-catalogue":
             cnt_rucio += 1
             locArra.append( data_doc['location'] )
-        
-        #if das != None and cnt_rucio > 1:  
+
+        #if das != None and cnt_rucio > 1:
           print(locArra, cnt_rucio, data_doc['status'])
           print(" ")
-        
+
         #print("There are {a} entries in the runDB with \"rucio-catalogue\" for the same run number or name".format(a=str(cnt)))

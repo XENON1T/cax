@@ -10,7 +10,8 @@ from cax import config, qsub
 
 import pax
 
-from cax.tasks import checksum, clear, data_mover, process, process_hax, filesystem, rucio_mover
+from cax.tasks import checksum, clear, data_mover, process, process_hax, filesystem, tsm_mover
+
 from cax.tasks import corrections
 
 
@@ -24,6 +25,8 @@ def main():
                         help="Load a custom .json config file into cax")
     parser.add_argument('--log', dest='log', type=str, default='info',
                         help="Logging level e.g. debug")
+    parser.add_argument('--log-file', dest='logfile', type=str, default='cax.log',
+                        help="Log file")
     parser.add_argument('--disable_database_update', action='store_true',
                         help="Disable the update function the run data base")
     parser.add_argument('--run', type=int,
@@ -56,7 +59,7 @@ def main():
 
     # Setup logging
     cax_version = 'cax_v%s - ' % __version__
-    logging.basicConfig(filename='cax.log',
+    logging.basicConfig(filename=args.logfile,
                         level=log_level,
                         format=cax_version + '%(asctime)s [%(levelname)s] '
                                              '%(message)s')
@@ -89,7 +92,8 @@ def main():
         #corrections.AddSlowControlInformation(),  
         data_mover.CopyPull(), # Download data through e.g. scp to this location
         data_mover.CopyPush(),  # Upload data through e.g. scp or gridftp to this location where cax running
-        checksum.CompareChecksums(),  # See if local data corrupted
+        #tsm_mover.AddTSMChecksum(), # Add forgotten Checksum for runDB for TSM client.
+	checksum.CompareChecksums(),  # See if local data corrupted
         checksum.AddChecksum(),  # Add checksum for data here so can know if corruption (useful for knowing when many good copies!)
         clear.RetryStalledTransfer(),  # If data transferring e.g. 48 hours, probably cax crashed so delete then retry
         clear.RetryBadChecksumTransfer(),  # If bad checksum for local data and can fetch from somewhere else, delete our copy
@@ -178,7 +182,7 @@ def massive():
                 ('_id', -1))
 
     dt = datetime.timedelta(days=1)
-    t0 = datetime.datetime.utcnow() - 2*dt
+    t0 = datetime.datetime.utcnow() - 2 * dt
 
 
     while True: # yeah yeah
@@ -196,6 +200,13 @@ def massive():
             logging.info("Full mode")
             t0 = t1
 
+
+        if args.run:
+            query['number'] = args.run
+
+        if args.start:
+            query['number'] = {'$gte' : args.start}
+
         docs = list(collection.find(query,
                                     sort=sort_key,
                                     projection=['start', 'number','name',
@@ -203,27 +214,20 @@ def massive():
 
         for doc in docs:
 
-            if args.run:
-                if args.run != doc['number']:
-                    continue
-
-            if args.start:
-                if args.start < doc['number']:
-                    continue
-
+            job_name = ''
             if doc['detector'] == 'tpc':
+                job_name = str(doc['number'])
                 job = dict(command='cax --once --run {number} '+config_arg,
-                            number=doc['number'],
-                           )
+                           number=int(job_name))
             elif doc['detector'] == 'muon_veto':
+                job_name = doc['name']
                 job = dict(command='cax --once --name {number} '+config_arg,
-                            number=doc['name'],
-                           )
+                           number=job_name)
 
             script = config.processing_script(job)
 
-            if 'cax_%d_v%s' % (doc['number'], pax.__version__) in qsub.get_queue():
-                logging.debug('Skip: cax_%d_v%s job exists' % (doc['number'], pax.__version__))
+            if 'cax_%s_v%s' % (job_name, pax.__version__) in qsub.get_queue():
+                logging.debug('Skip: cax_%s_v%s job exists' % (job_name, pax.__version__))
                 continue
 
             while qsub.get_number_in_queue() > (500 if config.get_hostname() == 'midway-login1' else 30):
@@ -234,15 +238,15 @@ def massive():
             print(script)
             qsub.submit_job(script)
 
-            logging.debug("Pace by 1s")
+            logging.debug("Pace by 1 s")
             time.sleep(1)  # Pace 1s for batch queue
 
         if run_once:
-           break
-        else:
-           pace = 5
-           logging.info("Done, waiting %d minutes" % pace)
-           time.sleep(60*pace) # Pace 5 minutes
+            break
+        #else:
+        #    pace = 5
+        #    logging.info("Done, waiting %d minutes" % pace)
+        #    time.sleep(60*pace) # Pace 5 minutes
 
 
 def move():
@@ -300,8 +304,8 @@ def status():
     
     parser = argparse.ArgumentParser(description="Check the database status")
     
-    parser.add_argument('--node', type=str, required=True,
-                        help="Select the node")
+    parser.add_argument('--host', type=str, required=True,
+                        help="Select the host")
     parser.add_argument('--status', type=str, required=True,
                         help="Which status should be asked: error, transferred, none, ")
     parser.add_argument('--disable_database_update', action='store_true',
@@ -336,7 +340,7 @@ def status():
     config.set_database_log(database_log)
     config.mongo_password()
     
-    filesystem.StatusSingle(args.node, args.status).go()
+    filesystem.StatusSingle(args.host, args.status).go()
 
 #Rucio Stuff
 def ruciax():
@@ -351,39 +355,28 @@ def ruciax():
     
     parser.add_argument('--rucio-rule', type=str,
                         dest='config_rule',
-                        help="Load the a rule file") 
-    
+                        help="Load the a rule file")
+
     parser.add_argument('--log', dest='log', type=str, default='info',
                         help="Logging level e.g. debug")
     
     parser.add_argument('--log-file', dest='logfile', type=str, default='ruciax.log',
                         help="Specify a certain logfile")
     
+def remove_from_tsm():
+    parser = argparse.ArgumentParser(description="Remove data and notify"
+                                                 " the run database.")
+    parser.add_argument('--location', type=str, required=True,
+                        help="Location of file or folder to be removed")
     parser.add_argument('--disable_database_update', action='store_true',
-                        help="Disable the update function the run data base")
-    
-    parser.add_argument('--run', type=int,
-                        help="Select a single run by its number")
-    
-    parser.add_argument('--name', type=str,
-                        help="Select a single run by its name")
-    
-    parser.add_argument('--host', type=str,
-                        help="Host to pretend to be")
-    
-    #parser for rucio arguments
-    parser.add_argument('--rucio-scope', type=str, dest='rucio_scope',
-                        help="Rucio: Choose your scope")
-
-    parser.add_argument('--rucio-rse', type=str, dest='rucio_rse',
-                        help="Rucio: Choose your rse")
-
-    parser.add_argument('--rucio-upload', type=str, dest='rucio_upload',
-                        help="Rucio: Select a data file or data set")
-    
+                        help="Disable the update function of the run data base")
+    parser.add_argument('--run', type=int, required=False,
+                        help="Select a single run by number")
+    parser.add_argument('--name', type=str, required=False,
+                        help="Select a single run by name")
     
     args = parser.parse_args()
-   
+
     #This one is mandatory: hardcoded science run number!
     config.set_rucio_campaign("000")
 
@@ -394,11 +387,17 @@ def ruciax():
     run_once = args.once
     database_log = not args.disable_database_update
 
-    # Set information to update the run database 
+    # Set information to update the run database
     config.set_database_log(database_log)
-
-    # Check passwords and API keysspecified
     config.mongo_password()
+
+    number_name = None
+    if args.name is not None:
+      number_name = args.name
+    else:
+      number_name = args.run
+
+    filesystem.RemoveTSMEntry(args.location).go(number_name)
 
     # Set information for rucio transfer rules (config file)
     config.set_rucio_rules( args.config_rule)
@@ -411,7 +410,7 @@ def ruciax():
                                              '%(message)s')
     logging.info('Daemon is starting')
     logging.info('Logfile: %s', args.logfile)
-    
+
     # define a Handler which writes INFO messages or higher to the sys.stderr
     console = logging.StreamHandler()
     console.setLevel(log_level)
@@ -447,11 +446,11 @@ def ruciax():
     while True:
         for task in tasks:
             name = task.__class__.__name__
-            
+
             # Skip tasks that user did not specify
             if user_tasks and name not in user_tasks:
                 continue
-            
+
             logging.info("Executing %s." % name)
 
             try:
@@ -459,26 +458,19 @@ def ruciax():
                 task.go(args.name)
               else:
                 task.go(args.run)
-                
+
             except Exception as e:
                 logging.fatal("Exception caught from task %s" % name,
                               exc_info=True)
                 logging.exception(e)
                 raise
 
-        # Decide to continue or not
-        if run_once:
-            break
-        else:
-            logging.info('Sleeping.')
-            time.sleep(60)
-
-def massiveruciax():
+def massive_tsmclient():
     # Command line arguments setup
     parser = argparse.ArgumentParser(description="Submit ruciax tasks to batch queue.")
 
     parser.add_argument('--once', action='store_true',
-                        help="Run all tasks just one, then exits")
+                        help="Run all tasks just once, then exits")
     parser.add_argument('--config', action='store', type=str,
                         dest='config_file',
                         help="Load a custom .json config file into cax")
@@ -488,11 +480,18 @@ def massiveruciax():
                         help="Choose: run number start")
     parser.add_argument('--to-run', dest='to_run', type=int, 
                         help="Choose: run number end")
-    parser.add_argument('--log-file', dest='logfile', type=str, default='massive_rucio.log',
+    parser.add_argument('--log', dest='log', type=str, default='INFO',
+                        help="Logging level e.g. debug")
+    parser.add_argument('--logfile', dest='logfile', type=str, default='massive_tsm.log',
                         help="Specify a certain logfile")
-    
+    parser.add_argument('--disable_database_update', action='store_true',
+                        help="Disable the update function the run data base")
 
     args = parser.parse_args()
+
+    log_level = args.log
+    #if not isinstance(log_level, int):
+        #raise ValueError('Invalid log level: %s' % args.log)
 
     run_once = args.once
 
@@ -523,39 +522,46 @@ def massiveruciax():
             logging.info("Using custom config file: %s",
                          args.config_file)
             config.set_json(args.config_file)
-            config_arg = '--config ' + os.path.abspath(args.config_file)
+            config_arg = os.path.abspath(args.config_file)
       
     # Setup logging
     log_path = {"xe1t-datamanager": "/home/xe1ttransfer/rucio_log",
                "midway-login1": "/home/bauermeister/rucio_log",
                "tegner-login-1": "/afs/pdc.kth.se/home/b/bobau/rucio_log"}
-    
+
+    if log_path[config.get_hostname()] == "n/a":
+        print("Modify the log path in main.py")
+        exit()
+
     if not os.path.exists(log_path[config.get_hostname()]):
         os.makedirs(log_path[config.get_hostname()])
-    cax_version = 'massive_ruciax_v%s - ' % __version__
+    cax_version = 'massive_tsm-client_v%s - ' % __version__
     logging.basicConfig(filename="{logp}/{logf}".format(logp=log_path[config.get_hostname()], logf=args.logfile),
-                        level=logging.INFO,
+                        level="INFO",
                         format=cax_version + '%(asctime)s [%(levelname)s] ' '%(message)s')
     
+    # define a Handler which writes INFO messages or higher to the sys.stderr
+    console = logging.StreamHandler()
+    console.setLevel("INFO")
+
+    # set a format which is simpler for console use
+
+    formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+    # tell the handler to use this format
+    console.setFormatter(formatter)
+    # add the handler to the root logger
+    logging.getLogger('').addHandler(console)
+
     # Check Mongo connection
     config.mongo_password()
-    
-
 
     # Establish mongo connection
     collection = config.mongo_collection()
-    sort_key = (('number', -1),
+
+    sort_key = (('start', -1),
+                ('number', -1),
                 ('detector', -1),
                 ('_id', -1))
-
-    #Construct the basic bash script(s):
-    xe1tdatam="""#!/bin/bash
-export PATH=/home/SHARED/anaconda3/bin:$PATH
-source activate rucio_client_p3.4
-export PATH=/home/xe1ttransfer/.local/bin:$PATH
-export RUCIO_HOME=~/.local/rucio
-export RUCIO_ACCOUNT={account}
-    """.format( account=config.get_config("rucio-catalogue")['rucio_account'] )
     
     midwayrcc="""#!/bin/bash
 export PATH=/project/lgrandi/anaconda3/bin:$PATH
@@ -570,7 +576,7 @@ voms-proxy-init -voms xenon.biggrid.nl -valid 168:00
 export PATH="/home/bauermeister/anaconda2/bin:$PATH"
 source activate rucio_p3
     """
-    
+
     tegner = """#!/bin/bash
 export PATH="/cfs/klemming/nobackup/b/bobau/ToolBox/TestEnv/Anaconda3/bin:$PATH"
 source activate rucio_p3
@@ -581,20 +587,17 @@ cd
 export RUCIO_HOME=~/.local/rucio
 export RUCIO_ACCOUNT={account}
       """.format( account=config.get_config("rucio-catalogue")['rucio_account'] )
-    
+
     general = {"xe1t-datamanager": xe1tdatam,
                "midway-login1": midwayrcc,
                "tegner-login-1": tegner,
                "login": osgchicago}
 
     while True: # yeah yeah
-        #query = {'detector':'tpc'}
+
         query = {}
-        
         docs = list(collection.find(query))
-        
-        cnt_upload_miss=0
-        
+
         for doc in docs:
             
             #Select a single run for rucio upload (massive-ruciax -> ruciax)
@@ -606,24 +609,24 @@ export RUCIO_ACCOUNT={account}
             if doc['number'] < beg_run or doc['number'] > end_run and run_window == True:
               continue
             
-            #Double check if a 'data' field is defind in doc
+            #Double check if a 'data' field is defind in doc (runDB entry)
             if 'data' not in doc:
               continue
             
-            #Double check that rucio uploads are only triggered when data exists at the host
+            #Double check that tsm uploads are only triggered when data exists at the host
             host_data = False
             for idoc in doc['data']:
               if idoc['host'] == config.get_hostname():
                 host_data = True
                 break
             if host_data == False:
-              cnt_upload_miss+=1
+              #Do not try upload data which are not registered in the runDB
               continue
             
             #Detector choice
             local_time = time.strftime("%Y%m%d_%H%M%S", time.localtime())
             if doc['detector'] == 'tpc':
-              job = "{conf} --run {number} --log-file {log_path}/ruciax_log_{number}_{timestamp}.txt".format(
+              job = "--config {conf} --run {number} --log-file {log_path}/tsm_log_{number}_{timestamp}.txt".format(
                   conf=config_arg,
                   number=doc['number'],
                   log_path=log_path[config.get_hostname()],
@@ -639,76 +642,138 @@ export RUCIO_ACCOUNT={account}
             #start the time for an upload:
             time_start = datetime.datetime.utcnow()
             
-            #Create the command
-            command="""
-ruciax --once {job}
-""".format(job=job)
+            #Create the command and execute the job only once
+            command="cax --once {job}".format(job=job)
 
-            command = general[config.get_hostname()]+command
+            #Disable runDB notifications
+            if args.disable_database_update == True:
+              command = command + " --disable_database_update"
+
+            #command = general[config.get_hostname()]+command
                         
-            logging.info(command)
+            logging.info("Command: %s", command)
             
-            #Submit the command
-            sc = qsub.create_script(command)
-            execute = subprocess.Popen( ['sh', sc.name] , 
-                                        stdin=subprocess.PIPE,
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.STDOUT, shell=False )
+            command = command.replace("\n", "")
+            command = command.split(" ")
+            execute = subprocess.Popen( command ,
+                                  stdin=subprocess.PIPE,
+                                  stdout=subprocess.PIPE,
+                                  stderr=subprocess.STDOUT, shell=False )
             stdout_value, stderr_value = execute.communicate()
             stdout_value = stdout_value.decode("utf-8")
             stdout_value = stdout_value.split("\n")
-            
+
+            stdout_value = stdout_value.decode()
+
+            stdout_value = str(stdout_value).split("\n")
+            stderr_value = str(stderr_value).split("\n")
+
+            stdout_value.remove('') #remove '' entries from an array
+
             #Return command output:
             for i in stdout_value:
-              logging.info('massive-ruciax: %s', i)
+              logging.info("massive-tsm: %s", i)
             
             #Manage the upload time:
             time_end = datetime.datetime.utcnow()
             diff = time_end-time_start
             dd = divmod(diff.total_seconds(), 60)
-            
             logging.info("Upload time: %s min %s", str(dd[0]), str(dd[1]))
             
         if run_once:
           break
         else:
           logging.info('Sleeping.')
-          time.sleep(60)  
-        
-        logging.info("There %s files not on xe1t-datamanager", str(cnt_upload_miss) )        
+          time.sleep(60)
 
+def cax_tape_log_file():
+    """Analyses the tsm storage"""
+    parser = argparse.ArgumentParser(description="This program helps you to watch the tape backup")
 
-def remove_from_rucio():
-    parser = argparse.ArgumentParser(description="Remove data and notify"
-                                                 " the run database.")
-    parser.add_argument('--location', type=str, required=True,
-                        help="Location of file or folder to be removed")
-    parser.add_argument('--disable_database_update', action='store_true',
-                        help="Disable the update function the run data base")
-    parser.add_argument('--run', type=int, required=False,
-                        help="Select a single run by number")
-    parser.add_argument('--name', type=str, required=False,
-                        help="Select a single run by name")
-    
+    parser.add_argument('--monitor', dest='monitor',
+                        help="Select if you want to monitor database or logfile [database/logfile/checkstatus]")
+    parser.add_argument('--status', type=str,
+                        help="Select a status you want monitor: [transferred/transferring/error]")
+    parser.add_argument('--run', type=int,
+                        help="Select a single run")
+    parser.add_argument('--name', type=int,
+                        help="Select a single run")
+    parser.add_argument('--config', action='store', type=str,
+                        dest='config_file',
+                        help="Load a custom .json config file into cax")
+    run_once = True
     args = parser.parse_args()
 
-    database_log = not args.disable_database_update
-
-    # Set information to update the run database
-    config.set_database_log(database_log)
+    # Check Mongo connection
     config.mongo_password()
-    
-    number_name = None
-    if args.name is not None:
-      number_name = args.name
-    else:
-      number_name = args.run
 
-    filesystem.RemoveRucioEntry(args.location).go(number_name)
+    # Establish mongo connection
+    collection = config.mongo_collection()
+    sort_key = (('number', -1),
+                ('detector', -1),
+                ('_id', -1))
+
+    if args.monitor == "logfile":
+      """load the logfile watcher class"""
+      a = tsm_mover.TSMLogFileCheck()
+
+    elif args.monitor == "database":
+      """load the data base watcher class"""
+      #a = tsm_mover.TSMDatabaseCheck()
+
+
+      total_uploaded_amount = 0
+      total_uploaded_datasets = 0
+      #while True: # yeah yeah
+      while True: # yeah yeah
+        #query = {'detector':'tpc'}
+        query = {}
+
+        docs = list(collection.find(query))
+
+        for doc in docs:
+          #tsm_mover.TSMDatabaseCheck()
+
+          if 'data' not in doc:
+            continue
+
+          nb_tsm_hosts = 0
+          for idoc in doc['data']:
+            if idoc['host'] == "tsm-server" and idoc['location'] != "n/a" and idoc['location'].find("tsm/") >= 0:
+              nb_tsm_hosts+=1
+              logging.info("Dataset: %s at host %s", idoc['location'], idoc['host'] )
+              fsize = tsm_mover.TSMDatabaseCheck().get_info(idoc['location'])
+              total_uploaded_datasets += 1
+              logging.info( "Total file size of the individual dataset: %s mb", fsize)
+              total_uploaded_amount += fsize
+
+          if nb_tsm_hosts == 0:
+            continue
+
+        if run_once:
+            break
+
+      logging.info("Total amount of uploaded data: %s mb", total_uploaded_amount)
+      logging.info("Total amount of uploaded data sets: %s", total_uploaded_datasets)
+
+    elif args.monitor == "checkstatus":
+      if args.status == None:
+        logging.info("ATTENTION: Specify status by --status [transferred/transferring/error]")
+        return 0
+
+      query = {}
+      docs = list(collection.find(query))
+      number_name = None
+      if args.name is not None:
+        number_name = args.name
+      else:
+        number_name = args.run
+
+      tsm_mover.TSMStatusCheck(docs, args.status).go(number_name)
 
 def ruciax_status():
     parser = argparse.ArgumentParser(description="Allow to check the run database for rucio entries")
-    
+
     parser.add_argument('--location', type=str, required=False,
                         dest='location', default=None,
                         help="Location of file or folder to be removed")
@@ -720,11 +785,11 @@ def ruciax_status():
     parser.add_argument('--name', type=str, required=False,
                         dest='name', default=None,
                         help="Select a single run by name")
-    
+
     parser.add_argument('--mode', type=str, required=True,
                         dest='mode',
                         help="Choose the kind of test you want to run")
-    
+
     args = parser.parse_args()
 
     database_log = not args.disable_database_update
@@ -732,13 +797,13 @@ def ruciax_status():
     # Set information to update the run database
     config.set_database_log(database_log)
     config.mongo_password()
-    
+
     number_name = None
     if args.name is not None:
       number_name = args.name
     else:
       number_name = args.run
-      
+
     if args.mode == "DoubleEntries":
       print("Check if there are more than one entries in the runDB")
       filesystem.RuciaxTest(args.mode, args.location).go(number_name)

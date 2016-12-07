@@ -6,7 +6,7 @@ import logging
 import os
 import pax
 import socket
-from zlib import adler32
+
 import pymongo
 
 # global variable to store the specified .json config file
@@ -53,7 +53,7 @@ def get_hostname():
         HOST = HOST.split('.')[0]
     return HOST
 
-   
+
 def set_json(config):
     """Set the cax.json file at your own
     """
@@ -91,11 +91,6 @@ def nstream_settings(hostname=get_hostname()):
 def get_cert(hostname=get_hostname()):
     return get_config(hostname).get('grid_cert',
                                     None)
-def get_registered_hostnames():
-    host_names = []
-    for doc in load():
-      host_names.append( doc["name"] )
-    return host_names
 
 def get_config(hostname=get_hostname()):
     """Returns the cax configuration for a particular hostname
@@ -104,6 +99,8 @@ def get_config(hostname=get_hostname()):
     for doc in load():
         if doc['name'] == hostname:
             return doc
+        elif hostname == "upload_tsm":
+            return hostname
     raise LookupError("Unknown host %s" % hostname)
 
 

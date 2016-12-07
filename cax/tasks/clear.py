@@ -54,7 +54,7 @@ class RetryStalledTransfer(checksum.CompareChecksums):
                                           self.run_doc['name']))
 
         if difference > datetime.timedelta(hours=24) or \
-                        data_doc["status"] == 'error':  # If stale transfer
+                        (data_doc['host'] != 'xe1t-datamanager' and data_doc["status"] == 'error'):
             self.give_error("Transfer lasting more than 24 hours "
                             "or errored, retry.")
 
@@ -109,9 +109,10 @@ class BufferPurger(checksum.CompareChecksums):
             self.log.debug("Do not purge processed data")
             return
 
-        if self.run_doc['source']['type'] == "Kr83m" or self.run_doc['source']['type'] == "Rn220":
-            self.log.debug("Do not purge %s data" % self.run_doc['source']['type'])
-            return
+        if data_doc['host'] == 'midway-login1':
+            if self.run_doc['source']['type'] == "Kr83m" or self.run_doc['source']['type'] == "Rn220":
+                self.log.debug("Do not purge %s data" % self.run_doc['source']['type'])
+                return
         
         self.log.debug("Checking purge logic")
 

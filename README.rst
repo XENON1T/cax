@@ -105,15 +105,15 @@ ruciax runs two configurations: "Uploads" and "Rules". These is controlled by:
 Both are configured with "simple" rules by::
 
    "name": "rucio-catalogue",
-   "hostname": "",  
-   "username": "",  
-   "method": "rucio",  
-   "dir_raw": "/data/xenon/raw",    
-   "upload_options": null,    
-   "download_options": null,   
-   "rucio_upload_rse": "NIKHEF_USERDISK", <<-- Entrance RSE    
-   "rucio_account": "production",         <<-- Don't change that unless you want to change your rucio upload account.    
-   "rucio_transfer": ["UC_OSG_USERDISK"]  <<-- RSE's for rucio transfers    
+   "hostname": "",
+   "username": "",
+   "method": "rucio",
+   "dir_raw": "/data/xenon/raw",
+   "upload_options": null,
+   "download_options": null,
+   "rucio_upload_rse": "NIKHEF_USERDISK", <<-- Entrance RSE
+   "rucio_account": "production",         <<-- Don't change that unless you want to change your rucio upload account.
+   "rucio_transfer": ["UC_OSG_USERDISK"]  <<-- RSE's for rucio transfers
 
 Here are some examples:
 
@@ -126,7 +126,7 @@ Run a single rule (e.g. of run XXXX) to verify/update all rucio storage endpoint
    [~] ruciax --once --config cax_ruciax_xe1tdatamanager_verifyruns.json --run XXXX --log-file ruciax_log_file_verify.txt
 
 Run 'massive-ruciax' for upload continuously::
-   
+
    [~] massive-ruciax --config cax_ruciax_xe1tdatamanager.json
 
 Run 'massive-ruciax' for rules continuously::
@@ -134,17 +134,62 @@ Run 'massive-ruciax' for rules continuously::
    [~] massive-ruciax --config cax_ruciax_xe1tdatamanager_verifyruns.json
 
 Run 'massive-ruciax' for upload once (similar for rules)::
-   
+
    [~] massive-ruciax --once --config cax_ruciax_xe1tdatamanager.json
 
 Run 'massive-ruciax' for upload continuously for a range of tpc runs::
-   
+
    [~] massive-ruciax --config cax_ruciax_xe1tdatamanager_verifyruns.json --from-run 4455 --to-run 4465
 
 Please note: You need both configurations running for upload and proper registration in the runDB. Use screen or tmux!
 
 ###Define complex rules
 A more complex structure for rucio based transfer rules is not yet implemented.
+
+Customizing cax for tape backup
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The backup is done by using the Tivoli Storage Management (TSM) system from IBM. It works by running a server at the PDC in Stockholm which is connected to the tape backup. A client is installed at the xe1t-datamanager to transfer the latest data to tape backup constantly and direct. The client software is installed and configured for the user xe1ttransfer. The client software name itself is 'dsmc'.
+
+The tsm modified cax version runs in:
+
+  * Single mode (cax)
+  * Sequence mode (massive-tsm)
+
+To upload a single raw data set (XXXX) at xe1t-datamanager type::
+
+  cax --once --config /home/xe1ttransfer/cax_tsm/cax/cax_tsm_upload.json --run XXXX --log-file /home/xe1ttransfer/tsm_log/tsm_log_XXXX_UPLOADDATE_UPLOADTIME.txt
+
+or for muon veto data::
+
+  cax --once --config /home/xe1ttransfer/cax_tsm/cax/cax_tsm_upload.json --name DATE_TIME --log-file /home/xe1ttransfer/tsm_log/tsm_log_DATE_TIME_UPLOADDATE_UPLOADTIME.txt
+
+Please use in ANY CASE the --log-file input with the given structure to store the log files:
+
+  * XXXX -> Run number or DATE_TIME (e.g. 161111_1434)
+  * UPLOADDATE: e.g. 161115
+  * UPLOADTIME: e.g. 161400
+
+The UPLOADTIME must not be so accurate. If it is within 30 minutes it is ok for book keeping.
+
+The usual way of running the tsm-cax is by using massive-tsm. Type::
+
+  massive-tsm --config /home/xe1ttransfer/cax_tsm/cax/cax_tsm_upload.json
+
+Possible to add:
+
+  * --once to run the sequence only once
+  * --log-file to store some general information in a specific log file.
+
+The download is done by typing::
+
+  cax --once --config /home/xe1ttransfer/cax_tsm/cax/cax_tsm_download.json --name DATE_TIME
+
+or::
+
+  cax --once --config /home/xe1ttransfer/cax_tsm/cax/cax_tsm_download.json --run XXXX
+
+The download notifies the tape backup and ask for downloading a raw data set to xe1t-datamanager and registere it there. The raw data set itself can not be deleted from tape storage!
 
 Customizing cax
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
