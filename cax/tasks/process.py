@@ -28,15 +28,29 @@ def verify():
 
 
 def _process(name, in_location, host, pax_version, pax_hash,
+<<<<<<< HEAD
              out_location, ncpus=1, disable_updates=False, json_file=""):
+=======
+             out_location, detector='tpc',  ncpus=1):
+>>>>>>> 0bbf65660307d56b75db4158d709785dd0f3c89c
     """Called by another command.
     """
     print('Welcome to cax-process, OSG development with pax mod')
 
     # Import pax so can process the data
+<<<<<<< HEAD
     from pax import core, configuration   
+=======
+    from pax import core, parallel
 
-    output_fullname = out_location + '/' + name
+    # Grab the Run DB so we can query it
+    collection = config.mongo_collection()
+>>>>>>> 0bbf65660307d56b75db4158d709785dd0f3c89c
+
+    if detector == 'muon_veto':
+        output_fullname = out_location + '/' + name + '_MV'
+    elif detector == 'tpc':
+        output_fullname = out_location + '/' + name
 
     if host != 'login':
         os.makedirs(out_location, exist_ok=True)
@@ -54,10 +68,31 @@ def _process(name, in_location, host, pax_version, pax_hash,
              'creation_time' : datetime.datetime.utcnow(),
              'creation_place': host}
 
+<<<<<<< HEAD
 
     if json_file == "":
         print("No JSON file supplied.")
         return 1
+=======
+    # This query is used to find if this run has already processed this data
+    # in the same way.  If so, quit.
+    query = {'name'    : name,
+             'detector' : detector,
+             # This 'data' gets deleted later and only used for checking
+             'data'    : {'$elemMatch': {'host'       : host,
+                                         'type'       : 'processed',
+                                         'pax_version': pax_version}}}
+    doc = collection.find_one(query)  # Query DB
+    if doc is not None:
+        print("Already processed %s.  Clear first.  %s" % (name,
+                                                           pax_version))
+        return 1
+
+    # Not processed this way already, so notify run DB we will
+    doc = collection.find_one_and_update({'detector': detector, 'name': name},
+                                         {'$push': {'data': datum}},
+                                         return_document=ReturnDocument.AFTER)
+>>>>>>> 0bbf65660307d56b75db4158d709785dd0f3c89c
 
     # if processing on OSG
     elif json_file != "":
@@ -66,6 +101,7 @@ def _process(name, in_location, host, pax_version, pax_hash,
         
     
     # Determine based on run DB what settings to use for processing.
+<<<<<<< HEAD
 
     if doc['detector'] == 'muon_veto':
         pax_config = 'XENON1T_MV'
@@ -73,10 +109,18 @@ def _process(name, in_location, host, pax_version, pax_hash,
 
     elif doc['detector'] == 'tpc':
         #decoder = 'Pickle.DecodeZPickle'
+=======
+    if doc['detector'] == 'muon_veto':
+        pax_config = 'XENON1T_MV'
+        decoder = 'BSON.DecodeZBSON'
+    elif doc['detector'] == 'tpc':
+        decoder = 'Pickle.DecodeZPickle'
+>>>>>>> 0bbf65660307d56b75db4158d709785dd0f3c89c
         if doc['reader']['self_trigger']:
             pax_config = 'XENON1T'
         else:
             pax_config = 'XENON1T_LED'
+<<<<<<< HEAD
     
     if host == 'login':
         output_fullname = 'output/' + name
@@ -101,14 +145,31 @@ def _process(name, in_location, host, pax_version, pax_hash,
     config_dict['DEFAULT']['run_number'] = doc['number']
     config_dict['DEFAULT']['run_name'] = doc['name'] 
 
+=======
+>>>>>>> 0bbf65660307d56b75db4158d709785dd0f3c89c
 
     # Try to process data.
     try:
         print('processing', name, in_location, pax_config)
+<<<<<<< HEAD
         print('saving to', output_fullname)
         p = core.Processor(config_names=pax_config,
                            config_dict=config_dict)
         p.run()
+=======
+        pax_kwargs = dict(config_names=pax_config,
+                          config_dict={'pax': {'input_name' : in_location,
+                                               'output_name': output_fullname,
+                                               'decoder_plugin': decoder},
+                                       'DEFAULT': {'lock_breaking_timeout': 600},
+                                       'Queues': {'event_block_size': 1,
+                                                  'max_blocks_on_heap': 1000,
+                                                  'timeout_after_sec': 600}})
+        if ncpus > 1:
+            parallel.multiprocess_locally(n_cpus=ncpus, **pax_kwargs)
+        else:
+            core.Processor(**pax_kwargs).run()
+>>>>>>> 0bbf65660307d56b75db4158d709785dd0f3c89c
 
     except Exception as exception:
         # processing failed
@@ -117,10 +178,32 @@ def _process(name, in_location, host, pax_version, pax_hash,
 class ProcessBatchQueue(Task):
     "Create and submit job submission script."
 
+<<<<<<< HEAD
     def submit(self, in_location, host, pax_version, pax_hash, out_location,
                ncpus, disable_updates, json_file):
         '''Submission Script
         '''
+=======
+    def verify(self):
+        """Verify processing worked"""
+        return True  # yeah... TODO.
+
+    def each_run(self):
+        if self.has_tag('donotprocess'):
+            self.log.debug("Do not process tag found, skip processing")
+            return
+
+        if 'processor' not in self.run_doc or \
+                'DEFAULT' not in self.run_doc['processor']:
+            self.log.debug("processor or DEFAUT tag not in run_doc, skip processing")
+            return
+
+        processing_parameters = self.run_doc['processor']['DEFAULT']
+        if 'gains' not in processing_parameters or \
+            'electron_lifetime_liquid' not in processing_parameters:
+            self.log.info("gains or e-lifetime not in run_doc, skip processing")
+            return
+>>>>>>> 0bbf65660307d56b75db4158d709785dd0f3c89c
 
         name = self.run_doc['name']
         number = self.run_doc['number']
@@ -146,6 +229,7 @@ class ProcessBatchQueue(Task):
             if not os.path.exists(inner_dag_dir):
                 os.makedirs(inner_dag_dir)
 
+<<<<<<< HEAD
             joblog_dir = "/xenon/ershockley/cax/{pax_version}/{name}/joblogs".format(name=name, pax_version=pax_version)
 
             if not os.path.exists(joblog_dir):
@@ -153,6 +237,14 @@ class ProcessBatchQueue(Task):
             
             outer_dag_file = outer_dag_dir + "/{name}_outer.dag".format(name=name)
             inner_dag_file = inner_dag_dir + "/{name}_inner.dag".format(name=name)
+=======
+        if self.run_doc['reader']['ini']['write_mode'] != 2:
+            self.log.debug("write_mode != 2, skip processing")
+            return
+
+        # Get number of events in data set (not set for early runs <1000)
+        events = self.run_doc.get('trigger', {}).get('events_built', 0)
+>>>>>>> 0bbf65660307d56b75db4158d709785dd0f3c89c
 
             qsub.submit_dag_job(number, outer_dag_file, inner_dag_file, out_location, script, pax_version, json_file)
 
@@ -172,7 +264,14 @@ class ProcessBatchQueue(Task):
 
         thishost = config.get_hostname()
 
+<<<<<<< HEAD
         version = 'v%s' % pax.__version__
+=======
+            _process(self.run_doc['name'], have_raw['location'], thishost,
+                     version, pax_hash, out_location,
+                     self.run_doc['detector'],
+                     ncpus)
+>>>>>>> 0bbf65660307d56b75db4158d709785dd0f3c89c
 
         # Specify number of cores for pax multiprocess
         ncpus = 1
@@ -295,14 +394,8 @@ class ProcessBatchQueue(Task):
             if 'host' not in datum:
                 continue
 
-            # If the location is Midway SRM...
-            if datum['host']  == "midway-srm":
-                # ... must access from midway-login1
-                if thishost != "midway-login1":
-                    continue
-
-            # Otherwise, if the location doesn't refer to here, skip
-            elif datum['host'] != thishost:
+            # If the location doesn't refer to here, skip
+            if datum['host'] != thishost:
                 continue
 
             # Raw data must exist
