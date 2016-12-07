@@ -142,6 +142,11 @@ class CompareChecksums(Task):
         self.check()
 
     def purge(self, data_doc):
+        # Do not automatically purge Stash for rescue DAGs
+        if config.get_hostname() == 'login' and data_doc['type'] == 'processed':
+            self.log.info("Not deleting %s" % data_doc['location'])
+            return            
+        
         self.log.info("Deleting %s" % data_doc['location'])
 
         # Temporary hardcoded check for gfal-rm removal
