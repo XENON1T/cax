@@ -179,15 +179,15 @@ class ProcessBatchQueue(Task):
     def __init__(self):
         self.API = api()
 
-        thishost = config.get_hostname()
-        version = 'v%s' % pax.__version__
+        self.thishost = config.get_hostname()
+        self.pax_version = 'v%s' % pax.__version__
 
-        query = {"data" : {"$not" : {"$elemMatch" : {"host" : thishost,
+        query = {"data" : {"$not" : {"$elemMatch" : {"host" : self.thishost,
                                                      "type" : "processed",
-                                                     "pax_version" : version
+                                                     "pax_version" : self.pax_version
                                                      }
                                      },
-                           "$elemMatch" : {"host" : thishost,
+                           "$elemMatch" : {"host" : self.thishost,
                                            "type" : "raw"}
                            },
                  'reader.ini.write_mode' : 2,
@@ -202,17 +202,16 @@ class ProcessBatchQueue(Task):
         """Verify processing worked"""
         return True  # yeah... TODO.
 
-    def submit(self, in_location, host, pax_version, out_location,
-               ncpus, disable_updates, json_file):
+    def submit(self, in_location, out_location, ncpus, disable_updates, json_file):
         '''Submission Script
         '''
 
         name = self.run_doc['name']
         number = self.run_doc['number']
 
-        script_args = dict(host=host,
+        script_args = dict(host=self.thishost,
                            name=name,
-                           pax_version='v%s' % pax.__version__,
+                           pax_version=self.pax_version,
                            number=number,
                            out_location = out_location,
                            ncpus = ncpus,
@@ -223,15 +222,15 @@ class ProcessBatchQueue(Task):
         script = config.processing_script(script_args)
         self.log.info(script)
 
-        if host == 'login':
+        if self.thishost == 'login':
             outer_dag_dir = "/xenon/ershockley/cax/{pax_version}/{name}/dags".format(name=name,
-                                                                                      pax_version=pax_version)
+                                                                                      pax_version=self.pax_version)
             inner_dag_dir = outer_dag_dir + "/inner_dags"
 
             if not os.path.exists(inner_dag_dir):
                 os.makedirs(inner_dag_dir)
 
-            joblog_dir = "/xenon/ershockley/cax/{pax_version}/{name}/joblogs".format(name=name, pax_version=pax_version)
+            joblog_dir = "/xenon/ershockley/cax/{pax_version}/{name}/joblogs".format(name=name, pax_version=self.pax_version)
 
             if not os.path.exists(joblog_dir):
                 os.mkdir(joblog_dir)
@@ -239,10 +238,10 @@ class ProcessBatchQueue(Task):
             outer_dag_file = outer_dag_dir + "/{name}_outer.dag".format(name=name)
             inner_dag_file = inner_dag_dir + "/{name}_inner.dag".format(name=name)
 
-            qsub.submit_dag_job(number, outer_dag_file, inner_dag_file, out_location, script, pax_version, json_file)
+            qsub.submit_dag_job(number, outer_dag_file, inner_dag_file, out_location, script, self.pax_version, json_file)
 
         else:
-            qsub.submit_job(host, script, name + "_" + pax_version)
+            qsub.submit_job(self.thishost, script, name + "_" + self.pax_version)
                         
     def each_run(self):
 
@@ -252,13 +251,9 @@ class ProcessBatchQueue(Task):
             time.sleep(120)
             return
 
-        thishost = config.get_hostname()
-
         disable_updates = not config.DATABASE_LOG
 
-        pax_version = 'v%s' % pax.__version__
-
-        have_processed, have_raw = self.local_data_finder(thishost, pax_version)
+        have_processed, have_raw = self.local_data_finder()
 
         if have_processed or not have_raw:
             self.log.debug("Skipping %s already processed or no raw",
@@ -272,14 +267,14 @@ class ProcessBatchQueue(Task):
         ncpus = 1
         # 1 CPU for small number of events (sometimes pax stalls
         # with too many CPU)
-        if events > 1000 and thishost == 'midway-login1':
+        if events > 1000 and self.thishost == 'midway-login1':
             ncpus = 4  # based on Figure 2 here https://xecluster.lngs.infn.it/dokuwiki/doku.php?id=xenon:xenon1t:shockley:performance#automatic_processing
 
-        out_location = config.get_processing_dir(thishost, pax_version)
+        out_location = config.get_processing_dir(self.thishost, self.pax_version)
         if not os.path.exists(out_location):
             os.makedirs(out_location)
 
-        queue_list = qsub.get_queue(thishost)
+        queue_list = qsub.get_queue(self.thishost)
         
         # Warning: No check for pax version here
         if self.run_doc['name'] in queue_list:
@@ -288,36 +283,35 @@ class ProcessBatchQueue(Task):
             return
 
         self.log.info("Processing %s with pax_%s, output to %s",
-                      self.run_doc['name'], pax_version, out_location)
+                      self.run_doc['name'], self.pax_version, out_location)
 
-        if thishost != 'login':
-            _process(self.run_doc['name'], have_raw['location'], thishost,
-                     pax_version, out_location, ncpus)
+        if self.thishost != 'login':
+            _process(self.run_doc['name'], have_raw['location'], self.thishost,
+                     self.pax_version, out_location, ncpus)
 
         else:
             # New data location
-            datum = {'host'          : thishost,
+            datum = {'host'          : self.thishost,
                      'type'          : 'processed',
-                     'pax_version'   : pax_version,
+                     'pax_version'   : self.pax_version,
                      'status'        : 'transferring',
                      'location'      : out_location + "/" + str(self.run_doc['name']),
                      'checksum'      : None,
                      'creation_time' : datetime.datetime.utcnow(),
-                     'creation_place': thishost}
+                     'creation_place': self.thishost}
 
             json_file = "/xenon/ershockley/jsons/" + str(self.run_doc['name']) + ".json"
             with open(json_file, "w") as f:
                 json.dump(self.run_doc, f)
 
-            self.submit(have_raw, thishost, pax_version,
-                        out_location, ncpus, disable_updates, json_file)
+            self.submit(have_raw['location'], out_location, ncpus, disable_updates, json_file)
 
             if config.DATABASE_LOG == True:
                 self.API.add_location(doc['_id'], datum)
 
             time.sleep(5)
 
-    def local_data_finder(self, thishost, version):
+    def local_data_finder(self):
         have_processed = False
         have_raw = False
         # Iterate over data locations to know status
@@ -328,7 +322,7 @@ class ProcessBatchQueue(Task):
                 continue
 
             # If the location doesn't refer to here, skip
-            if datum['host'] != thishost:
+            if datum['host'] != self.thishost:
                 continue
 
             # Raw data must exist
@@ -337,7 +331,7 @@ class ProcessBatchQueue(Task):
 
             # Check if processed data already exists in DB
             if datum['type'] == 'processed':
-                if version == datum['pax_version'] and datum['status'] == 'transferred':
+                if self.pax_version == datum['pax_version'] and datum['status'] == 'transferred':
                     have_processed= True
 
         return have_processed, have_raw
