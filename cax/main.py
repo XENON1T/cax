@@ -93,7 +93,7 @@ def main():
         data_mover.CopyPull(), # Download data through e.g. scp to this location
         data_mover.CopyPush(),  # Upload data through e.g. scp or gridftp to this location where cax running
         #tsm_mover.AddTSMChecksum(), # Add forgotten Checksum for runDB for TSM client.
-	checksum.CompareChecksums(),  # See if local data corrupted
+        checksum.CompareChecksums(),  # See if local data corrupted
         checksum.AddChecksum(),  # Add checksum for data here so can know if corruption (useful for knowing when many good copies!)
         clear.RetryStalledTransfer(),  # If data transferring e.g. 48 hours, probably cax crashed so delete then retry
         clear.RetryBadChecksumTransfer(),  # If bad checksum for local data and can fetch from somewhere else, delete our copy

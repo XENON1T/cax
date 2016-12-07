@@ -6,26 +6,25 @@ from bson.json_util import dumps
 
 from cax import config
 
-
 class Task():
-    def __init__(self):
+    def __init__(self, query = {}):
         # Grab the Run DB so we can query it
         self.collection = config.mongo_collection()
         self.log = logging.getLogger(self.__class__.__name__)
         self.run_doc = None
         self.untriggered_data = None
 
+        self.query = query
+
     def go(self, specify_run = None):
         """Run this periodically"""
-
-        query = {}
 
         # argument can be run number or run name
         if specify_run is not None:
             if isinstance(specify_run,int):
-                query['number'] = specify_run
+                self.query['number'] = specify_run
             elif isinstance(specify_run,str):
-                query['name'] = specify_run
+                self.query['name'] = specify_run
 
         # Get user-specified list of datasets
         datasets = config.get_dataset_list()
@@ -33,7 +32,7 @@ class Task():
         # Collect all run document ids.  This has to be turned into a list
         # to avoid timeouts if a task takes too long.
         try:
-            ids = [doc['_id'] for doc in self.collection.find(query,
+            ids = [doc['_id'] for doc in self.collection.find(self.query,
                                                               projection=('_id'),
                                                               sort=(('start', -1),))]
         except pymongo.errors.CursorNotFound:
