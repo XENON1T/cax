@@ -31,7 +31,7 @@ def which(program):
 
 
 
-def submit_job(host,script, name, extra=''):
+def submit_job(script, name='', extra=''):
     """Submit a job
 
     :param script: contents of the script to run.
@@ -41,6 +41,8 @@ def submit_job(host,script, name, extra=''):
     """
     fileobj = create_script(script)
 
+    host = config.get_hostname()
+    
     #Different submit command for using OSG
     if host == 'login':
         which('condor_submit_dag')
@@ -57,10 +59,9 @@ def submit_job(host,script, name, extra=''):
         # Effect of the arguments for sbatch:
         # http://slurm.schedmd.com/sbatch.html
 
-        submit_command = ('sbatch -J {name} {extra} {script}'
-                          .format(name=name, script=fileobj.name,
+        submit_command = ('sbatch {extra} {script}'
+                          .format(script=fileobj.name,
                                   extra=extra))
-
 
     logging.info('submit job:\n %s' % submit_command)
 

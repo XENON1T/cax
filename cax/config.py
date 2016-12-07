@@ -270,10 +270,7 @@ def processing_script(args={}):
             if key not in args:
                 args[key] = value
 
-# Following line from Evan's implementation
-#        fill_args(args, default_args)
-
-    # Evaluate {variables} within strings in the arguments.
+        # Evaluate {variables} within strings in the arguments.
         args = {k:v.format(**args) if isinstance(v, str) else v for k,v in args.items()}
 
         os.makedirs(args['base']+"/"+args['use']+("/%s"%str(args['number']))+"_"+args['pax_version'], exist_ok=True)
