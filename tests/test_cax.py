@@ -1,30 +1,31 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-"""
-test_cax
-----------------------------------
-
-Tests for `cax` module.
-"""
-
-import unittest
-
-from cax import cax
+import pytest
+from .common import lone_run_collection
 
 
-class TestCax(unittest.TestCase):
+def test_task(lone_run_collection):
+    """Tests the basic task framework."""
+    from cax.task import Task
 
-    def setUp(self):
-        pass
+    class ScanningTask(Task):
+        data_entries_found = 0
 
-    def tearDown(self):
-        pass
+        def each_location(self, data_doc):
+            self.data_entries_found += 1
+            pass
 
-    def test_000_something(self):
-        pass
+    t = ScanningTask()
+    t.go()
+    assert t.data_entries_found == 1
 
+def test_checksum(lone_run_collection):
+    run_status = lone_run_collection.find_one({})['data'][0]['status']
 
-if __name__ == '__main__':
-    import sys
-    sys.exit(unittest.main())
+    from cax.tasks.checksum import AddChecksum
+    t = AddChecksum()
+    if run_status == 'verifying':
+        t.go()
+    else:
+        # If the status is anything but verifgying, but the checksum is missing, AddChecksum will raise something
+        # Currently it's not a great exception (keyerror)
+        with pytest.raises(Exception):
+            t.go()

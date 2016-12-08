@@ -1,0 +1,13 @@
+# Compiled python files
+__pycache__
+*.py[cod]
+
+# Eggs
+.eggs
+*.egg_info
+cax.egg-info
+
+# Pycharm
+.idea
+
+
