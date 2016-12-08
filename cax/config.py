@@ -6,7 +6,7 @@ import logging
 import os
 import pax
 import socket
-
+from zlib import adler32
 import pymongo
 
 # global variable to store the specified .json config file

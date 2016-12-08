@@ -276,11 +276,11 @@ class RemoveRucioEntry(Task):
     This notifies the run database.
     """
 
-    def __init__(self, location):
+    def __init__(self, location, status):
         # Save filesnames to use
         self.location = location
+        self.status = status
         print("delete from database: ", self.location)
-        # Perform base class initialization
         Task.__init__(self)
 
     def each_run(self):
@@ -289,18 +289,27 @@ class RemoveRucioEntry(Task):
         cnt = 0
         for data_doc in self.run_doc['data']:
             # Is not local, skip
-            if data_doc['host'] == "rucio-catalogue":
+            
+            if self.status == None:
+              if data_doc['host'] == "rucio-catalogue":
                 print("found: ", data_doc)
                 cnt+=1
-
+            else:
+              if data_doc['host'] == "rucio-catalogue" and data_doc['status'] == self.status:
+                print("found: ", data_doc)
+                cnt+=1  
+        
         for data_doc in self.run_doc['data']:
-
+            
             if 'host' not in data_doc or data_doc['host'] != "rucio-catalogue":
                 continue
 
             if data_doc['location'] != self.location:
                 continue
-
+            
+            if self.status != None and data_doc['status'] != self.status:
+                continue
+            
             # Notify run database
             if config.DATABASE_LOG is True:
               print("Delete this: ", data_doc)
@@ -313,8 +322,6 @@ class RemoveRucioEntry(Task):
               print("This should be deleted:")
               print(data_doc)
             break
-
-        print("There are {a} entries in the runDB with \"rucio-catalogue\" for the same run number or name".format(a=str(cnt)))
 
 class RuciaxTest(Task):
     """Remove a single file or directory

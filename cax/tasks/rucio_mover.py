@@ -8,7 +8,6 @@ import datetime
 import logging
 import os
 import time
-import argcomplete
 import hashlib
 import json
 import random
@@ -17,7 +16,6 @@ import signal
 import socket
 import subprocess
 import sys
-import tabulate
 import time
 import traceback
 import datetime
@@ -1458,7 +1456,8 @@ class RucioRule(Task):
         return 0
       
       t = json.loads(open(config.RUCIO_RULE, 'r').read())
-
+      
+      #get run numbers
       run_nb = t[0]['run_nb'].split(",")
       runNB = []
       for i in run_nb:
@@ -1471,20 +1470,39 @@ class RucioRule(Task):
                   
         else:
           runNB.append( i )
-              
+      
+      run_name = t[0]['run_name'].split(",")
+      runNameList = []
+      runNameRange = []
+      for i in run_name:
+        i = i.replace(" ", "")
+        if i.find("-") >= 0:
+          a = i.split("-")[0]
+          b = i.split("-")[1]
+          tmp_runname_list = [a, b]
+          runNameRange.append( tmp_runname_list )
+        else:
+          runNameList.append( i )
+        
+      detector_type         = t[0]['detector_type']
+      source_type           = t[0]['source_type']
       destination_rse       = t[0]['destination_rse']
       destination_livetime  = t[0]['destination_livetime']
       destination_condition = t[0]['destination_condition']
       remove_rse            = t[0]['remove_rse']
 
-      print( runNB )
-      print( destination_rse )
-      print( destination_livetime )
-      print( destination_condition )
-      print( remove_rse )
-
-      self.the_mighty_rule = []
-    
+      dest_info = {
+        'run_number': runNB,          
+        'run_name_list': runNameList,
+        'run_name_range': runNameRange,
+        'destination_rse': destination_rse,
+        'destination_livetime': destination_livetime,
+        'destination_condition': destination_condition,
+        'remove_rse': remove_rse
+        }
+      
+      return dest_info
+         
     def each_run(self):
       """Tell what to do for raw and processed data"""
       
@@ -1498,7 +1516,7 @@ class RucioRule(Task):
                                   dbinfo=None)
          
          self.del_possible_rules( data_type=data_type,
-                                   dbinfo=None)
+                                  dbinfo=None)
          
     def set_possible_rules(self, data_type, dbinfo ):
       '''Set Possible rules according a set of mandatory pre definitions'''
@@ -1522,6 +1540,57 @@ class RucioRule(Task):
       
       # Modify this list by rule_definition information:
       # NEED SOME MORE CODE # self.the_mighty_rule
+      print("possible transfers: ", transfer_list)
+      print("method: ", method)
+      print("rucio-entry: ", there)
+      print("run number: ", self.run_doc['number']) 
+      print("run name: ", self.run_doc['name']) 
+      print("run source: ", self.run_doc['source']['type'] ) 
+      print("run detector: ", self.run_doc['detector']) 
+
+      actual_run_number   = self.run_doc['number']
+      actual_run_name     = self.run_doc['name']
+      actual_run_source   = self.run_doc['source']['type']
+      actual_run_detector = self.run_doc['detector']
+      
+      print( self.rule_definition() )
+      
+      
+      
+      ##test run numbers
+      #if actual_run_number in self.rule_definition()['run_number'] and actual_run_number != 0:
+        ##logging.info("No rules need to be changed for run number %s", actual_run_number)
+        ##return
+        #if self.rule_definition()['source'] != None:
+          #if actual_run_source == self.rule_definition()['source']:
+            #logging.info("Source specified and match")
+            #tt_list = self.rule_definition()['destination_rse']
+            #tt_life = self.rule_definition()['destination_livetime']
+          
+        #elif self.rule_definition()['detector'] != None:
+          #if actual_run_detector == self.rule_definition()['detector']:
+            #logging.info("Detector specified and match")  
+            #tt_list = self.rule_definition()['destination_rse']
+            #tt_life = self.rule_definition()['destination_livetime']
+        
+        #else:
+          #logging.info("Deal with only run numbers")
+          #tt_list = self.rule_definition()['destination_rse']
+          #tt_life = self.rule_definition()['destination_livetime']
+        
+      #elif actual_run_number == 0:
+        ##fix  
+        #if actual_run_name in self.rule_definition()['run_name_list']:
+          #tt_list = self.rule_definition()['destination_rse']
+          #tt_life = self.rule_definition()['destination_livetime']
+        
+        #for i_l in self.rule_definition()['run_name_range']:
+          #beg = i_l[0]
+          #end = i_l[1]
+      
+      #elif self.rule_definition()['run_number'] == None:
+        #logging.info("no run number")
+      
 
       if there != None:
         self.rucio = RucioBase(self.run_doc)
@@ -1632,6 +1701,4 @@ class RucioRule(Task):
         db_entry = i_data
        
       return db_entry
-         
-         
          
