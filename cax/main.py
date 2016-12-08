@@ -807,7 +807,7 @@ def massive_tsmclient():
                         help="Disable the update function the run data base")
 
     args = parser.parse_args()
-
+    
     log_level = args.log
     #if not isinstance(log_level, int):
         #raise ValueError('Invalid log level: %s' % args.log)
@@ -844,14 +844,13 @@ def massive_tsmclient():
             config_arg = os.path.abspath(args.config_file)
       
     # Setup logging
-    log_path = {"xe1t-datamanager": "/home/xe1ttransfer/rucio_log",
-               "midway-login1": "/home/bauermeister/rucio_log",
-               "tegner-login-1": "/afs/pdc.kth.se/home/b/bobau/rucio_log"}
-
+    log_path = {"xe1t-datamanager": "/home/xe1ttransfer/tsm_log",
+                "midway-login1": "n/a"}
+    
     if log_path[config.get_hostname()] == "n/a":
         print("Modify the log path in main.py")
         exit()
-
+    
     if not os.path.exists(log_path[config.get_hostname()]):
         os.makedirs(log_path[config.get_hostname()])
     cax_version = 'massive_tsm-client_v%s - ' % __version__
@@ -870,53 +869,23 @@ def massive_tsmclient():
     console.setFormatter(formatter)
     # add the handler to the root logger
     logging.getLogger('').addHandler(console)
-
+    
     # Check Mongo connection
     config.mongo_password()
 
     # Establish mongo connection
     collection = config.mongo_collection()
-
+    
     sort_key = (('start', -1),
                 ('number', -1),
                 ('detector', -1),
                 ('_id', -1))
     
-    midwayrcc="""#!/bin/bash
-export PATH=/project/lgrandi/anaconda3/bin:$PATH
-source activate rucio_work
-export PATH=~/.local/bin:$PATH
-export RUCIO_HOME=~/.local/rucio
-export RUCIO_ACCOUNT={account}
-    """.format( account=config.get_config("rucio-catalogue")['rucio_account'] )
-
-    osgchicago="""#!/bin/bash
-voms-proxy-init -voms xenon.biggrid.nl -valid 168:00
-export PATH="/home/bauermeister/anaconda2/bin:$PATH"
-source activate rucio_p3
-    """
-
-    tegner = """#!/bin/bash
-export PATH="/cfs/klemming/nobackup/b/bobau/ToolBox/TestEnv/Anaconda3/bin:$PATH"
-source activate rucio_p3
-export PATH=~/.local/bin:$PATH
-cd /cfs/klemming/nobackup/b/bobau/ToolBox/gfal-tools
-source /cfs/klemming/nobackup/b/bobau/ToolBox/gfal-tools/setup.sh
-cd
-export RUCIO_HOME=~/.local/rucio
-export RUCIO_ACCOUNT={account}
-      """.format( account=config.get_config("rucio-catalogue")['rucio_account'] )
-
-    general = {"xe1t-datamanager": xe1tdatam,
-               "midway-login1": midwayrcc,
-               "tegner-login-1": tegner,
-               "login": osgchicago}
-
     while True: # yeah yeah
-
+        
         query = {}
         docs = list(collection.find(query))
-
+        
         for doc in docs:
             
             #Select a single run for rucio upload (massive-ruciax -> ruciax)
@@ -952,7 +921,7 @@ export RUCIO_ACCOUNT={account}
                   timestamp=local_time)
                 
             elif doc['detector'] == 'muon_veto':
-              job = "{conf} --name {number} --log-file {log_path}/ruciax_log_{number}_{timestamp}.txt".format(
+              job = "--config {conf} --name {number} --log-file {log_path}/tsm_log_{number}_{timestamp}.txt".format(
                   conf=config_arg,
                   number=doc['name'],
                   log_path=log_path[config.get_hostname()],
@@ -963,32 +932,29 @@ export RUCIO_ACCOUNT={account}
             
             #Create the command and execute the job only once
             command="cax --once {job}".format(job=job)
-
+            
             #Disable runDB notifications
             if args.disable_database_update == True:
               command = command + " --disable_database_update"
-
+            
             #command = general[config.get_hostname()]+command
                         
             logging.info("Command: %s", command)
             
             command = command.replace("\n", "")
             command = command.split(" ")
-            execute = subprocess.Popen( command ,
+            execute = subprocess.Popen( command , 
                                   stdin=subprocess.PIPE,
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.STDOUT, shell=False )
             stdout_value, stderr_value = execute.communicate()
-            stdout_value = stdout_value.decode("utf-8")
-            stdout_value = stdout_value.split("\n")
-
             stdout_value = stdout_value.decode()
-
+      
             stdout_value = str(stdout_value).split("\n")
             stderr_value = str(stderr_value).split("\n")
-
+      
             stdout_value.remove('') #remove '' entries from an array
-
+            
             #Return command output:
             for i in stdout_value:
               logging.info("massive-tsm: %s", i)
