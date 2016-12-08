@@ -52,6 +52,7 @@
     "dir_tsm": "/data/xenon/tsm/",
     "upload_options": [],
     "download_options": ["tsm-server"],
+    "data_type": ["raw"],
     "task_list": ["CopyPull","CopyPush"]
   },
   {
