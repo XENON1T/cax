@@ -55,8 +55,9 @@
     "method": "tsm",
     "dir_raw": "/data/xenon/raw/",
     "dir_tsm": "/data/xenon/tsm/",
-    "upload_options": ["tsm-server", "rucio-catalogue"],
+    "upload_options": ["tsm-server"],
     "download_options": null,
+    "task_list": ["CopyPull","CopyPush"]
   },
   {
     "name": "tsm-server",
@@ -66,9 +67,6 @@
     "dir_raw": null,
     "upload_options": null,
     "download_options": null
-  },
-    "pax_processing_versions": null,
-    "task_list": ["CopyPull", "CopyPush"]
   },
   {
     "name": "rucio-catalogue",

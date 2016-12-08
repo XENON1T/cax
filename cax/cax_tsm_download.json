@@ -64,6 +64,18 @@
     "download_options": null
   },
   {
+    "name": "rucio-catalogue",
+    "hostname": "",
+    "username": "",
+    "method": "rucio",
+    "dir_raw": "/data/xenon/raw",
+    "upload_options": null,
+    "download_options": null,
+    "rucio_upload_rse": null,
+    "rucio_account": "production",
+    "rucio_transfer": null
+  },  
+  {
     "name": "lfc",
     "method": "lcg-cp",
     "hostname": "lfn:",
