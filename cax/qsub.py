@@ -31,7 +31,7 @@ def which(program):
 
 
 
-def submit_job(host,script, name, extra=''):
+def submit_job(script, name='', extra=''):
     """Submit a job
 
     :param script: contents of the script to run.
@@ -41,11 +41,13 @@ def submit_job(host,script, name, extra=''):
     """
     fileobj = create_script(script)
 
+    host = config.get_hostname()
+    
     #Different submit command for using OSG
     if host == 'login':
         which('condor_submit_dag')
-        
-        # Effect of the arguments for condor_submit:                      
+
+        # Effect of the arguments for condor_submit:
         # http://research.cs.wisc.edu/htcondor/manual/v7.6/condor_submit.html
         submit_command = ('condor_submit_dag {extra} {script}'
                           .format(script=fileobj.name,
@@ -53,16 +55,15 @@ def submit_job(host,script, name, extra=''):
 
     else:
         which('sbatch')
-        
+
         # Effect of the arguments for sbatch:
         # http://slurm.schedmd.com/sbatch.html
 
-        submit_command = ('sbatch -J {name} {extra} {script}'
-                          .format(name=name, script=fileobj.name,
+        submit_command = ('sbatch {extra} {script}'
+                          .format(script=fileobj.name,
                                   extra=extra))
-                
-    
-    logging.info('submit job:\n %s' % submit_command)   
+
+    logging.info('submit job:\n %s' % submit_command)
 
     try:
         result = subprocess.check_output(submit_command,
@@ -73,11 +74,11 @@ def submit_job(host,script, name, extra=''):
         logging.error("Process timeout")
     except Exception as e:
         logging.exception(e)
-    
+
     delete_script(fileobj)
 
 def submit_dag_job(run_number, outer_dag, inner_dag, outputdir, submitscript, paxversion, json_file):
-    
+
     from cax.dag_writer import dag_writer
 
     which('condor_submit_dag')
@@ -91,7 +92,7 @@ def submit_dag_job(run_number, outer_dag, inner_dag, outputdir, submitscript, pa
         # create inner dag file. In creation of instance, must put run number in a list
         DAG = dag_writer([run_number], paxversion)
         DAG.write_inner_dag(run_number, inner_dag, outputdir, submitfileobj.name, json_file)
-      
+
     # now check if outer dag exists
     if not os.path.isfile(outer_dag):
         print("No OUTER dag file exists, writing one now")
@@ -147,12 +148,12 @@ def get_queue(host=config.get_hostname()):
         elif host == 'tegner-login-1':
             args = {'partition': 'main',
                     'user' : 'bobau'}
-            
+
         else:
             raise ValueError()
 
-        command = 'squeue --partition={partition} --user={user} -o "%.30j"'.format(**args)
-    
+        command = 'squeue --user={user} -o "%.30j"'.format(**args)
+
     else:
         command = 'condor_q ershockley -format "%d\n" ClusterID'
 
@@ -172,4 +173,3 @@ def get_queue(host=config.get_hostname()):
     if len(queue_list) > 1:
         return queue_list[1:]
     return []
-

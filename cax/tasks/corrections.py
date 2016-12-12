@@ -17,7 +17,7 @@ from cax import config
 from cax.task import Task
 
 PAX_CONFIG = configuration.load_configuration('XENON1T')
-
+PAX_CONFIG_MV = configuration.load_configuration('XENON1T_MV')
 
 class CorrectionBase(Task):
     "Derive correction"
@@ -141,6 +141,9 @@ class AddGains(CorrectionBase):
         if self.run_doc['reader']['self_trigger']:
             self.log.info("Run %d: gains computing" % self.run_doc['number'])
             gains = self.get_gains(timestamp)
+        elif self.run_doc['detector'] == 'muon_veto':
+            self.log.info("Run %d: using 1e6 as gain for MV" % self.run_doc['number'])
+            gains = len(PAX_CONFIG_MV['DEFAULT']['pmts'])*[1e6]
         else:
             self.log.info("Run %d: using 1 as gain for LED" % self.run_doc['number'])
             gains = len(PAX_CONFIG['DEFAULT']['pmts'])*[1]
@@ -178,7 +181,7 @@ class AddGains(CorrectionBase):
 
     def get_voltages(self, timestamp):
         try:
-            r = requests.post('https://172.16.2.105:4040/WebService.asmx/getLastMeasuredPMTValues',
+            r = requests.post('https://xenon1t-daq.lngs.infn.it/slowcontrol/getLastMeasuredPMTValues',
                           data = {'EndDateUnix' : int(timestamp),
                                   'username':'slowcontrolwebserver',
                                   'api_key' : os.environ.get('api_key'),
@@ -204,7 +207,7 @@ class AddGains(CorrectionBase):
 
         for doc in json_value:
             if doc['tagname'] in mapping.keys():
-                voltages[mapping[doc['tagname']]] = doc['value']
+                voltages[mapping[doc['tagname']]] = doc['value'] if doc['value'] > 1 else 0
 
         return voltages
 

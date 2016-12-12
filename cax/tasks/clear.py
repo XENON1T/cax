@@ -24,12 +24,6 @@ class RetryStalledTransfer(checksum.CompareChecksums):
     # Do not overload this routine from checksum inheritance.
     each_run = Task.each_run
 
-    def has_untriggered(self):
-        for data_doc in self.run_doc['data']:
-            if data_doc['type'] == 'untriggered':
-                return True
-        return False
-
     def each_location(self, data_doc):
         if 'host' not in data_doc or data_doc['host'] != config.get_hostname():
             return  # Skip places where we can't locally access data
@@ -60,29 +54,11 @@ class RetryStalledTransfer(checksum.CompareChecksums):
                                           self.run_doc['name']))
 
         if difference > datetime.timedelta(hours=24) or \
-                        data_doc["status"] == 'error':  # If stale transfer
+                        (data_doc['host'] != 'xe1t-datamanager' and data_doc["status"] == 'error'):
             self.give_error("Transfer lasting more than 24 hours "
                             "or errored, retry.")
 
-            self.log.info("Deleting %s" % data_doc['location'])
-
-            if os.path.isdir(data_doc['location']):
-                try:
-                    shutil.rmtree(data_doc['location'])
-                except FileNotFoundError:
-                    self.log.warning("FileNotFoundError within %s" % data_doc['location'])
-                self.log.info('Deleted, notify run database.')
-            elif os.path.isfile(data_doc['location']):
-                os.remove(data_doc['location'])
-            else:
-                self.log.error('did not exist, notify run database.')
-
-            if config.DATABASE_LOG == True:
-                resp = self.collection.update({'_id': self.run_doc['_id']},
-                                              {'$pull': {'data': data_doc}})
-            self.log.error('Removed from run database.')
-            self.log.debug(resp)
-
+            self.purge(data_doc)
 
 class RetryBadChecksumTransfer(checksum.CompareChecksums):
     """Alert if stale transfer.
@@ -108,20 +84,62 @@ class RetryBadChecksumTransfer(checksum.CompareChecksums):
 
         if data_doc['checksum'] != comparison:
             self.give_error("Bad checksum %d" % self.run_doc['number'])
-            if self.check(warn=False) > 1:
-                self.log.info("Deleting %s" % data_doc['location'])
+            if self.check(data_doc['type'], warn=False) > 1:
+                self.purge(data_doc)
 
-                if os.path.isdir(data_doc['location']):
-                    shutil.rmtree(data_doc['location'])
-                    self.log.error('Deleted, notify run database.')
-                elif os.path.isfile(data_doc['location']):
-                    os.remove(data_doc['location'])
-                else:
-                    self.log.error('did not exist, notify run database.')
 
-                if config.DATABASE_LOG == True:
-                    resp = self.collection.update({'_id': self.run_doc['_id']},
-                                                  {'$pull': {'data': data_doc}})
+class BufferPurger(checksum.CompareChecksums):
+    """Purge buffer
 
-                self.log.error('Removed from run database.')
-                self.log.debug(resp)
+    """
+
+    # Do not overload this routine from checksum inheritance.
+    each_run = Task.each_run
+
+    def each_location(self, data_doc):
+        """Check every location with data whether it should be purged.
+        """
+        # Skip places where we can't locally access data
+        if 'host' not in data_doc or data_doc['host'] != config.get_hostname():
+            return
+
+        # Do not purge processed data
+        # Warning: if you want to enable this here, need to add pax version checking in check()
+        if data_doc['type'] == 'processed':
+            self.log.debug("Do not purge processed data")
+            return
+
+        if data_doc['host'] == 'midway-login1':
+            if self.run_doc['source']['type'] == "Kr83m" or self.run_doc['source']['type'] == "Rn220":
+                self.log.debug("Do not purge %s data" % self.run_doc['source']['type'])
+                return
+        
+        self.log.debug("Checking purge logic")
+
+        # Only purge transfered data
+        if data_doc["status"] != "transferred":
+            self.log.debug("Not transfered")
+            return
+
+        # See if purge settings specified, otherwise don't purge
+        if config.purge_settings() == None:
+            self.log.debug("No purge settings")
+            return
+
+        # Require at least three copies of the data since we are deleting third.
+        num_copies = self.check(data_doc['type'], warn=False)
+        if num_copies < 3:
+            self.log.debug("Not enough copies (%d)" % num_copies)
+            return
+
+        # The dt we require
+        dt = datetime.timedelta(days=config.purge_settings())
+
+        t0 = self.run_doc['start']
+        t1 = datetime.datetime.utcnow()
+
+        self.log.info(t1-t0 > dt)
+
+        if t1 - t0 > dt:
+            self.log.info("Purging %s" % data_doc['location'])
+            self.purge(data_doc)

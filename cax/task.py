@@ -1,44 +1,44 @@
 import logging
 from json import loads
-import time 
+
 import pymongo
 from bson.json_util import dumps
 
 from cax import config
 
-
 class Task():
-    def __init__(self):
+    def __init__(self, query = {}):
         # Grab the Run DB so we can query it
         self.collection = config.mongo_collection()
         self.log = logging.getLogger(self.__class__.__name__)
         self.run_doc = None
         self.untriggered_data = None
 
+        self.query = query
+
     def go(self, specify_run = None):
         """Run this periodically"""
-        query = {'detector': 'tpc'}
+
+        # argument can be run number or run name
         if specify_run is not None:
-            query['number'] = specify_run
+            if isinstance(specify_run,int):
+                self.query['number'] = specify_run
+            elif isinstance(specify_run,str):
+                self.query['name'] = specify_run
 
         # Get user-specified list of datasets
-
         datasets = config.get_dataset_list()
-
-        print('datasets:', datasets)
 
         # Collect all run document ids.  This has to be turned into a list
         # to avoid timeouts if a task takes too long.
         try:
-            ids = [doc['_id'] for doc in self.collection.find(query,
+            ids = [doc['_id'] for doc in self.collection.find(self.query,
                                                               projection=('_id'),
                                                               sort=(('start', -1),))]
         except pymongo.errors.CursorNotFound:
-            print('cursor not found')
             self.log.warning("Curson not found exception.  Skipping")
             return
 
-        print("iterating over each run")
         # Iterate over each run
         for id in ids:
             # Make sure up to date
@@ -50,7 +50,6 @@ class Task():
 
 
             if 'data' not in self.run_doc:
-                print("data not in run doc")
                 continue
 
             # DAQ experts only:
@@ -60,10 +59,10 @@ class Task():
             # Operate on only user-specified datasets
             if datasets:
                 if self.run_doc['name'] not in datasets:
-                    print("run not in dataset list")
                     continue
-                
+
             self.each_run()
+
         self.shutdown()
 
     def each_run(self):
