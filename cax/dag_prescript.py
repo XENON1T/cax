@@ -24,8 +24,49 @@ def has_tag(doc, name):
             return True
         return False
 
+def clear_errors(run_number, pax_version):
+    query = {'detector': 'tpc',
+             'number'    : int(run_number),
+             "data" : {"$elemMatch" : {"host" : 'login',
+                                      "type" : "processed",
+                                      "pax_version" : pax_version
+                                      #"status" : "error"
+                                      }
+                       }
+             }
+
+    query = {'query' : json.dumps(query)}
+
+    API = api()
+    doc = API.get_next_run(query)
+
+         # if query returns northing, there is no error
+    if doc is None:
+        print("no errors need clearing")
+        return
+
+    # if there is an error, remove that entry from database
+    else:
+        parameters = None
+        for entry in doc["data"]:
+            if (entry["host"] == 'login' and entry["type"] == 'processed' and 
+                entry['pax_version'] == pax_version and entry["status"] in ['transferring', 'error']):
+                parameters = entry
+
+        if parameters is not None:
+            print("Clearing errors for run %s" %run_number)
+            API.remove_location(doc["_id"], parameters)
+            time.sleep(0.5)
+        else:
+            print("Could not find relevant entry in doc")
+            
+             
 def pre_script(run_number, pax_version, update_database=True):
 
+    # first clear any relevant errors
+    
+    clear_errors(run_number, pax_version)
+    
     # query that checks if it's okay that we process this run
     query = {'detector': 'tpc',
              'number'    : int(run_number),
@@ -49,11 +90,14 @@ def pre_script(run_number, pax_version, update_database=True):
     # initialize api instance
     API = api()
     doc = API.get_next_run(query)
+    time.sleep(0.5)
     print(query)
-    print(doc)
+    
+    
+
     # if run doesn't satisfy above query, we don't process
     if doc is None:
-        print("Run %d is not suitable for OSG processing. Check run doc" % run_number)
+        print("Run %s is not suitable for OSG processing. Check run doc" % run_number)
         sys.exit(1)
 
     name = doc["name"]

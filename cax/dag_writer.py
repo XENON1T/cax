@@ -4,6 +4,7 @@ import os
 from cax.api import api
 from cax import config
 import json
+import time
 
 """
 This class contains functions for writing inner and outer dag files. It takes a list of runs (integers) and pax_version as input.
@@ -18,7 +19,7 @@ class dag_writer():
         self.reprocessing = reprocessing
         self.default_uri = "gsiftp://gridftp.grid.uchicago.edu:2811/cephfs/srm"
         self.host = "login"
-        self.submitfile = "/home/ershockley/cax/osg_scripts/processing_template.submit"
+        self.submitfile = os.path.join(logdir, "process.submit")
 
     def get_run_doc(self, run_number):
         query = {"detector" : "tpc",
@@ -26,6 +27,7 @@ class dag_writer():
                  }
         API = api()
         doc = API.get_next_run(query)
+        time.sleep(0.5)
         return doc
     
     def write_json_file(self, doc):
@@ -44,11 +46,38 @@ class dag_writer():
         """
         Writes outer dag file that contains subdag for each run in runlist.
         """
-        with open(outer_dag, "wt") as outer_dag_file:
+        with open(outer_dag, "a") as outer_dag_file:
             # loop over runs in list, write an outer dag that contains subdags for each rubn
             for run in self.runlist:
                 # get run doc, various parameters needed to write dag
                 doc = self.get_run_doc(run)
+
+                if doc is None:
+                    print("Run %d does not exist" % run)
+                    continue
+                
+                # skip bad runs 
+                if "data" not in doc.keys():
+                    print("Skipping Run %d. No 'data' in run doc" % run)
+                    continue
+
+                # skip if already processed with this pax version
+                if any( [ entry["type"] == 'processed' and 
+                          entry['pax_version'] == self.pax_version and 
+                          entry['status'] == 'transferred'
+                          for entry in doc["data"] ]):
+                    print("Skipping Run %d. Already processed with pax %s" %
+                          (run, self.pax_version))
+                    continue
+
+                #skip run if not present on stash (temporary)
+                if not any([entry["host"] == 'login' and entry["type"] == 'raw'
+                            and entry["status"] == 'transferred' for entry in doc["data"]]):
+                    print("Skipping Run %d. No raw data on login" % run)
+                    continue
+
+                print("Adding run %d to dag" % run)
+
                 rawdir = self.get_raw_dir(doc)
                 run_name = doc["name"]
 
@@ -61,7 +90,6 @@ class dag_writer():
                     os.chmod(inner_dagdir, 0o777)
                 outputdir = config.get_processing_dir('login',self.pax_version)
                 json_file = self.write_json_file(doc)
-                print(json_file)
                 if not os.path.exists(os.path.join(self.logdir, self.pax_version, run_name, "joblogs")):
                     os.makedirs(os.path.join(self.logdir, self.pax_version, run_name, "joblogs"))
                 self.write_submit_script(self.submitfile, self.logdir, json_file)
@@ -119,7 +147,7 @@ class dag_writer():
                                     "json_file=\"%s\" \n") % (run_number, i, infile,
                                                               outfile_full, run_name,
                                                               self.pax_version, zip_name, jsonfile))
-                    inner_dag.write("Retry %s.%d 12\n" % (run_number, i))
+                    inner_dag.write("Retry %s.%d 10\n" % (run_number, i))
                     i += 1
 
 
@@ -139,8 +167,8 @@ class dag_writer():
         template = """#!/bin/bash
 executable = /home/ershockley/cax/osg_scripts/run_xenon.sh
 universe = vanilla
-Error = {logdir}/$(pax_version)/$(name)/$(zip_name)_$(cluster).err
-Output  = {logdir}/$(pax_version)/$(name)/$(zip_name)_$(cluster).out
+Error = {logdir}/$(pax_version)/$(name)/$(zip_name)_$(cluster).log
+Output  = {logdir}/$(pax_version)/$(name)/$(zip_name)_$(cluster).log
 Log     = {logdir}/$(pax_version)/$(name)/joblogs/$(zip_name)_$(cluster).joblog
 
 Requirements = ((OpSysAndVer == "CentOS6" || OpSysAndVer == "RedHat6" || OpSysAndVer == "SL6") && (GLIDEIN_ResourceName =!= "NPX")) && (GLIDEIN_ResourceName =!= "BU_ATLAS_Tier2")
@@ -155,7 +183,7 @@ transfer_executable = True
 arguments = $(name) $(input_file) $(host) $(pax_version) $(pax_hash) $(out_location) $(ncpus) $(disable_updates) $(json_file)
 queue 1
 """
-        script = template.format(logdir = logdir, json_file = json_file)
+        script = template.format(logdir = logdir)
 
         with open(filename, "w") as f:
             f.write(script)

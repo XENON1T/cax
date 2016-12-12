@@ -13,14 +13,15 @@ date >> $post_log
 
 echo $@ >> $post_log
 
-if [[ $4 -eq "-1004" ]]; then
+if [[ $3 -eq "-1004" ]]; then
     echo "Job did not run. Skipping post script" >> $post_log
+    echo "Exiting with status 0" >> $post_log
     exit 0
 fi
 
 rawdir=$1
 
-python /home/ershockley/cax/osg_scripts/upload.py $1 $2 >> $post_log
+python /home/ershockley/cax/osg_scripts/upload.py $1 $2 >> $post_log 2>&1
 
 if [[ $? -ne 0 ]]; then
     exit 1
@@ -28,7 +29,7 @@ fi
     
 # transfer to midway
 echo "Beginning cax transfer to midway" >> $post_log
-/home/ershockley/cax/bin/cax --once --run $4 --config /home/ershockley/cax/cax/cax_transfer.json >> $post_log
+/home/ershockley/cax/bin/cax --once --run $4 --config /home/ershockley/cax/cax/cax_transfer.json >> $post_log 2>&1
 
 ex=$?
 
