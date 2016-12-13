@@ -16,7 +16,6 @@ import signal
 import socket
 import subprocess
 import sys
-import time
 import traceback
 import datetime
 import tarfile
@@ -147,7 +146,7 @@ class RucioBase(Task):
       i_path    = None  
         
     
-    def set_rule(self, location, rse_remote, lifetime = "-1"):
+    def set_rule(self, location, rse_remote, lifetime = "-2"):
       """ A general approach to define a rule """
       
       #1) Check for rules: scope:did at rse  
@@ -163,7 +162,8 @@ class RucioBase(Task):
       i_rse     = rule_summary['rse']
       i_expired = rule_summary['expires']
       i_rule_account = config.get_config( self.remote_host )["rucio_account"]
-      if rule_summary['status'].find("OK") >= 0 and i_expired == "valid":
+      
+      if rule_summary['status'].find("OK") >= 0 and i_rule_id != "n/a":
         #return array of files and file properties  
         files, file_info = self.list_files( location.split(":")[0] , location.split(":")[1] )
         #get all file loations for a single rse:
@@ -182,26 +182,56 @@ class RucioBase(Task):
         i_path = super_string
         logging.info("Status of transfer %s to RSE %s: OK", location, rse_remote)
         i_rule_status = "OK"
-        i_expired = "valid"
-        
-      elif rule_summary['status'].find("REPLICATING") >= 0 and i_expired == "valid":
+        if i_expired == "valid":
+          i_expired = "valid"
+        else:
+          i_expired = "Expired"
+          
+      elif rule_summary['status'].find("REPLICATING") >= 0 and i_rule_id != "n/a":
         logging.info("Status of transfer %s to RSE %s: REPLICATING", location, rse_remote)
         i_path = "n/a"
         i_rule_status = "REPLICATING"
         
-      elif rule_summary['status'].find("STUCK") >= 0 and i_expired == "valid":
+      elif rule_summary['status'].find("STUCK") >= 0 and i_rule_id != "n/a":
         logging.info("Status of transfer %s to RSE %s: STUCK", location, rse_remote)
         i_path = "n/a"
         i_rule_status = "STUCK"
+      
+      elif i_rule_id != "n/a" and i_expired == "valid" and lifetime != "-1" and int(lifetime) > 0:
+        logging.info("Update the rule for %s with setting to %s sec", rse_remote, lifetime)
         
-      elif i_expired != "valid":
+        
+        trrule = self.RucioCommandLine( self.host,
+                                        "update-rule",
+                                        filelist = None,
+                                        metakey  = None).format(rucio_account=config.get_config( self.remote_host )["rucio_account"],
+                                                                location=location,
+                                                                rse_remote=rse_remote,
+                                                                dataset_lifetime=lifetime,
+                                                                rule_id=i_rule_ad)  
+
+        logging.debug( trrule )
+        
+        msg_std, msg_err = self.doRucio( trrule )
+        for i in msg_std:
+          if i.find("Updated Rule") >= 0:
+            logging.info("Update rule sucessful from valid to %s seconds unitl termination.", lifetime) 
+    
+      
+      elif i_rule_id != "n/a" and len(i_rule_id) == 32 and lifetime != "-1":
+        logging.info("Evaluate the rule ID again for %s", rse_remote)
+        print("ADAAAAAAAAAAAAAAAAAAAAAA")
+        
+
+      elif i_rule_id == "n/a" and lifetime == "-2":
+        logging.info("Verfication Modus for RSE %s", rse_remote)
         i_path = "n/a"
-        logging.info("Status of transfer %s to RSE %s: OK/REPLICATING/STUCK but rule is expired.", location, rse_remote)
-        i_rule_status = "Expired"
-            
-      elif i_rule_id == "n/a":
+        i_rule_status = "n/a"
+      
+      elif i_rule_id == "n/a" and lifetime != "-2":
         logging.info("No ruleID definied - We should create one!")
         
+        trrule = ""
         if lifetime == "-1":
           trrule = self.RucioCommandLine( self.host,
                                           "add-rule",
@@ -209,7 +239,7 @@ class RucioBase(Task):
                                           metakey  = None).format(rucio_account=config.get_config( self.remote_host )["rucio_account"],
                                                                   location=location,
                                                                   rse_remote=rse_remote)
-        elif lifetime != "-1":
+        elif int(lifetime) >= 0:
           trrule = self.RucioCommandLine( self.host,
                                           "add-rule-lifetime",
                                           filelist = None,
@@ -536,7 +566,8 @@ python -V
       msg_std, msg_err = self.doRucio( rse_list )
       rses = []
       for i in msg_std:
-        rses.append(i)
+        if i.find("_USERDISK") >= 0:
+          rses.append(i)
 
       return rses
     
@@ -1244,6 +1275,9 @@ rucio add-rule {location} 1 {rse_remote}
 rucio add-rule --lifetime {dataset_lifetime} {location} 1 {rse_remote}
       """
       
+      update_rule = """
+rucio update-rule --lifetime {dataset_lifetime} {rule_id}
+      """
       
       list_rules = """
 rucio list-rules {location}
@@ -1302,6 +1336,8 @@ rucio list-files {scope}:{dataset}
           return general[host] + add_rule_lifetime
       elif method == "list-rules":
           return general[host] + list_rules
+      elif method == "update-rule":
+          return general[host] + update_rule
       elif method == "ping-rucio":
           return general[host] + ping_rucio
       elif method == "delete-rule":
@@ -1458,43 +1494,103 @@ class RucioRule(Task):
       t = json.loads(open(config.RUCIO_RULE, 'r').read())
       
       #get run numbers
-      run_nb = t[0]['run_nb'].split(",")
+      run_nb = []
       runNB = []
-      for i in run_nb:
-        i = i.replace(" ", "")
-        if i.find("-") >= 0:
-          a = i.split("-")[0]
-          b = i.split("-")[1]
-          for j in range( int(a), int(b) ):
-            runNB.append( j )
-                  
+      if t[0]['run_nb'] != None:
+        #quick check for komma seperated list:
+        if t[0]['run_nb'].find(",") >= 0:
+          run_nb = t[0]['run_nb'].split(",")
         else:
-          runNB.append( i )
+          run_nb = [ t[0]['run_nb'] ]
+        
+        for i in run_nb:
+          i = i.replace(" ", "")
+          if i.find("-") >= 0:
+            a = i.split("-")[0]
+            b = i.split("-")[1]
+            for j in range( int(a), int(b) ):
+              runNB.append( str(j) )      
+          else:
+            runNB.append( i )
+         
+      run_nb_exclude = []
+      runNB_exclude = []
+      if t[0]['run_nb_exclude'] != None:
+        #quick check for komma seperated list:
+        if t[0]['run_nb_exclude'].find(",") >= 0:
+          run_nb_exclude = t[0]['run_nb_exclude'].split(",")
+        else:
+          run_nb_exclude = [ t[0]['run_nb_exclude']  ]
+          
+        for i in run_nb_exclude:
+          i = i.replace(" ", "")
+          if i.find("-") >= 0:
+            a = i.split("-")[0]
+            b = i.split("-")[1]
+            for j in range( int(a), int(b) ):
+              runNB_exclude.append( str(j) )  
+              
       
-      run_name = t[0]['run_name'].split(",")
+      
+      #Get run names:
+      run_name = []
       runNameList = []
       runNameRange = []
-      for i in run_name:
-        i = i.replace(" ", "")
-        if i.find("-") >= 0:
-          a = i.split("-")[0]
-          b = i.split("-")[1]
-          tmp_runname_list = [a, b]
-          runNameRange.append( tmp_runname_list )
-        else:
-          runNameList.append( i )
-        
+      if t[0]['run_name'] != None and t[0]['run_name'] != "all":
+        run_name = t[0]['run_name'].split(",")
+        for i in run_name:
+          i = i.replace(" ", "")
+          if i.find("-") >= 0:
+            a = i.split("-")[0]
+            b = i.split("-")[1]
+            tmp_runname_list = [a, b]
+            runNameRange.append( tmp_runname_list )
+          else:
+            runNameList.append( i )
+      if t[0]['run_name'] != None and t[0]['run_name'] == "all":
+        runNameList = ["all"]
+        runNameRange = ["all"]  
+      
+      run_name_exclude = []
+      runNameList_exclude = []
+      runNameRange_exclude = []
+      if t[0]['run_name_exclude'] != None:
+        run_name_exclude = t[0]['run_name_exclude'].split(",")
+        for i in run_name_exclude:
+          i = i.replace(" ", "")
+          if i.find("-") >= 0:
+            a = i.split("-")[0]
+            b = i.split("-")[1]
+            tmp_runname_list = [a, b]
+            runNameRange_exclude.append( tmp_runname_list )
+          else:
+            runNameList_exclude.append( i )
+      
+      # Prepare the summary on the rucio-rule json file with default:
+      if t[0]['verification_only'] == None:
+        verification_only     = True
+      else:  
+        verification_only     = t[0]['verification_only']
+      
       detector_type         = t[0]['detector_type']
       source_type           = t[0]['source_type']
-      destination_rse       = t[0]['destination_rse']
-      destination_livetime  = t[0]['destination_livetime']
+      destination_rse       = t[0]['destination_rse']       #need pre-definition
+      destination_livetime  = t[0]['destination_livetime']  #need pre-definition
       destination_condition = t[0]['destination_condition']
-      remove_rse            = t[0]['remove_rse']
-
+      
+      if t[0]['remove_rse'] == None:
+        remove_rse            = []
+      else:
+        remove_rse            = t[0]['remove_rse']
+        
       dest_info = {
-        'run_number': runNB,          
+        'verification_only': verification_only,
+        'run_number': runNB,
+        'run_number_exclude': runNB_exclude,
         'run_name_list': runNameList,
         'run_name_range': runNameRange,
+        'run_name_list_exclude': runNameList_exclude,
+        'run_name_range_exclude': runNameRange_exclude,
         'destination_rse': destination_rse,
         'destination_livetime': destination_livetime,
         'destination_condition': destination_condition,
@@ -1502,7 +1598,85 @@ class RucioRule(Task):
         }
       
       return dest_info
-         
+    
+    def magic(self, actual_run, rule_def, all_rse ):
+      delete_list   = []
+      transfer_list = []
+      transfer_lifetime = {}
+      
+      #Create time stamps from run number and check if actual run name in list or range of input:
+      actual_run_name_bool = False
+      actual_run_name_t = time.mktime(datetime.datetime.strptime(actual_run['actual_run_name'], "%y%m%d_%H%M").timetuple())
+      rule_run_name_list_t = []
+      rule_run_name_range_t = []
+      if rule_def['run_name_list'] != "all":
+        for ilist in rule_def['run_name_list']:
+          rule_run_name_list_t.append( time.mktime(datetime.datetime.strptime( ilist, "%y%m%d_%H%M").timetuple()) )
+        for ilist in rule_def['run_name_range']:
+          i_list_beg = time.mktime(datetime.datetime.strptime( ilist[0], "%y%m%d_%H%M").timetuple())
+          i_list_end = time.mktime(datetime.datetime.strptime( ilist[1], "%y%m%d_%H%M").timetuple())
+
+          l_element = [ i_list_beg, i_list_end ]
+          rule_run_name_range_t.append( l_element )
+          
+        for ilist in rule_run_name_range_t:
+          list_beg = ilist[0]
+          list_end = ilist[1]
+          if actual_run_name_t >= list_beg and actual_run_name_t <= list_end:
+            actual_run_name_bool = True
+        
+        if actual_run_name_t in rule_run_name_list_t:
+          actual_run_name_bool = True    
+      
+      elif rule_def['run_name_list'] == "all":
+        actual_run_name_bool = True  
+      
+      #Check if actual run number in list:
+      actual_run_number_bool = False
+      if str(actual_run["actual_run_number"]) in rule_def['run_number'] or len(rule_def['run_number']) == 0:
+        actual_run_number_bool = True
+        
+      logging.info("Actual run name (ts): %s", actual_run_name_t )  
+      logging.info("Rule run name list (ts): %s", rule_run_name_list_t )
+      logging.info("Rule run name range (ts): %s", rule_run_name_range_t )
+      logging.info("actual_run_name_bool: %s", actual_run_name_bool)
+      logging.info("actual_run_number_bool: %s", actual_run_number_bool)
+
+
+      if rule_def == 0:
+        #Define what happens if no additional rule definitions loaded:
+        #Only upload to the entrance point  
+        logging.info("No additional rule definition is made: Upload to entrance point %s", actual_run["actual_run_rse_entrance"])
+        transfer_list = actual_run["actual_run_rse_entrance"]
+        transfer_lifetime = { actual_run["actual_run_rse_entrance"]: "-1" }
+      elif rule_def != 0:
+        #Take advanced rules into account which are defined
+        #from the input rucio-rule .json file:
+        
+        if rule_def['verification_only'] == True:
+          #Ruciax runs only in verfication status:
+          #Ignore all tags in rucio-rule .json file
+          transfer_list = all_rse
+          for i_rse in transfer_list:
+            transfer_lifetime[ i_rse ] = "-2"
+        
+        elif rule_def['verification_only'] == False and ( actual_run_name_bool == True or actual_run_number_bool == True ):
+          logging.info("Source specified and match")
+          transfer_list = rule_def['destination_rse']
+          transfer_lifetime = rule_def['destination_livetime']
+          
+        elif rule_def['verification_only'] == False and actual_run_name_bool == False and actual_run_number_bool == False:
+          logging.info("No extended transfer list is created to set or update rules")
+          transfer_list = all_rse
+          for i_rse in transfer_list:
+            transfer_lifetime[ i_rse ] = "-2"
+        
+        #Read possible location for deleting data
+        if rule_def['verification_only'] == False and len( rule_def['remove_rse'] ) >= 0:
+          delete_list = rule_def['remove_rse'] 
+
+      return transfer_list, transfer_lifetime, delete_list
+    
     def each_run(self):
       """Tell what to do for raw and processed data"""
       
@@ -1533,69 +1707,54 @@ class RucioRule(Task):
         logging.info("Means: There was a previous upload by do_possible_transfers() executed")
         there = dbinfo
       
-      # Get list of possible transfer destinations (RSE)           
-      transfer_list = config.get_config("rucio-catalogue")['rucio_transfer']
-      transfer_list.append( config.get_config("rucio-catalogue")['rucio_upload_rse'] ) 
-      method = config.get_config("rucio-catalogue")['method']
-      
-      # Modify this list by rule_definition information:
-      # NEED SOME MORE CODE # self.the_mighty_rule
-      print("possible transfers: ", transfer_list)
-      print("method: ", method)
-      print("rucio-entry: ", there)
-      print("run number: ", self.run_doc['number']) 
-      print("run name: ", self.run_doc['name']) 
-      print("run source: ", self.run_doc['source']['type'] ) 
-      print("run detector: ", self.run_doc['detector']) 
-
-      actual_run_number   = self.run_doc['number']
-      actual_run_name     = self.run_doc['name']
-      actual_run_source   = self.run_doc['source']['type']
-      actual_run_detector = self.run_doc['detector']
-      
-      print( self.rule_definition() )
-      
-      
-      
-      ##test run numbers
-      #if actual_run_number in self.rule_definition()['run_number'] and actual_run_number != 0:
-        ##logging.info("No rules need to be changed for run number %s", actual_run_number)
-        ##return
-        #if self.rule_definition()['source'] != None:
-          #if actual_run_source == self.rule_definition()['source']:
-            #logging.info("Source specified and match")
-            #tt_list = self.rule_definition()['destination_rse']
-            #tt_life = self.rule_definition()['destination_livetime']
-          
-        #elif self.rule_definition()['detector'] != None:
-          #if actual_run_detector == self.rule_definition()['detector']:
-            #logging.info("Detector specified and match")  
-            #tt_list = self.rule_definition()['destination_rse']
-            #tt_life = self.rule_definition()['destination_livetime']
-        
-        #else:
-          #logging.info("Deal with only run numbers")
-          #tt_list = self.rule_definition()['destination_rse']
-          #tt_life = self.rule_definition()['destination_livetime']
-        
-      #elif actual_run_number == 0:
-        ##fix  
-        #if actual_run_name in self.rule_definition()['run_name_list']:
-          #tt_list = self.rule_definition()['destination_rse']
-          #tt_life = self.rule_definition()['destination_livetime']
-        
-        #for i_l in self.rule_definition()['run_name_range']:
-          #beg = i_l[0]
-          #end = i_l[1]
-      
-      #elif self.rule_definition()['run_number'] == None:
-        #logging.info("no run number")
-      
 
       if there != None:
         self.rucio = RucioBase(self.run_doc)
         self.rucio.set_host( config.get_hostname() )
         self.rucio.set_remote_host( there['host'] )
+                
+        # Get a list of ALL registered RSE
+        all_rse = self.rucio.get_rse_list()
+        
+        # Get list of possible transfer destinations (RSE)           
+        transfer_list = config.get_config("rucio-catalogue")['rucio_upload_rse'] 
+        method = config.get_config("rucio-catalogue")['method']
+        
+        #Gather actual information:
+        actual_run_rse = []
+        for i_location in self.run_doc['data']:
+          if i_location['host'] == "rucio-catalogue":
+            actual_run_rse = i_location['rse']
+
+        actual_run_number   = self.run_doc['number']
+        actual_run_name     = self.run_doc['name']
+        actual_run_source   = self.run_doc['source']['type']
+        actual_run_detector = self.run_doc['detector']
+        actual_run = {
+                        "actual_run_number": actual_run_number,
+                        "actual_run_name"  : actual_run_name,
+                        "actual_run_source": actual_run_source,
+                        "actual_run_detector": actual_run_detector,
+                        "actual_run_rse": actual_run_rse,
+                        "actual_run_rse_entrance": config.get_config("rucio-catalogue")['rucio_upload_rse']
+                        }
+
+        #Get rule definition from json file
+        delete_list = []
+        transfer_lifetime = {}
+        rule_def = self.rule_definition()
+        if rule_def != 0:
+          logging.info("A seperated rucio-rule file is loaded")  
+          transfer_list, transfer_lifetime, delete_list = self.magic( actual_run, rule_def, all_rse )
+        else:
+          logging.info("No seperated rucio-rule file is loaded!")
+          logging.info("Validation of entrance point rule at %s", config.get_config("rucio-catalogue")['rucio_upload_rse'] ) 
+          for ilist in transfer_list:
+            transfer_lifetime[ ilist ] = "-2"
+        
+        logging.info("Rule transfer list: %s", transfer_list)
+        logging.info("Rule transfer lifetimes: %s", transfer_lifetime )
+        
         if self.rucio.sanity_checks() == False:
           return 0
         
@@ -1604,15 +1763,13 @@ class RucioRule(Task):
           return 0
         
         rucio_location = there['location']
-              
+           
         new_rses = []
         new_rses_path = []
         for i_rse in transfer_list:
           logging.info("Gather rule information for RSE %s", i_rse)
-          print("Rucio location from runDB: ", rucio_location)
-          
-          #initiate the the transfer and add the rse + path to the runDB
-          rule_result = self.rucio.set_rule( rucio_location, i_rse, "-1" )
+          logging.info("Execute set/update rules for RSE %s", i_rse)
+          rule_result = self.rucio.set_rule( rucio_location, i_rse, transfer_lifetime[i_rse] )
           logging.info(" * Status rule/transfer: %s", rule_result['rule_status'])
           logging.info(" * RSE: %s", rule_result['rule_rse'])
           logging.info(" * RuleID: %s", rule_result['rule_id'])
@@ -1620,10 +1777,12 @@ class RucioRule(Task):
           logging.info(" * Rule expires: %s", rule_result['rule_expired'] )
           logging.info(" * Rule account: %s", rule_result['rule_account'] )
                 
-          if rule_result['rule_status'] == "OK" and rule_result['rule_expired'] == "valid":
+          if rule_result['rule_status'] == "OK":
             new_rses.append( i_rse )
             new_rses_path.append(rule_result['rule_path'])
-              
+          
+          
+          
         if method == "rucio" and there['rse'] != new_rses:
           #Notify the runDB if there has been a change in the number of registered RSE
           if config.DATABASE_LOG:           
@@ -1640,9 +1799,7 @@ class RucioRule(Task):
             self.collection.update({'_id': self.run_doc['_id'],},
                                              {'$push': {'data': there}})
                 
-          logging.info("Updated database entry:")
-          #for key, value in there.items():
-            #logging.info( "DB: %s - %s", str(key), str(value) )   
+          logging.info("Updated database entry:") 
         
         elif method == "rucio" and there['rse'] == new_rses:
           #Do not notify the runDB in case there is no change at the RSE information

@@ -483,6 +483,9 @@ def massiveruciax():
 
     parser.add_argument('--once', action='store_true',
                         help="Run all tasks just one, then exits")
+    parser.add_argument('--on-disk-only', action='store_true',
+                        dest='on_disk_only',
+                        help="Select only runs which are stored at the data analysis facility anyways")
     parser.add_argument('--config', action='store', type=str,
                         dest='config_file',
                         help="Load a custom .json config file into cax")
@@ -494,6 +497,9 @@ def massiveruciax():
                         help="Choose: run number end")
     parser.add_argument('--log-file', dest='logfile', type=str, default='massive_rucio.log',
                         help="Specify a certain logfile")
+    parser.add_argument('--rucio-rule', type=str,
+                        dest='config_rule',
+                        help="Load the a rule file") 
     
 
     args = parser.parse_args()
@@ -545,8 +551,14 @@ def massiveruciax():
     # Check Mongo connection
     config.mongo_password()
     
-
-
+    #Define additional file to define the rules:
+    abs_config_rule = os.path.abspath( args.config_rule )
+    if args.config_rule:
+      logging.info("Rucio Rule File: %s", abs_config_rule)
+      rucio_rule = "--rucio-rule {rulefile}".format( rulefile=abs_config_rule )
+    else:
+      rucio_rule = ""
+      
     # Establish mongo connection
     collection = config.mongo_collection()
     sort_key = (('number', -1),
@@ -578,7 +590,8 @@ source activate rucio_p3
     
     tegner = """#!/bin/bash
 export PATH="/cfs/klemming/nobackup/b/bobau/ToolBox/TestEnv/Anaconda3/bin:$PATH"
-source activate rucio_p3
+#source activate rucio_p3
+source activate test_upload
 export PATH=~/.local/bin:$PATH
 cd /cfs/klemming/nobackup/b/bobau/ToolBox/gfal-tools
 source /cfs/klemming/nobackup/b/bobau/ToolBox/gfal-tools/setup.sh
@@ -597,8 +610,6 @@ export RUCIO_ACCOUNT={account}
         query = {}
         
         docs = list(collection.find(query))
-        
-        cnt_upload_miss=0
         
         for doc in docs:
             
@@ -621,25 +632,35 @@ export RUCIO_ACCOUNT={account}
               if idoc['host'] == config.get_hostname():
                 host_data = True
                 break
-            if host_data == False:
-              cnt_upload_miss+=1
+            if host_data == False and args.on_disk_only == True:
               continue
             
-            #Detector choice
+            #Get the local time:
             local_time = time.strftime("%Y%m%d_%H%M%S", time.localtime())
+            
+            #Detector choice
+            run = ""
+            runlogfile = ""
             if doc['detector'] == 'tpc':
-              job = "{conf} --run {number} --log-file {log_path}/ruciax_log_{number}_{timestamp}.txt".format(
-                  conf=config_arg,
-                  number=doc['number'],
-                  log_path=log_path[config.get_hostname()],
-                  timestamp=local_time)
-                
+              run = "--run {number}".format(number=doc['number'])
+              runlogfile = "--log-file {log_path}/ruciax_log_{number}_{timestamp}.txt".format(
+                            log_path=log_path[config.get_hostname()],
+                            number=doc['number'],
+                            timestamp=local_time)
+                  
             elif doc['detector'] == 'muon_veto':
-              job = "{conf} --name {number} --log-file {log_path}/ruciax_log_{number}_{timestamp}.txt".format(
+              run = "--name {number}".format(number=doc['name'])
+              runlogfile = "--log-file {log_path}/ruciax_log_{number}_{timestamp}.txt".format(
+                            log_path=log_path[config.get_hostname()],
+                            number=doc['number'],
+                            timestamp=local_time)
+            
+            #Define the job:
+            job = "{conf} {run} {rucio_rule} {runlogfile}".format(
                   conf=config_arg,
-                  number=doc['name'],
-                  log_path=log_path[config.get_hostname()],
-                  timestamp=local_time)
+                  run=run,
+                  rucio_rule=rucio_rule,
+                  runlogfile=runlogfile)
             
             #start the time for an upload:
             time_start = datetime.datetime.utcnow()
@@ -672,15 +693,18 @@ ruciax --once {job}
             diff = time_end-time_start
             dd = divmod(diff.total_seconds(), 60)
             
-            logging.info("Upload time: %s min %s", str(dd[0]), str(dd[1]))
-            
+            logging.info("+--------------------------->>>")
+            logging.info("| Summary: massive-ruciax for run/name: %s/%s", doc['number'], doc['name'] )
+            logging.info("| Configuration script: %s", runlogfile)
+            logging.info("| Rucio-rule script: %s", abs_config_rule)
+            logging.info("| Run time of ruciax: %s min %s", str(dd[0]), str(dd[1]) )
+            logging.info("+------------------------------------------------->>>")
         if run_once:
           break
         else:
           logging.info('Sleeping.')
           time.sleep(60)  
-        
-        logging.info("There %s files not on xe1t-datamanager", str(cnt_upload_miss) ) 
+
     
 def remove_from_tsm():
     parser = argparse.ArgumentParser(description="Remove data and notify"
