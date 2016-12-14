@@ -67,7 +67,7 @@
     "download_options": null,
     "rucio_upload_rse": "NIKHEF_USERDISK",
     "rucio_account": "production",
-    "rucio_transfer": ["UC_OSG_USERDISK"]
+    "rucio_transfer": []
   },
   {
     "name": "lfc",

@@ -510,19 +510,27 @@ def massiveruciax():
     beg_run = -1
     end_run = -1
     run_window = False
+    run_window_lastruns = False
+    
     if args.from_run == None and args.to_run == None:
       pass
     elif (args.from_run != None and args.to_run == None) or (args.from_run == None and args.to_run != None):
       logging.info("Select (tpc) runs between %s and %s", args.from_run, args.to_run)
       logging.info("Make a full selection!")
-    elif args.from_run != None and args.to_run != None and args.from_run >= args.to_run:
+    elif args.from_run != None and args.to_run != None and args.from_run > 0 and args.to_run > 0 and args.from_run > args.to_run:
       logging.info("The last run is smaller then the first run!")
-    elif args.from_run != None and args.to_run != None and args.from_run < args.to_run:
+      logging.inof("--> Ruciax exits here")
+      exit()
+    elif args.from_run != None and args.to_run != None and args.from_run > 0 and args.to_run > 0 and args.from_run < args.to_run:
       logging.info("Start (tpc) runs between %s and %s", args.from_run, args.to_run)
       run_window = True
       beg_run = args.from_run
       end_run = args.to_run
-    
+    elif args.from_run != None and args.to_run != None and args.from_run > 0 and args.to_run == -1:
+      logging.info("Start (tpc) runs between %s and to last", args.from_run)
+      run_window_lastruns = True
+      beg_run = args.from_run
+      end_run = args.to_run
     
     #configure cax.json
     config_arg = ''
@@ -569,6 +577,7 @@ def massiveruciax():
     xe1tdatam="""#!/bin/bash
 export PATH=/home/SHARED/anaconda3/bin:$PATH
 source activate rucio_client_p3.4
+#source activate develop_p3
 export PATH=/home/xe1ttransfer/.local/bin:$PATH
 export RUCIO_HOME=~/.local/rucio
 export RUCIO_ACCOUNT={account}
@@ -619,9 +628,12 @@ export RUCIO_ACCOUNT={account}
                 continue
             
             #Rucio upload only of certain run numbers in a sequence
-            if doc['number'] < beg_run or doc['number'] > end_run and run_window == True:
+            if int(doc['number']) < beg_run or int(doc['number']) > end_run and run_window == True:
               continue
             
+            if int(doc['number']) < beg_run and run_window_lastruns == True:
+              continue
+          
             #Double check if a 'data' field is defind in doc
             if 'data' not in doc:
               continue

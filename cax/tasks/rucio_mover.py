@@ -158,6 +158,7 @@ class RucioBase(Task):
       i_rule_account = None
       
       rule_summary = self.list_rules( location, rse_remote)
+      
       i_rule_id = rule_summary['rule_id']
       i_rse     = rule_summary['rse']
       i_expired = rule_summary['expires']
@@ -167,6 +168,7 @@ class RucioBase(Task):
         #return array of files and file properties  
         files, file_info = self.list_files( location.split(":")[0] , location.split(":")[1] )
         #get all file loations for a single rse:
+        #pathlists = self.get_file_locations_keep( location.split(":")[0] , files )
         pathlists = self.get_file_locations( location.split(":")[0] , files )
         #create a super string out of it
         super_string = []
@@ -595,6 +597,51 @@ python -V
         rse_list = self.get_rse_list()
         
         file_location = {}
+        
+        checksum_name = self.RucioCommandLine(self.host, 
+                                          "get-file-replicas", 
+                                          filelist = None,
+                                          metakey = None).format(rucio_account=config.get_config( self.remote_host )["rucio_account"],
+                                                                 scope=rscope,
+                                                                 dataset = "raw")
+        logging.debug( checksum_name)     
+        msg_std, msg_err = self.doRucio( checksum_name )
+        
+        #Prepare the dictionary for filename and rse summary:
+        for i_filename in ifilelist:
+          ii_filename = i_filename.split("/")[-1]
+          
+          file_location_rse = {}
+          for irse in rse_list:
+            file_location_rse[irse] = ""  
+
+          file_location[ii_filename] = file_location_rse
+
+        #Fill the dictionary regarding the information from rucio:
+        for i in msg_std:
+          file_location_rse = {}  
+          for irse in rse_list:
+            if i.find(irse) >= 0 and i.find("|") == 0:
+              ii = i.split("|")
+
+              file_location_sub = {}              
+              file_location_sub['scope']    = ii[1].replace(" ", "")
+              file_location_sub['name']     = ii[2].replace(" ", "")
+              file_location_sub['size']     = ii[3].replace(" ", "")
+              file_location_sub['checksum'] = ii[4].replace(" ", "")
+              file_location_sub['path']     = ii[5].split(":", 1)[1].replace(" ", "")
+              
+              file_location_rse[ irse ] = file_location_sub
+              
+              file_location[ file_location_sub['name'] ][ irse ] = file_location_sub
+
+        return file_location
+
+    def get_file_locations_keep(self, rscope, ifilelist):
+        
+        rse_list = self.get_rse_list()
+        
+        file_location = {}
         for i_filename in ifilelist:
           file_location_rse = {}
           ii_filename = i_filename.split("/")[-1]
@@ -604,7 +651,7 @@ python -V
                                             metakey = None).format(rucio_account=config.get_config( self.remote_host )["rucio_account"],
                                                                    scope=rscope,
                                                                    dataset = ii_filename)
-          logging.debug( checksum_name)     
+          logging.info( checksum_name)     
           msg_std, msg_err = self.doRucio( checksum_name )
 
 
@@ -1639,8 +1686,9 @@ class RucioRule(Task):
       logging.info("Actual run name (ts): %s", actual_run_name_t )  
       logging.info("Rule run name list (ts): %s", rule_run_name_list_t )
       logging.info("Rule run name range (ts): %s", rule_run_name_range_t )
-      logging.info("actual_run_name_bool: %s", actual_run_name_bool)
-      logging.info("actual_run_number_bool: %s", actual_run_number_bool)
+      logging.info("Actual_run_name_bool: %s", actual_run_name_bool)
+      logging.info("Actual_run_number_bool: %s", actual_run_number_bool)
+      logging.info("Verfication only status: %s", rule_def['verification_only'])
 
 
       if rule_def == 0:
@@ -1654,11 +1702,19 @@ class RucioRule(Task):
         #from the input rucio-rule .json file:
         
         if rule_def['verification_only'] == True:
+          logging.info("Verfiy the rules only [Database Update]")
           #Ruciax runs only in verfication status:
           #Ignore all tags in rucio-rule .json file
           transfer_list = all_rse
           for i_rse in transfer_list:
             transfer_lifetime[ i_rse ] = "-2"
+          
+          #modify this for run numbers and run names from rucio-rule files:
+          if actual_run_name_bool == False and actual_run_number_bool == False:
+            logging.info("Actual run number matches not resquested run numbers from rucio-rule file.")
+            transfer_list = ["empty"]
+            for i_rse in transfer_list:
+              transfer_lifetime[ i_rse ] = "-2"
         
         elif rule_def['verification_only'] == False and ( actual_run_name_bool == True or actual_run_number_bool == True ):
           logging.info("Source specified and match")
@@ -1670,6 +1726,7 @@ class RucioRule(Task):
           transfer_list = all_rse
           for i_rse in transfer_list:
             transfer_lifetime[ i_rse ] = "-2"
+        
         
         #Read possible location for deleting data
         if rule_def['verification_only'] == False and len( rule_def['remove_rse'] ) >= 0:
@@ -1754,6 +1811,12 @@ class RucioRule(Task):
         
         logging.info("Rule transfer list: %s", transfer_list)
         logging.info("Rule transfer lifetimes: %s", transfer_lifetime )
+        
+        if "empty" in transfer_list:
+          logging.info("Actual run number/name %s/%s", actual_run['actual_run_number'], actual_run['actual_run_name'])
+          logging.info("does not match with requested run number/name from rucio-rule configuration file")
+          logging.info("   --> SKIP")
+          return 0
         
         if self.rucio.sanity_checks() == False:
           return 0
