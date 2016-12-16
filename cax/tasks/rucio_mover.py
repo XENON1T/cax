@@ -124,26 +124,134 @@ class RucioBase(Task):
           rule_summary['expires']  = "valid"
       
       return rule_summary
+
+    def download(self, location, rse_remote, download_dir):
+      """Download a certain data set from rucio catalogue
+      """
+      scope = location.split(":")[0]
+      name  = location.split(":")[1]
+      
+      # Get a list of ALL registered RSE
+      all_rse = self.get_rse_list()
+      
+      if rse_remote in all_rse:
+        rse = "--rse {rse}".format(rse=rse_remote)
+      else:
+        rse = ""
+      
+      download_dir = "--dir {d}".format(d=download_dir)
+      
+      dw = self.RucioCommandLine( self.host,
+                                  "download",
+                                  filelist = None,
+                                  metakey  = None).format(rucio_account=config.get_config( self.remote_host )["rucio_account"],
+                                                          rse_dw=rse,
+                                                          dir=download_dir,
+                                                          scope=scope,
+                                                          name=name)
+      
+      logging.debug( dw )
+      
+      sum_dw = {}
+      
+      msg_std, msg_err = self.doRucio( dw )
+      
+      #prepare extended download information:
+      sum_file_dw = {}
+      for i in msg_std:
+        if i.find("successfully downloaded") >= 0 and i.find("successfully downloaded from") >= 0:
+          line = i.split(" ")
+          dw_file = line[7].split(":")[1]
+          struct = {
+              'dw_file': "-1",
+              'dw_size': "-1",
+              'dw_time': "-1",
+              'dw_rse':  "-1"              
+              }
+          sum_file_dw[ dw_file ] = struct
+      
+      #Extract the rucio download summary:
+      i_summary = msg_std.index("Download summary")
+      sum_list = msg_std[i_summary:]
+      
+      count_dw_successmessages = 0
+      for i in msg_std:
+        if i.find("No such file or directory:") >= 0:
+          logging.info("The requested download directory %s does not exists or something else is bad [ERROR]", download_dir)
+        elif i.find("has no replicas available on disk endpoints and cannot be downloaded. Please ask for a replication") >= 0:
+          logging.info("There is no replica of %s at RSE %s [ERROR]", location, rse_remote)
+        elif i.find("WARNING [Provided RSE expression is considered invalid.") >= 0:
+          logging.info("The download was done without specifiying the RSE before! [WARNING]")
+        elif i.find("successfully downloaded") >= 0:
+          #logging.info("Rucio-download: %s", i)
+          count_dw_successmessages += 1
+          
+          if i.find("bytes downloaded") >= 0:
+            line = i.split(" ")
+            dw_file = line[7].split(":")[1]
+            dw_size = line[10]
+            dw_time = line[15]
+            sum_file_dw[dw_file]['dw_size'] = dw_size
+            sum_file_dw[dw_file]['dw_time'] = dw_time
+            
+          if i.find("successfully downloaded from") >= 0:
+            line = i.split(" ")
+            dw_rse = line[-1].split("]")[0]
+            dw_file = line[7].split(":")[1]
+            sum_file_dw[dw_file]['dw_rse'] = dw_rse
+            
+            
+      #Extract rucio download information and return it.
+      for i in sum_list:
+        if i.find("DID") >= 0:
+          sum_dw['did'] = i[4:]
+        if i.find("Total files") >= 0:
+          sum_dw['total_files'] = i.split(":")[1].replace(" ", "")
+        if i.find("Downloaded files") >= 0:
+          sum_dw['dw_files'] = i.split(":")[1].replace(" ", "")
+        if i.find("Files already found locally") >= 0:
+          sum_dw['alreadylocal_files'] = i.split(":")[1].replace(" ", "")
+        if i.find("Files that cannot be downloaded") >= 0:
+          sum_dw['dwfail_files'] = i.split(":")[1].replace(" ", "")
+      
+      if count_dw_successmessages == int(sum_dw['total_files']):
+        sum_dw['status'] = "successful"
+      else:
+        sum_dw['status'] = "file number error"
+      
+      sum_dw['details'] = sum_file_dw
+      
+      return sum_dw
+        
     
     def delete_rule(self, location, rse_remote):
-      
+      """Delete a transfer rule
+         Free data storage at a certain RSE after 24h
+      """
       rule_summary = self.list_rules( location, rse_remote )
-      
-      
+            
       delrule = self.RucioCommandLine( self.host,
                                       "delete-rule",
                                       filelist = None,
                                       metakey  = None).format(rucio_account=config.get_config( self.remote_host )["rucio_account"],
-                                                              ruleid = rule_summary['rule_id'])
+                                                              ruleid=rule_summary['rule_id'])
       
       logging.debug( delrule )
 
       msg_std, msg_err = self.doRucio( delrule )
+      rule_summary_new = self.list_rules( location, rse_remote )
       
-      i_rule_id = None
-      i_rule_status = None
-      i_rse     = None
-      i_path    = None  
+      if len(msg_std) == 0:
+        #If nothing is returned: means rule is ready for deletion
+        logging.info("Request to delete rule %s is sent", rule_summary['rule_id'])
+        logging.info("Expires: %s", rule_summary_new['expires'])
+      else:
+        #Something went wrong:
+        for i_msg in msg_std:
+          if i_msg.find("ERROR [A RSE expression must be specified if you do not provide a rule_id but a DID]") >= 0:
+            logging.info("Ups... Something went wrong with your rule ID")
+          
+      return rule_summary_new
         
     
     def set_rule(self, location, rse_remote, lifetime = "-2"):
@@ -1334,7 +1442,7 @@ rucio ping
       """
       
       delete_rule = """
-rucio delete-rule --acccount {account} {ruleid}
+rucio delete-rule --account {rucio_account} {ruleid}
       """
       
       list_rse_usage = """
@@ -1343,6 +1451,10 @@ rucio list-rse-usage {rse_remote}
     
       list_files = """
 rucio list-files {scope}:{dataset}      
+      """
+      
+      download_from_rucio = """
+rucio download --no-subdir {rse_dw} {dir} {scope}:{name}
       """
       
       if method == "upload-simple":
@@ -1391,6 +1503,8 @@ rucio list-files {scope}:{dataset}
           return general[host] + delete_rule
       elif method == "list-rse-usage":
           return general[host] + list_rse_usage
+      elif method == "download":
+          return general[host] + download_from_rucio
       else:
           return 0
         
@@ -1505,8 +1619,7 @@ class RucioPush(RucioBase):
 
     If the data is transfered to current host and does not exist at any other
     site (including transferring), then copy data there."""
-    option_type = 'upload'
-    
+    option_type = 'upload'    
 
 class RucioPull(RucioBase):
     """Copy data to here
@@ -1514,6 +1627,144 @@ class RucioPull(RucioBase):
     If data exists at a reachable host but not here, pull it.
     """
     option_type = 'download'
+    
+class RucioPurge(Task):
+    """Remove a single raw data or a bunch
+    This notifies the run database and delete raw data from
+    xe1t-datamanager
+    """
+    def __init__(self, purge):
+        # hand over the manual purge mode which needs to be activate by user
+        self.purge = purge
+        # Perform base class initialization
+        Task.__init__(self)
+
+    def each_run(self):
+        #Check if there is a local copy at:
+        # xe1t-datamanager
+        # tape backup
+        # if both is True: Free for deletion
+        nb_copies_xe1tdatamanager_b = False
+        nb_copies_tape_b            = False
+        for data_doc in self.run_doc['data']:
+          if data_doc['host'] == "xe1t-datamanager" and data_doc['status'] == "transferred":
+            nb_copies_xe1tdatamanager_b = True
+          if data_doc['host'] == "tsm-server" and data_doc['status'] == "transferred":
+            nb_copies_tape_b = True          
+          
+        check_for_delete = False  
+        for data_doc in self.run_doc['data']:
+          #Check for rucio-catalogue entries in runDB
+          if data_doc['host'] != "rucio-catalogue":
+            continue
+            
+          if data_doc['rse'] == None:
+            continue
+          
+          #Evaluate when rucio-purge is allowed to delete a data set from xe1t datamanager:
+          if len( data_doc['rse'] ) >= 2 and \
+             nb_copies_xe1tdatamanager_b == True and \
+             nb_copies_tape_b == True:                              
+             logging.info("<-\____________________________________________/->>>")
+             logging.info("   Dataset: %s | Run number: %s", self.run_doc['name'],  self.run_doc['number'])
+             logging.info("   --------------------------------------------------")
+             logging.info("   Rucio dataset %s is on tape: %s", data_doc['location'], nb_copies_tape_b)
+             logging.info("   Rucio dataset %s is on xe1t-datamanager: %s", data_doc['location'], nb_copies_xe1tdatamanager_b)
+             logging.info("   Rucio dataset %s has two ore more copies at:", data_doc['location'])
+             for i in data_doc['rse']:
+               logging.info("     -Rucio Storage Element: %s", i )
+             check_for_delete = True
+               
+        for data_doc in self.run_doc['data']:
+          # Only if previous check matches: start to delete data 
+          if data_doc['host'] == "xe1t-datamanager" and data_doc['status'] == "transferred" and \
+             check_for_delete == True and nb_copies_xe1tdatamanager_b == True and nb_copies_tape_b == True:
+            
+            location = data_doc['location']
+            logging.info("   Dataset %s is set for deletion.", self.run_doc['name'] )
+            logging.info("   Location on xe1t-datamanager: %s", location )
+            logging.info("   Purge mode is activate manually: %s", self.purge)
+            logging.info("<<<PURGE MODUS IS DEACTIVATED>>>")
+            logging.info("<<<Remove comment characters in rucio_mover>>>")
+              ### Notify run database
+              #if self.purge is True:
+                #self.collection.update({'_id': self.run_doc['_id']},
+                                       #{'$pull': {'data': data_doc}})
+
+              ### Perform operation
+              #self.log.info("Removing %s" % (self.location))
+              #if os.path.isdir( location ):
+                #shutil.rmtree( location )
+              #else:
+                #os.remove( location )
+
+              #break
+     
+class RucioDownload(Task):
+    """Remove a single raw data or a bunch
+    This notifies the run database and delete raw data from
+    xe1t-datamanager
+    """
+    def __init__(self, data_rse, data_dir, data_type='raw'):
+        self.data_rse  = data_rse
+        self.data_dir  = data_dir
+        self.data_type = data_type
+        
+        # Perform base class initialization
+        Task.__init__(self)
+
+    def each_run(self):
+        """Download from rucio catalogue"""
+       
+        for data_doc in self.run_doc['data']:
+          #Check if the requested data set is registered to the rucio catalogue
+          if data_doc['host'] != "rucio-catalogue":
+            continue
+          
+          if data_doc['type'] != self.data_type:
+            continue
+        
+          #Specify a RSE for download
+          rse = None
+          if data_doc['rse'] and self.data_rse in data_doc['rse']:
+            rse = self.data_rse
+          
+          location = data_doc['location']
+          scope    = location.split(":")[0]
+          name    = location.split(":")[1]
+          
+          if os.path.isabs(self.data_dir) == False:
+            self.data_dir = os.path.abspath(self.data_dir)    
+          
+          if not os.path.exists(self.data_dir):
+            os.makedirs(self.data_dir)
+            
+          self.rucio = RucioBase(self.run_doc)
+          self.rucio.set_host( config.get_hostname() )
+          self.rucio.set_remote_host( "rucio-catalogue" )
+          if self.rucio.sanity_checks() == False:
+            return 0
+          
+          result = self.rucio.download(location, rse, self.data_dir) 
+          
+          logging.info("Summary:")
+          logging.info("Downloaded DID: %s", result['did'])
+          logging.info("Total number of files: %s", result['total_files'])
+          logging.info("Number of already local files: %s", result['alreadylocal_files'])
+          
+          logging.info("Number of downloaded files: %s", result['dw_files'])
+          logging.info("Number of failed downloaded files: %s", result['dwfail_files'])
+          logging.info("Download status: %s", result['status'])
+          for key, value in result['details'].items():
+              logging.info("File %s", key)
+              logging.info("-- Download size: %s kB", value['dw_size'])
+              logging.info("-- Download time: %s seconds", value['dw_time'])
+              logging.info("-- Downloaded from RSE: %s", value['dw_rse'])
+          
+          
+          
+          
+        
     
 class RucioRule(Task):
     
@@ -1680,6 +1931,7 @@ class RucioRule(Task):
       
       #Check if actual run number in list:
       actual_run_number_bool = False
+      print(actual_run["actual_run_number"], " __", rule_def['run_number'])
       if str(actual_run["actual_run_number"]) in rule_def['run_number'] or len(rule_def['run_number']) == 0:
         actual_run_number_bool = True
         
@@ -1729,7 +1981,8 @@ class RucioRule(Task):
         
         
         #Read possible location for deleting data
-        if rule_def['verification_only'] == False and len( rule_def['remove_rse'] ) >= 0:
+        if rule_def['verification_only'] == False and len( rule_def['remove_rse'] ) > 0 \
+           and ( actual_run_name_bool == True or actual_run_number_bool == True ):
           delete_list = rule_def['remove_rse'] 
 
       return transfer_list, transfer_lifetime, delete_list
@@ -1769,7 +2022,9 @@ class RucioRule(Task):
         self.rucio = RucioBase(self.run_doc)
         self.rucio.set_host( config.get_hostname() )
         self.rucio.set_remote_host( there['host'] )
-                
+        if self.rucio.sanity_checks() == False:
+          return 0
+      
         # Get a list of ALL registered RSE
         all_rse = self.rucio.get_rse_list()
         
@@ -1797,12 +2052,12 @@ class RucioRule(Task):
                         }
 
         #Get rule definition from json file
-        delete_list = []
+        self.delete_list = []
         transfer_lifetime = {}
         rule_def = self.rule_definition()
         if rule_def != 0:
           logging.info("A seperated rucio-rule file is loaded")  
-          transfer_list, transfer_lifetime, delete_list = self.magic( actual_run, rule_def, all_rse )
+          transfer_list, transfer_lifetime, self.delete_list = self.magic( actual_run, rule_def, all_rse )
         else:
           logging.info("No seperated rucio-rule file is loaded!")
           logging.info("Validation of entrance point rule at %s", config.get_config("rucio-catalogue")['rucio_upload_rse'] ) 
@@ -1812,13 +2067,14 @@ class RucioRule(Task):
         logging.info("Rule transfer list: %s", transfer_list)
         logging.info("Rule transfer lifetimes: %s", transfer_lifetime )
         
+        if len(self.delete_list) > 0:
+          logging.info("Nothing to do for set_possible_rules()")
+          return 0
+        
         if "empty" in transfer_list:
           logging.info("Actual run number/name %s/%s", actual_run['actual_run_number'], actual_run['actual_run_name'])
           logging.info("does not match with requested run number/name from rucio-rule configuration file")
           logging.info("   --> SKIP")
-          return 0
-        
-        if self.rucio.sanity_checks() == False:
           return 0
         
         if there['status'] != "transferred":
@@ -1873,7 +2129,13 @@ class RucioRule(Task):
       
     def del_possible_rules(self, data_type, dbinfo ):
       '''Delete possible rules according a set of mandatory pre definitions'''
-      logging.info("Delete rules for data transfers.")
+      logging.info("Delete data transfers rules.")
+      logging.info("----------------------------")
+      
+      #Nothing to do for del_possible_rules() if self.delete_list[] is empty
+      if len(self.delete_list) == 0:
+        logging.info("-> No deletion of rules is requested [SKIP]")
+        return 0
       
       if dbinfo == None:
         there = self.get_rundb_entry( data_type )  
@@ -1886,28 +2148,41 @@ class RucioRule(Task):
         logging.info("Means: There was a previous upload by do_possible_transfers() executed")
         there = dbinfo
       
-      # Get list of possible transfer destinations (RSE)           
-      transfer_list = config.get_config("rucio-catalogue")['rucio_transfer']
-      transfer_list.append( config.get_config("rucio-catalogue")['rucio_upload_rse'] ) 
+      #Get list of RSE where the data are transferred:
+      actual_rse = there['rse']
+      remaining_rse = []
+      
+      if all(x in actual_rse for x in self.delete_list) == False:
+        logging.info("The possible RSEs for deletion are:")
+        for i in actual_rse:
+          logging.info(" * %s", i)
+        logging.info("The requested RSEs for deletion")
+        for i in self.delete_list:
+          logging.info(" * %s", i)
+        logging.info("do not match with the registered RSEs in the database")
+        return 0
+      else:
+        remaining_rse = [x for x in actual_rse if str(x) not in self.delete_list]
+      
       method = config.get_config("rucio-catalogue")['method'] 
-      print("sc: ", transfer_list )
-      print("th: ", there)
-      logging.info("Nothing yet done here to delete rules and files !<code>")
-      # WRITE SOME CODE TO DELTE TRANFER RULES AND FILES
-      # according to self.the_mighty_rule
       
-      #Finish this once the RSE locations are fixed.
-      #if there != None:
-        #self.rucio = RucioBase(self.run_doc)
-        #self.rucio.set_host( config.get_hostname() )
-        #self.rucio.set_remote_host( there['host'] )
-        #if self.rucio.sanity_checks() == False:
-          #return 0
+      logging.info("RSE according to run data base: %s", actual_rse )
+      logging.info("RSE for deletion: %s", self.delete_list)
+      logging.info("Remaining RSEs after deletion: %s", remaining_rse)
+      
+      #Let us start to delete a rule and request data deletion.
+      if there != None:
+        self.rucio = RucioBase(self.run_doc)
+        self.rucio.set_host( config.get_hostname() )
+        self.rucio.set_remote_host( there['host'] )
+        if self.rucio.sanity_checks() == False:
+          return 0
         
-        #if there['status'] != "transferred":
-          #logging.info("RunDB status: %s - No need to create a transfer rule", there['status'])  
-          #return 0  
-      
+        for i_rse in self.delete_list:
+          logging.info("Delete file %s from RSE %s", there['location'], i_rse)
+          self.rucio.delete_rule(there['location'], i_rse)
+                          
+        
     def get_rundb_entry(self, data_type):
       """Get a specified runDB entry"""
       db_entry = None

@@ -7,10 +7,31 @@ import os
 import checksumdir
 import shutil
 import subprocess
+from zlib import adler32
 
 from cax import config
 from ..task import Task
 
+
+class ChecksumMethods():
+    """Implement own checksum methods"""
+    
+    def get_adler32( fname ):
+        """Calcualte an Adler32 checksum in python
+            Used for cross checks with Rucio
+        """
+        BLOCKSIZE=256*1024*1024
+        asum = 1
+        with open(fname, "rb") as f:
+          while True:
+            data = f.read(BLOCKSIZE)
+            if not data:
+                break
+            asum = adler32(data, asum)
+            if asum < 0:
+                asum += 2**32
+
+        return hex(asum)[2:10].zfill(8).lower()
 
 class AddChecksum(Task):
     """Perform a checksum on accessible data.

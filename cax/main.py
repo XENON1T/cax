@@ -576,8 +576,8 @@ def massiveruciax():
     #Construct the basic bash script(s):
     xe1tdatam="""#!/bin/bash
 export PATH=/home/SHARED/anaconda3/bin:$PATH
-source activate rucio_client_p3.4
-#source activate develop_p3
+#source activate rucio_client_p3.4
+source activate develop_p3
 export PATH=/home/xe1ttransfer/.local/bin:$PATH
 export RUCIO_HOME=~/.local/rucio
 export RUCIO_ACCOUNT={account}
@@ -704,6 +704,9 @@ ruciax --once {job}
             time_end = datetime.datetime.utcnow()
             diff = time_end-time_start
             dd = divmod(diff.total_seconds(), 60)
+            
+            #delete script:
+            qsub.delete_script( sc )
             
             logging.info("+--------------------------->>>")
             logging.info("| Summary: massive-ruciax for run/name: %s/%s", doc['number'], doc['name'] )
@@ -1158,6 +1161,129 @@ def remove_from_rucio():
       number_name = args.run
 
     filesystem.RemoveRucioEntry(args.location, args.status).go(number_name)
+
+def ruciax_purge():
+    #Ask the database for the actual status of the file or folder:
+    
+    parser = argparse.ArgumentParser(description="Check the database status")
+    
+    parser.add_argument('--run', type=int, required=False,
+                        help="Select a single run by number")
+    parser.add_argument('--name', type=str, required=False,
+                        help="Select a single run by name")    
+    parser.add_argument('--purge', type=bool, required=False,
+                        dest='purge', default=False,
+                        help="Activate purge modus [True]")
+    parser.add_argument('--disable_database_update', action='store_true',
+                        help="Disable the update function the run data base")
+
+    args = parser.parse_args()
+
+    database_log = not args.disable_database_update
+
+    # Setup logging
+    cax_version = 'cax_v%s - ' % __version__
+    logging.basicConfig(filename='ruciax_purge.log',
+                        level="INFO",
+                        format=cax_version + '%(asctime)s [%(levelname)s] '
+                                             '%(message)s')
+    
+    logging.info('Purge raw data sets - Handle with care!')
+
+    # define a Handler which writes INFO messages or higher to the sys.stderr
+    console = logging.StreamHandler()
+    console.setLevel("INFO")
+
+    # set a format which is simpler for console use
+
+    formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+    # tell the handler to use this format
+    console.setFormatter(formatter)
+    # add the handler to the root logger
+    logging.getLogger('').addHandler(console)
+    
+
+    # Set information to update the run database
+    config.set_database_log(database_log)
+    config.mongo_password()
+    
+    number_name = None
+    if args.name is not None:
+      number_name = args.name
+    else:
+      number_name = args.run
+    
+    rucio_mover.RucioPurge(args.purge).go(number_name)
+
+def ruciax_download():
+    #Ask the database for the actual status of the file or folder:
+    
+    parser = argparse.ArgumentParser(description="Check the database status")
+    
+    parser.add_argument('--run', type=int, required=False,
+                        help="Select a single run by number")
+    parser.add_argument('--name', type=str, required=False,
+                        help="Select a single run by name")    
+    parser.add_argument('--type', type=str, required=False,
+                        dest='data_type',
+                        help="Select what kind of data you want to download [raw/processed]")    
+    parser.add_argument('--rse', type=str, required=False,
+                        dest='data_rse',
+                        help="Select a specific rucio storage endpoint for download")  
+    parser.add_argument('--dir', type=str, required=True,
+                        dest='data_dir',
+                        help="Select a download directory")  
+    parser.add_argument('--config', action='store', type=str,
+                        dest='config_file',
+                        help="Load a custom .json config file into cax")
+    parser.add_argument('--disable_database_update', action='store_true',
+                        help="Disable the update function the run data base")
+
+    args = parser.parse_args()
+
+    database_log = not args.disable_database_update
+
+    # Setup logging
+    cax_version = 'cax_v%s - ' % __version__
+    logging.basicConfig(filename='ruciax_download.log',
+                        level="INFO",
+                        format=cax_version + '%(asctime)s [%(levelname)s] '
+                                             '%(message)s')
+    
+    logging.info('Ruciax - The data set downloader')
+
+    # define a Handler which writes INFO messages or higher to the sys.stderr
+    console = logging.StreamHandler()
+    console.setLevel("INFO")
+
+    # set a format which is simpler for console use
+
+    formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+    # tell the handler to use this format
+    console.setFormatter(formatter)
+    # add the handler to the root logger
+    logging.getLogger('').addHandler(console)
+    
+
+    # Set information to update the run database
+    config.set_database_log(database_log)
+    config.mongo_password()
+    
+    if args.config_file:
+        if not os.path.isfile(args.config_file):
+            logging.error("Config file %s not found", args.config_file)
+        else:
+            logging.info("Using custom config file: %s",
+                         args.config_file)
+            config.set_json(args.config_file)
+    
+    number_name = None
+    if args.name is not None:
+      number_name = args.name
+    else:
+      number_name = args.run
+    
+    rucio_mover.RucioDownload(args.data_rse, args.data_dir, args.data_type).go(number_name)
 
 if __name__ == '__main__':
     main()

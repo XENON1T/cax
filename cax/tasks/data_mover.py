@@ -269,8 +269,17 @@ class CopyBase(Task):
                                                              option_type,
                                                              remote_host)
 
+            #Delete the old data base entry if rucio transfers are requested
+            #and an old upload failed by a bad connection error.
+            if method == "rucio" and datum_there != None and datum_there['status'] == 'RSEreupload' and config.DATABASE_LOG == True:
+              self.log.info("Former upload of %s failed with error", datum_here['location'])
+              self.log.info("[('Connection aborted.', BadStatusLine('',))] -> Delete runDB status and start again")
+              
+              self.collection.update({'_id': self.run_doc['_id']},
+                                     {'$pull': {'data': datum_there}})
+
             #Upload logic for everything exepct tape
-            if option_type == 'upload' and datum_here and datum_there is None and method != "tsm":
+            if option_type == 'upload' and method != "tsm" and datum_here and (datum_there is None or                                                           datum_there['status'] == 'RSEreupload'):
                 self.copy_handshake(datum_here, remote_host, method, option_type)
                 break
 

@@ -64,6 +64,8 @@ setup(
             'ruciax-rm = cax.main:remove_from_rucio',
             'massive-ruciax = cax.main:massiveruciax',
             'ruciax-check = cax.main:ruciax_status',
+            'ruciax-purge = cax.main:ruciax_purge',
+            'ruciax-download = cax.main:ruciax_download',
         ],
     },
 )

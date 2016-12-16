@@ -1,8 +1,8 @@
-    [
+[
   {
     "version": "1.0",
     "verification_only": false,
-    "run_nb": null,
+    "run_nb": "5115, 5116, 5188, 5390",
     "run_nb_exclude": null,
     "run_name": null,
     "run_name_exclude": null,
@@ -12,7 +12,7 @@
     "destination_livetime":{
                             "UC_OSG_USERDISK": "-1",
                             "NIKHEF_USERDISK": "-1",
-                            "LNGS_USERDISK": "7200"
+                            "LNGS_USERDISK": "-1"
                             },
     "destination_condition": "blabla",
     "remove_rse": null
