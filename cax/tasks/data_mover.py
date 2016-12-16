@@ -223,12 +223,8 @@ class CopyBase(Task):
         client.close()
 
     def each_run(self):
-        try:
-            data_types = config.get_config()["data_types"]
-        except KeyError:
-            self.log.info("JSON does not contain data_types field.")
-            data_types = ["raw", "processed"]
-
+        json_config = config.get_config()
+        data_types = json_config["data_types"] if "data_types" in json_config.keys() else ["raw", "processed"]
         for data_type in data_types:
             self.log.info("%s" % data_type)
             self.do_possible_transfers(option_type=self.option_type,
@@ -308,10 +304,9 @@ class CopyBase(Task):
         datum_there = None  # Information about data there
         # Iterate over data locations to know status
 
-        pax_version_here = pax.__version__
+        pax_version_here = 'v' + pax.__version__
 
         for datum in self.run_doc['data']:
-
             # Is host known?
             if 'host' not in datum or datum['type'] != data_type:
                 continue
@@ -325,9 +320,15 @@ class CopyBase(Task):
                     continue
                 datum_here = datum.copy()
             elif datum['host'] == remote_host and datum["pax_version"] == pax_version_here:  # This the remote host?
+
                 # If downloading, they should have data
                 if option_type == 'download' and not transferred:
                     continue
+
+                # if uploading and data is there, make note in logs
+                if option_type == 'upload':
+                    logging.info("Data is already at %s. Upload aborted" % remote_host)
+
                 datum_there = datum.copy()
 
         return datum_here, datum_there

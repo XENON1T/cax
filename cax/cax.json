@@ -32,6 +32,7 @@
     "upload_options": ["midway-login1"],
     "username": "pdeperio",
     "download_options": [],
+    "task_list": ["ProcessBatchQueue"],
     "nstreams": 2,
     "grid_cert": "/stash2/project/@xenon1t/deployHQ/cax/user_cert"
   },

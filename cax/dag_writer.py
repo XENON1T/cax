@@ -20,6 +20,17 @@ class dag_writer():
         self.default_uri = "gsiftp://gridftp.grid.uchicago.edu:2811/cephfs/srm"
         self.host = "login"
         self.submitfile = os.path.join(logdir, "process.submit")
+        
+        self.dag_template = """SPLICE {inner_dagname} {inner_dagfile}
+JOB {inner_dagname}_noop1 {inner_dagfile} NOOP
+JOB {inner_dagname}_noop2 {inner_dagfile} NOOP
+SCRIPT PRE {inner_dagname}_noop1 /home/ershockley/cax/osg_scripts/pre_script.sh {rawdir} {pax_version} {number} {logdir}
+SCRIPT POST {inner_dagname}_noop2 /home/ershockley/cax/osg_scripts/hadd_and_upload.sh {inner_dagname} {rawdir} {pax_version} {number} {logdir}
+PARENT {inner_dagname}_noop1 CHILD {inner_dagname}
+PARENT {inner_dagname} CHILD {inner_dagname}_noop2
+"""
+
+        self.write_submit_script(self.submitfile, self.logdir)
 
     def get_run_doc(self, run_number):
         query = {"detector" : "tpc",
@@ -46,8 +57,9 @@ class dag_writer():
         """
         Writes outer dag file that contains subdag for each run in runlist.
         """
-        with open(outer_dag, "a") as outer_dag_file:
+        with open(outer_dag, "w") as outer_dag_file:
             # loop over runs in list, write an outer dag that contains subdags for each rubn
+            run_counter = 0
             for run in self.runlist:
                 # get run doc, various parameters needed to write dag
                 doc = self.get_run_doc(run)
@@ -65,11 +77,10 @@ class dag_writer():
                 if any( [ entry["type"] == 'processed' and 
                           entry['pax_version'] == self.pax_version and 
                           entry['status'] == 'transferred'
-                          for entry in doc["data"] ]):
+                          for entry in doc["data"] if 'pax_version' in entry.keys() ]):
                     print("Skipping Run %d. Already processed with pax %s" %
                           (run, self.pax_version))
                     continue
-
                 #skip run if not present on stash (temporary)
                 if not any([entry["host"] == 'login' and entry["type"] == 'raw'
                             and entry["status"] == 'transferred' for entry in doc["data"]]):
@@ -77,6 +88,7 @@ class dag_writer():
                     continue
 
                 print("Adding run %d to dag" % run)
+                run_counter += 1
 
                 rawdir = self.get_raw_dir(doc)
                 run_name = doc["name"]
@@ -92,17 +104,19 @@ class dag_writer():
                 json_file = self.write_json_file(doc)
                 if not os.path.exists(os.path.join(self.logdir, self.pax_version, run_name, "joblogs")):
                     os.makedirs(os.path.join(self.logdir, self.pax_version, run_name, "joblogs"))
-                self.write_submit_script(self.submitfile, self.logdir, json_file)
                 self.write_inner_dag(run, inner_dagfile, outputdir, self.submitfile, json_file, doc) 
 
                 # write inner dag info to outer dag
-                outer_dag_file.write("SUBDAG EXTERNAL %s %s \n" % (inner_dagname, inner_dagfile))
-                #outer_dag_file.write("RETRY %s 5\n" % inner_dagname)
-                if self.reprocessing:
-                    outer_dag_file.write("SCRIPT PRE %s /home/ershockley/cax/osg_scripts/pre_script.sh "
-                                         "%s %s %s %s \n" % (inner_dagname, rawdir, self.pax_version, run, self.logdir))
-                outer_dag_file.write("SCRIPT POST %s /home/ershockley/cax/osg_scripts/hadd_and_upload.sh "
-                                     "%s %s $RETURN %s %s \n" % (inner_dagname, rawdir, self.pax_version, run, self.logdir))
+                outer_dag_file.write(self.dag_template.format(inner_dagname = inner_dagname,
+                                                              inner_dagfile = inner_dagfile,
+                                                              rawdir = rawdir,
+                                                              pax_version = self.pax_version,
+                                                              number = run,
+                                                              logdir = self.logdir)
+                                     )
+
+
+        print("\n%d Runs written to %s" % (run_counter, outer_dag))
 
     def write_inner_dag(self, run_number, inner_dag, outputdir, submitfile, jsonfile, doc, 
                         inputfilefilter = "XENON1T-", uri = "DEFAULT", muonveto = False):
@@ -115,6 +129,7 @@ class dag_writer():
         
         i = 0
         with open(inner_dag, "wt") as inner_dag:
+            
             for dir_name, subdir_list, file_list in os.walk(rawdir):
                 if not muonveto and "MV" in dir_name:
                     continue
@@ -147,9 +162,8 @@ class dag_writer():
                                     "json_file=\"%s\" \n") % (run_number, i, infile,
                                                               outfile_full, run_name,
                                                               self.pax_version, zip_name, jsonfile))
-                    inner_dag.write("Retry %s.%d 10\n" % (run_number, i))
+                    inner_dag.write("Retry %s.%d 6 \n" % (run_number, i))
                     i += 1
-
 
     # for retrieving path to raw data. takes a run doc
     def get_raw_dir(self, doc):
@@ -163,7 +177,7 @@ class dag_writer():
         return path        
 
 
-    def write_submit_script(self, filename, logdir, json_file):
+    def write_submit_script(self, filename, logdir):
         template = """#!/bin/bash
 executable = /home/ershockley/cax/osg_scripts/run_xenon.sh
 universe = vanilla
@@ -179,7 +193,9 @@ transfer_output_files = ""
 when_to_transfer_output = ON_EXIT
 # on_exit_hold = (ExitBySignal == True) || (ExitCode != 0)
 transfer_executable = True
-# periodic_release =  ((NumJobStarts < 5) && ((CurrentTime - EnteredCurrentStatus) > 600))
+periodic_hold =  ((JobStatus == 2) && ((CurrentTime - EnteredCurrentStatus) > (60*60*3)))
+periodic_release = (JobStatus == 5) && (HoldReason == 3) && (NumJobStarts < 5) && ( (CurrentTime - EnteredCurrentStatus) > $RANDOM_INTEGER(60, 1800, 30) )
+periodic_remove = (NumJobStarts > 4)
 arguments = $(name) $(input_file) $(host) $(pax_version) $(pax_hash) $(out_location) $(ncpus) $(disable_updates) $(json_file)
 queue 1
 """

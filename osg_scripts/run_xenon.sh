@@ -12,7 +12,10 @@
   # 8 - disable_updates  
 
 echo $HOSTNAME
-#env
+echo $LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/envs/evan-testing/lib:$LD_LIBRARY_PATH
+echo $LD_LIBRARY_PATH
+env
 # df -h
 
 

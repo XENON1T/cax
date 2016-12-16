@@ -92,8 +92,7 @@ def pre_script(run_number, pax_version, update_database=True):
     doc = API.get_next_run(query)
     time.sleep(0.5)
     print(query)
-    
-    
+        
 
     # if run doesn't satisfy above query, we don't process
     if doc is None:
