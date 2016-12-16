@@ -42,22 +42,23 @@ class RetryStalledTransfer(checksum.CompareChecksums):
         difference = datetime.datetime.utcnow() - max(time_modified,
                                                       time_made)
 
-        if data_doc["status"] == "transferred":
+        if data_doc["status"] == "transferred" or data_doc["status"] == "verifying":
             return  # Transfer went fine
 
         self.log.debug(difference)
 
         if difference > datetime.timedelta(hours=2):  # If stale transfer
             self.give_error("Transfer %s from run %d (%s) lasting more than "
-                            "one hour" % (data_doc['type'],
+                            "2 hours" % (data_doc['type'],
                                           self.run_doc['number'],
                                           self.run_doc['name']))
 
-        if difference > datetime.timedelta(hours=24) or \
-                        (data_doc['host'] != 'xe1t-datamanager' and data_doc["status"] == 'error'):
-            self.give_error("Transfer lasting more than 24 hours "
-                            "or errored, retry.")
-
+        if difference > datetime.timedelta(hours=24):
+            self.give_error("Transfer lasting more than 24 hours, retry.")
+            self.purge(data_doc)
+            
+        elif data_doc["status"] == 'error' and data_doc['host'] != 'xe1t-datamanager':
+            self.give_error("Transfer or process errored, retry.")
             self.purge(data_doc)
 
 class RetryBadChecksumTransfer(checksum.CompareChecksums):
