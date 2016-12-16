@@ -1931,7 +1931,6 @@ class RucioRule(Task):
       
       #Check if actual run number in list:
       actual_run_number_bool = False
-      print(actual_run["actual_run_number"], " __", rule_def['run_number'])
       if str(actual_run["actual_run_number"]) in rule_def['run_number'] or len(rule_def['run_number']) == 0:
         actual_run_number_bool = True
         

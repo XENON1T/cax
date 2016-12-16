@@ -576,8 +576,8 @@ def massiveruciax():
     #Construct the basic bash script(s):
     xe1tdatam="""#!/bin/bash
 export PATH=/home/SHARED/anaconda3/bin:$PATH
-#source activate rucio_client_p3.4
-source activate develop_p3
+source activate rucio_client_p3.4
+#source activate develop_p3
 export PATH=/home/xe1ttransfer/.local/bin:$PATH
 export RUCIO_HOME=~/.local/rucio
 export RUCIO_ACCOUNT={account}
@@ -735,20 +735,12 @@ def remove_from_tsm():
     
     args = parser.parse_args()
 
-    #This one is mandatory: hardcoded science run number!
-    config.set_rucio_campaign("000")
-
-    log_level = getattr(logging, args.log.upper())
-    if not isinstance(log_level, int):
-        raise ValueError('Invalid log level: %s' % args.log)
-
-    run_once = args.once
     database_log = not args.disable_database_update
 
     # Set information to update the run database
     config.set_database_log(database_log)
     config.mongo_password()
-
+    
     number_name = None
     if args.name is not None:
       number_name = args.name
@@ -757,71 +749,6 @@ def remove_from_tsm():
 
     filesystem.RemoveTSMEntry(args.location).go(number_name)
 
-    # Set information for rucio transfer rules (config file)
-    config.set_rucio_rules( args.config_rule)
-
-    # Setup logging
-    cax_version = 'ruciax_v%s - ' % __version__
-    logging.basicConfig(filename=args.logfile,
-                        level=log_level,
-                        format=cax_version + '%(asctime)s [%(levelname)s] '
-                                             '%(message)s')
-    logging.info('Daemon is starting')
-    logging.info('Logfile: %s', args.logfile)
-
-    # define a Handler which writes INFO messages or higher to the sys.stderr
-    console = logging.StreamHandler()
-    console.setLevel(log_level)
-
-    # set a format which is simpler for console use
-
-    formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
-    # tell the handler to use this format
-    console.setFormatter(formatter)
-    # add the handler to the root logger
-    logging.getLogger('').addHandler(console)
-
-    # Get specified cax.json configuration file for cax:
-    if args.config_file:
-        if not os.path.isfile(args.config_file):
-            logging.error("Config file %s not found", args.config_file)
-        else:
-            logging.info("Using custom config file: %s",
-                         args.config_file)
-            config.set_json(args.config_file)
-
-    tasks = [
-        data_mover.CopyPull(),
-        data_mover.CopyPush(),
-        rucio_mover.RucioRule()
-    ]
-
-    # Raises exception if unknown host
-    config.get_config()
-
-    user_tasks = config.get_task_list()
-
-    while True:
-        for task in tasks:
-            name = task.__class__.__name__
-
-            # Skip tasks that user did not specify
-            if user_tasks and name not in user_tasks:
-                continue
-
-            logging.info("Executing %s." % name)
-
-            try:
-              if args.name is not None:
-                task.go(args.name)
-              else:
-                task.go(args.run)
-
-            except Exception as e:
-                logging.fatal("Exception caught from task %s" % name,
-                              exc_info=True)
-                logging.exception(e)
-                raise
 
 def massive_tsmclient():
     # Command line arguments setup
