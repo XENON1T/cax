@@ -3,7 +3,7 @@
 
 4.10.6 (2016-12-20)
 ------------------
-* Compute gains at Midway to speed it up (Closes #50).
+* Compute gains at Midway to speed it up (Closes #50)
 
 4.10.5 (2016-12-06)
 ------------------
