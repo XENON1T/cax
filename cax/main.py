@@ -573,47 +573,9 @@ def massiveruciax():
                 ('detector', -1),
                 ('_id', -1))
 
-    #Construct the basic bash script(s):
-    xe1tdatam="""#!/bin/bash
-export PATH=/home/SHARED/anaconda3/bin:$PATH
-source activate rucio_client_p3.4
-#source activate develop_p3
-export PATH=/home/xe1ttransfer/.local/bin:$PATH
-export RUCIO_HOME=~/.local/rucio
-export RUCIO_ACCOUNT={account}
-    """.format( account=config.get_config("rucio-catalogue")['rucio_account'] )
+    #Construct the pre-basic bash script(s) from rucio_mover.RucioConfig()
+    RucioBashConfig = rucio_mover.RucioConfig()
     
-    midwayrcc="""#!/bin/bash
-export PATH=/project/lgrandi/anaconda3/bin:$PATH
-source activate rucio_work
-export PATH=~/.local/bin:$PATH
-export RUCIO_HOME=~/.local/rucio
-export RUCIO_ACCOUNT={account}
-    """.format( account=config.get_config("rucio-catalogue")['rucio_account'] )
-
-    osgchicago="""#!/bin/bash
-voms-proxy-init -voms xenon.biggrid.nl -valid 168:00
-export PATH="/home/bauermeister/anaconda2/bin:$PATH"
-source activate rucio_p3
-    """
-    
-    tegner = """#!/bin/bash
-export PATH="/cfs/klemming/nobackup/b/bobau/ToolBox/TestEnv/Anaconda3/bin:$PATH"
-#source activate rucio_p3
-source activate test_upload
-export PATH=~/.local/bin:$PATH
-cd /cfs/klemming/nobackup/b/bobau/ToolBox/gfal-tools
-source /cfs/klemming/nobackup/b/bobau/ToolBox/gfal-tools/setup.sh
-cd
-export RUCIO_HOME=~/.local/rucio
-export RUCIO_ACCOUNT={account}
-      """.format( account=config.get_config("rucio-catalogue")['rucio_account'] )
-    
-    general = {"xe1t-datamanager": xe1tdatam,
-               "midway-login1": midwayrcc,
-               "tegner-login-1": tegner,
-               "login": osgchicago}
-
     while True: # yeah yeah
         #query = {'detector':'tpc'}
         query = {}
@@ -682,7 +644,10 @@ export RUCIO_ACCOUNT={account}
 ruciax --once {job}
 """.format(job=job)
 
-            command = general[config.get_hostname()]+command
+            pre_bash_command =  RucioBashConfig.get_config( config.get_hostname() ).format(
+                                    account=config.get_config("rucio-catalogue")['rucio_account'] 
+                                    )
+            command = pre_bash_command + command
                         
             logging.info(command)
             

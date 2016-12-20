@@ -560,28 +560,6 @@ class RucioBase(Task):
 
         """
         fileobj.close()
-        
-    def get_python_version(self):
-      """Check for the right python version. Assure that rucio is executed under python <=2.7"""
-      sc = "/tmp/{sc_name}.sh".format(sc_name="python_check")
-      upload_string = """#.bashrc
-export PATH=/home/SHARED/anaconda3/bin:$PATH
-source activate rucio_client
-python -V
-      """
-      self.create_script( sc, upload_string )
-      
-      ex = subprocess.Popen(['sh', sc] , 
-                            shell=True,
-                            stdin=subprocess.PIPE,
-                            stdout=subprocess.PIPE
-                            )
-      out, err = ex.communicate()
-      std = out
-      
-      print("Python Version: ",  out, err )
-      
-      self.delete_script( sc )
     
     def ping_rucio(self):
       rucio_version = False  
@@ -1699,6 +1677,78 @@ class RucioPurge(Task):
                 #os.remove( location )
 
               #break
+
+class RucioConfig():
+    """A class to configure basic Anaconda3 environments
+       in which the ruciax client is executed
+       -> important for massive-ruciax
+    """
+    
+    def get_config(self, host ):
+      general = {"xe1t-datamanager": self.config_xe1tdatamanager(),
+                 "midway-login1":    self.config_midway_rcc(),
+                 "tegner-login-1":   self.config_tegner(),
+                 "login":            self.config_stash()
+                 #"yourhost":        self.config_yourhost()
+                 }
+      
+      return general[host]
+      
+    def config_tegner(self):
+      # Configuration pre-bash script for Tegner
+      tegner = """#!/bin/bash
+voms-proxy-init -voms xenon.biggrid.nl -valid 168:00
+export PATH="/cfs/klemming/nobackup/b/bobau/ToolBox/TestEnv/Anaconda3/bin:$PATH"
+#source activate rucio_p3
+source activate test_upload
+export PATH=~/.local/bin:$PATH
+cd /cfs/klemming/nobackup/b/bobau/ToolBox/gfal-tools
+source /cfs/klemming/nobackup/b/bobau/ToolBox/gfal-tools/setup.sh
+cd
+export RUCIO_HOME=~/.local/rucio
+export RUCIO_ACCOUNT={account}
+      """    
+      return tegner
+    
+    def config_xe1tdatamanager(self):
+      # Configuration pre-bash script for xe1t-datamanager
+      xe1tdatam="""#!/bin/bash
+voms-proxy-init -voms xenon.biggrid.nl -valid 168:00
+export PATH=/home/SHARED/anaconda3/bin:$PATH
+source activate rucio_client_p3.4
+#source activate develop_p3
+export PATH=/home/xe1ttransfer/.local/bin:$PATH
+export RUCIO_HOME=~/.local/rucio
+export RUCIO_ACCOUNT={account}
+      """
+      return xe1tdatam
+    
+    def config_midway_rcc(self):
+      # Configuration pre-bash script for RCC midway
+      midwayrcc="""#!/bin/bash
+voms-proxy-init -voms xenon.biggrid.nl -valid 168:00
+export PATH=/project/lgrandi/anaconda3/bin:$PATH
+source activate rucio_work
+export PATH=~/.local/bin:$PATH
+export RUCIO_HOME=~/.local/rucio
+export RUCIO_ACCOUNT={account}
+      """
+      return midwayrcc
+    
+    def config_stash(self):
+      # Configuration pre-bash script for Stash/OSG  
+      osgchicago="""#!/bin/bash
+voms-proxy-init -voms xenon.biggrid.nl -valid 168:00
+export PATH="/home/bauermeister/anaconda2/bin:$PATH"
+source activate rucio_p3
+      """
+      return osgchicago
+        
+        
+    def config_yourhost(self):
+      yourhost="""#!/bin/bash
+      """
+      return yourhost
      
 class RucioDownload(Task):
     """Remove a single raw data or a bunch
@@ -1982,7 +2032,9 @@ class RucioRule(Task):
         #Read possible location for deleting data
         if rule_def['verification_only'] == False and len( rule_def['remove_rse'] ) > 0 \
            and ( actual_run_name_bool == True or actual_run_number_bool == True ):
-          delete_list = rule_def['remove_rse'] 
+          delete_list = rule_def['remove_rse']
+        else:
+          delete_list = []
 
       return transfer_list, transfer_lifetime, delete_list
     
