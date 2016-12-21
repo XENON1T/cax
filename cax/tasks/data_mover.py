@@ -49,6 +49,9 @@ class CopyBase(Task):
         if method == 'scp':
             self.copySCP(datum_original, datum_destination, server, username, option_type)
 
+        elif method == 'rsync':
+            self.copyRSYNC(datum_original, datum_destination, server, username, option_type)
+
         elif method == 'gfal-copy':
             self.copyGFAL(datum_original, datum_destination, server, option_type, nstreams, grid_cert)
 
@@ -191,6 +194,48 @@ class CopyBase(Task):
         else:
             self.log.info(gfal_out_ascii) # To print timing
             
+    def copyRSYNC(self, datum_original, datum_destination, server, username, option_type):
+        """Copy data via rsync function
+        """
+
+        command = "time rsync -r --stats --append "
+
+        status = -1
+
+        if option_type == 'upload':
+            logging.info(option_type+": %s to %s" % (datum_original['location'],
+                                            server+datum_destination['location']))
+
+            full_command = command+ \
+                       datum_original['location']+" "+ \
+                       username+"@"+server+":"+os.path.dirname(datum_destination['location'])
+
+        else: # download
+            logging.info(option_type+": %s to %s" % (server+datum_original['location'],
+                                                     datum_destination['location']))
+
+            full_command = command+ \
+                           username+"@"+server+":"+datum_original['location']+" "+ \
+                           os.path.dirname(datum_destination['location'])
+
+        self.log.info(full_command)
+
+        try:
+            rsync_out = subprocess.check_output(full_command, stderr=subprocess.STDOUT, shell=True)
+
+        except subprocess.CalledProcessError as rsync_exec:
+            self.log.error(rsync_exec.output.rstrip().decode('ascii'))
+            self.log.error("Error: rsync status = %d\n" % rsync_exec.returncode)
+            raise
+
+        rsync_out_ascii = rsync_out.rstrip().decode('ascii')
+        if "error" in rsync_out_ascii.lower(): # Some errors don't get caught above
+            self.log.error(rsync_out_ascii)
+            raise
+
+        else:
+            self.log.info(rsync_out_ascii) # To print timing
+
 
     def copySCP(self, datum_original, datum_destination, server, username, option_type):
         """Copy data via SCP function
@@ -636,7 +681,7 @@ class CopyBase(Task):
                       method, 
                       option_type)
             # Checksumming to follow on local site
-            if method == 'scp':
+            if method == 'scp' or method == 'rsync':
                 status = 'verifying'
 
             # Cannot do cax-checksum on GRID sites, 

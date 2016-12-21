@@ -141,51 +141,54 @@ class CompareChecksums(Task):
                        "run %d" % self.run_doc['number'])
         self.check()
 
-    def purge(self, data_doc):
-        self.log.info("Deleting %s" % data_doc['location'])
+    def purge(self, data_doc, delete_data=True):
 
-        # Temporary hardcoded check for gfal-rm removal
-        if config.get_hostname() == 'login' and 'raw' in data_doc['location']:
-            config_original = config.get_config('login')
-            server = config_original['hostname']
-            if config.get_cert() == None:
-                grid_cert = ''
+        if delete_data is True:
+
+            self.log.info("Deleting %s" % data_doc['location'])
+
+            # Temporary hardcoded check for gfal-rm removal
+            if config.get_hostname() == 'login' and 'raw' in data_doc['location']:
+                config_original = config.get_config('login')
+                server = config_original['hostname']
+                if config.get_cert() == None:
+                    grid_cert = ''
+                else:
+                    grid_cert = config.get_cert()
+
+                full_command = "gfal-rm -v -r --cert %s " % grid_cert + \
+                               server+data_doc['location']
+
+                self.log.info(full_command)
+
+                try:
+                    gfal_out = subprocess.check_output(full_command, stderr=subprocess.STDOUT, shell=True)
+
+                except subprocess.CalledProcessError as gfal_exec:
+                    self.log.error(gfal_exec.output.rstrip().decode('ascii'))
+                    self.log.error("Error: gfal-rm status = %d\n" % gfal_exec.returncode)
+                    raise
+
+                gfal_out_ascii = gfal_out.rstrip().decode('ascii')
+                if "error" in gfal_out_ascii.lower(): # Some errors don't get caught above
+                    self.log.error(gfal_out_ascii)
+                    raise
+
+                else:
+                    self.log.info(gfal_out_ascii) # To print timing
+
+            # Default POSIX removal        
             else:
-                grid_cert = config.get_cert()
-
-            full_command = "gfal-rm -v -r --cert %s " % grid_cert + \
-                           server+data_doc['location']
-
-            self.log.info(full_command)
-
-            try:
-                gfal_out = subprocess.check_output(full_command, stderr=subprocess.STDOUT, shell=True)
-
-            except subprocess.CalledProcessError as gfal_exec:
-                self.log.error(gfal_exec.output.rstrip().decode('ascii'))
-                self.log.error("Error: gfal-rm status = %d\n" % gfal_exec.returncode)
-                raise
-
-            gfal_out_ascii = gfal_out.rstrip().decode('ascii')
-            if "error" in gfal_out_ascii.lower(): # Some errors don't get caught above
-                self.log.error(gfal_out_ascii)
-                raise
-
-            else:
-                self.log.info(gfal_out_ascii) # To print timing
-
-        # Default POSIX removal        
-        else:
-            if os.path.isdir(data_doc['location']):
-                shutil.rmtree(data_doc['location'])
-                self.log.info('Deleted, notify run database.')
-            elif os.path.isfile(data_doc['location']):
-                os.remove(data_doc['location'])
-            else:
-                self.log.error('did not exist, notify run database.')
+                if os.path.isdir(data_doc['location']):
+                    shutil.rmtree(data_doc['location'])
+                    self.log.info('Deleted, notify run database.')
+                elif os.path.isfile(data_doc['location']):
+                    os.remove(data_doc['location'])
+                else:
+                    self.log.error('did not exist, notify run database.')
 
         if config.DATABASE_LOG == True:
             resp = self.collection.update({'_id': self.run_doc['_id']},
                                           {'$pull': {'data': data_doc}})
-            self.log.info('Removed from run database.')
+            self.log.info('Removed from run database: %s' % data_doc['location'])
             self.log.debug(resp)
