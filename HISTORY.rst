@@ -1,6 +1,10 @@
   History
 =======
 
+4.11.0 (2016-12-21)
+------------------
+* Switch to rsync for data transfers (instead of scp)
+  
 4.10.6 (2016-12-20)
 ------------------
 * Compute gains at Midway to speed it up (Closes #50)
