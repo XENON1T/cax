@@ -19,19 +19,24 @@ class SetPermission(Task):
     def __init__(self):
         
         self.raw_data = {"tegner-login-1": "/cfs/klemming/projects/xenon/xenon1t/raw/",
-                    "midway-login1": "/project/lgrandi/xenon1t/raw/"}
+                    "midway-login1": "/project/lgrandi/xenon1t/raw/",
+                    "midway2-login1.rcc.local": "/project2/lgrandi/xenon1t/raw/"}
         
         self.proc_data = {"tegner-login-1": "/cfs/klemming/projects/xenon/xenon1t/processed/",
-                    "midway-login1": "/project/lgrandi/xenon1t/processed/"}
+                    "midway-login1": "/project/lgrandi/xenon1t/processed/",
+                    "midway2-login1.rcc.local": "/project/lgrandi/xenon1t/processed/"}
         
         self.chown_user = {"tegner-login-1": "bobau",
-                           "midway-login1": "tunnell"}
+                           "midway-login1": "tunnell",
+                           "midway2-login1.rcc.local": "tunnell"}
         
         self.chown_group = {"tegner-login-1": "xenon-users",
-                            "midway-login1": "xenon1t-admins"}
+                            "midway-login1": "xenon1t-admins",
+                            "midway2-login1.rcc.local": "xenon1t-admins"}
         
         self.chmod = {"tegner-login-1": '750',
-                      "midway-login1": '755'}
+                      "midway-login1": '755',
+                      "midway2-login1.rcc.local": '755'}
 
         Task.__init__(self)
         self.hostname_config = config.get_config(config.get_hostname())
@@ -44,6 +49,7 @@ class SetPermission(Task):
             if 'host' not in data_doc or data_doc['host'] != config.get_hostname():
                 continue
             
+            midway = all(x in config.get_hostname() for x in ["midway", "login1"])
 
             #extract path:
             f_path = data_doc['location']
@@ -55,7 +61,7 @@ class SetPermission(Task):
               logging.info('Change to username %s and group %s', self.chown_user[self.hostname], self.chown_group[self.hostname])
               logging.info('Set permission: %s', self.chmod[self.hostname] )
               logging.info('Set ownership and permissions at %s', config.get_hostname() )
-              if config.get_hostname() == "midway-login1":
+              if midway:
                 subprocess.call(['chmod', self.chmod[self.hostname], f_path])
                 subprocess.call(['chown', str(self.chown_user[self.hostname]+":"+self.chown_group[self.hostname]), f_path])
               elif config.get_hostname() == "tegner-login-1":
@@ -69,7 +75,7 @@ class SetPermission(Task):
               logging.info('Change to username %s and group %s', self.chown_user[self.hostname], self.chown_group[self.hostname])
               logging.info('Set permission: %s', self.chmod[self.hostname] )
               logging.info('Set ownership and permissions at %s', config.get_hostname() )
-              if config.get_hostname() == "midway-login1":
+              if midway:
                 subprocess.call(['chmod', '-R', self.chmod[self.hostname], f_path])
                 subprocess.call(['chown', '-R', str(self.chown_user[self.hostname]+":"+self.chown_group[self.hostname]), f_path])
               elif config.get_hostname() == "tegner-login-1":

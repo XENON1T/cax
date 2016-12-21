@@ -36,11 +36,8 @@ class AddChecksum(Task):
 
         # Data must be here locally
         if data_doc['host'] != config.get_hostname():
-
-            # Special case of midway-srm accessible via POSIX on midway-login1
-            if not (data_doc['host']  == "midway-srm" and config.get_hostname() == "midway-login1"):
-                self.log.debug('Location not here')
-                return
+            self.log.debug('Location not here')
+            return
 
         # This status is given after checksumming
         status = 'transferred'

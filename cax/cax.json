@@ -24,6 +24,19 @@
     "grid_cert": "/project/lgrandi/deployHQ/cax/user_cert"
   },
   {
+    "name": "midway2-login1.rcc.local",
+    "method": "scp",
+    "hostname": "midway2-login1.rcc.uchicago.edu",
+    "dir_raw": "/project2/lgrandi/xenon1t/raw",
+    "dir_processed": "/project/lgrandi/xenon1t/processed",
+    "dir_minitrees": "/project/lgrandi/xenon1t/minitrees",
+    "upload_options": [],
+    "username": "tunnell",
+    "download_options": ["xe1t-datamanager"],
+    "purge" : 25,
+    "grid_cert": "/project/lgrandi/deployHQ/cax/user_cert"
+  },
+  {
     "name": "login",
     "method": "gfal-copy",
     "hostname": "gsiftp://gridftp.grid.uchicago.edu:2811/cephfs/srm",
