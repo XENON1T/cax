@@ -69,7 +69,7 @@ class ProcessBatchQueueHax(Task):
 
         thishost = config.get_hostname()
         
-        if thishost != 'midway-login1':
+        if not all(x in thishost for x in ["midway", "login1"]):
             return
 
         version = 'v%s' % pax.__version__

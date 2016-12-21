@@ -243,7 +243,7 @@ def massive():
                 logging.debug('Skip: cax_%s_v%s job exists' % (job_name, pax.__version__))
                 continue
 
-            while qsub.get_number_in_queue() > (500 if config.get_hostname() == 'midway-login1' else 30):
+            while qsub.get_number_in_queue() > (500 if all(x in config.get_hostname() for x in ["midway", "login1"]) else 30):
                 logging.info("Speed break 60s because %d in queue" % qsub.get_number_in_queue())
                 time.sleep(60)
 
@@ -444,7 +444,8 @@ def massive_tsmclient():
       
     # Setup logging
     log_path = {"xe1t-datamanager": "/home/xe1ttransfer/tsm_log",
-                "midway-login1": "n/a"}
+                "midway-login1": "n/a",
+                "midway2-login1.rcc.local": "n/a"}
     
     if log_path[config.get_hostname()] == "n/a":
         print("Modify the log path in main.py")

@@ -16,11 +16,6 @@ HOST = os.environ.get("HOSTNAME") if os.environ.get("HOSTNAME") else socket.geth
 DATA_USER_PDC = 'bobau'
 DATA_GROUP_PDC = 'xenon-users'
 
-PAX_DEPLOY_DIRS = {
-    'midway-login1' : '/project/lgrandi/deployHQ/pax',
-    'tegner-login-1': '/afs/pdc.kth.se/projects/xenon/software/pax'
-}
-
 
 def mongo_password():
     """Fetch passsword for MongoDB
@@ -180,10 +175,10 @@ def data_availability(hostname=get_hostname()):
 
 def processing_script(args={}):
     host = get_hostname()
-    if host not in ('midway-login1', 'tegner-login-1'):
+    if host not in ('midway-login1', 'midway2-login1.rcc.local', 'tegner-login-1'):
         raise ValueError
 
-    midway = (host == 'midway-login1')
+    midway = all(x in config.get_hostname() for x in ["midway", "login1"])
     default_args = dict(host=host,
                         use='cax',
                         number=333,

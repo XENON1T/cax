@@ -128,9 +128,9 @@ class AddGains(CorrectionBase):
     correction_units = units.V  # should be 1
 
     def each_run(self):
-        """Only run on data manager at LNGS
+        """Only run on Midway
         """
-        if config.get_hostname() == 'midway-login1':
+        if all(x in config.get_hostname() for x in ["midway", "login1"]): 
             CorrectionBase.each_run(self)
 
     def evaluate(self):
