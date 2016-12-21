@@ -53,13 +53,17 @@ class RetryStalledTransfer(checksum.CompareChecksums):
                                           self.run_doc['number'],
                                           self.run_doc['name']))
 
+        # Do not delete stalled or failed raw data transfers to recover with rsync 
+        # (Warning: do no use scp, which may create nested directories)
+        delete_data = (data_doc['type'] == 'processed')
+
         if difference > datetime.timedelta(hours=24):
             self.give_error("Transfer lasting more than 24 hours, retry.")
-            self.purge(data_doc)
+            self.purge(data_doc, delete_data)
             
         elif data_doc["status"] == 'error' and data_doc['host'] != 'xe1t-datamanager':
             self.give_error("Transfer or process errored, retry.")
-            self.purge(data_doc)
+            self.purge(data_doc, delete_data)
 
 class RetryBadChecksumTransfer(checksum.CompareChecksums):
     """Alert if stale transfer.
