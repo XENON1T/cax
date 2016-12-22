@@ -1629,16 +1629,27 @@ class RucioPurge(Task):
             nb_copies_xe1tdatamanager_b = True
           if data_doc['host'] == "tsm-server" and data_doc['status'] == "transferred":
             nb_copies_tape_b = True          
+
+
           
         check_for_delete = False  
         for data_doc in self.run_doc['data']:
           #Check for rucio-catalogue entries in runDB
           if data_doc['host'] != "rucio-catalogue":
             continue
-            
+          
+          if data_doc['host'] != "tsm-server" and data_doc['status'] != "transferred":   
+            print("Tape copy not present... don't delete it")
+            logging.info("  Raw file not present on tsm-server")
+            continue 
+
+
           if data_doc['rse'] == None:
             continue
-          
+
+####>>>>>> Inserire qui il l'ecczione per verificare la presenza della copia su         
+####>>>>>> tape forse, ancora da capire!!!!                                     
+
           #Evaluate when rucio-purge is allowed to delete a data set from xe1t datamanager:
           if len( data_doc['rse'] ) >= 2 and \
              nb_copies_xe1tdatamanager_b == True and \
