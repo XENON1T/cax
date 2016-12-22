@@ -1,6 +1,10 @@
   History
 =======
 
+4.11.1 (2016-12-22)
+------------------
+* Switch to /project2 space on Midway
+
 4.11.0 (2016-12-21)
 ------------------
 * Switch to rsync for data transfers (instead of scp)
