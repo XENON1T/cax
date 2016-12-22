@@ -120,13 +120,6 @@ class BufferPurger(checksum.CompareChecksums):
         if data_doc["status"] != "transferred":
             self.log.debug("Not transfered")
             return
-        # Do not purge data that have to be still copied on tape
-        if data_doc["host"] != "tsm-server" and data_doc['status'] != "transferred":
-            self.log.debug("No Deletion")
-            print("Still has to be copied on tape!")
-            return
-        else:
-            print("Tape copy already present!")
 
         # See if purge settings specified, otherwise don't purge
         if config.purge_settings() == None:
