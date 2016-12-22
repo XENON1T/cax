@@ -13,9 +13,9 @@
   {
     "name": "midway-login1",
     "method": "scp",
-    "hostname": "midway-login1.rcc.uchicago.edu",
-    "dir_raw": "/project/lgrandi/xenon1t/raw",
-    "dir_processed": "/project/lgrandi/xenon1t/processed",
+    "hostname": "midway2-login1.rcc.uchicago.edu",
+    "dir_raw": "/project2/lgrandi/xenon1t/raw",
+    "dir_processed": "/project2/lgrandi/xenon1t/processed",
     "dir_minitrees": "/project/lgrandi/xenon1t/minitrees",
     "upload_options": [],
     "username": "tunnell",
