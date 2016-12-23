@@ -1636,19 +1636,11 @@ class RucioPurge(Task):
         for data_doc in self.run_doc['data']:
           #Check for rucio-catalogue entries in runDB
           if data_doc['host'] != "rucio-catalogue":
-            continue
-          
-          if data_doc['host'] != "tsm-server" and data_doc['status'] != "transferred":   
-            print("Tape copy not present... don't delete it")
-            logging.info("  Raw file not present on tsm-server")
-            continue 
-
+             print("not present %s" % (data_doc['host']))
+             continue
 
           if data_doc['rse'] == None:
             continue
-
-####>>>>>> Inserire qui il l'ecczione per verificare la presenza della copia su         
-####>>>>>> tape forse, ancora da capire!!!!                                     
 
           #Evaluate when rucio-purge is allowed to delete a data set from xe1t datamanager:
           if len( data_doc['rse'] ) >= 2 and \
@@ -1673,21 +1665,21 @@ class RucioPurge(Task):
             logging.info("   Dataset %s is set for deletion.", self.run_doc['name'] )
             logging.info("   Location on xe1t-datamanager: %s", location )
             logging.info("   Purge mode is activate manually: %s", self.purge)
-            logging.info("<<<PURGE MODUS IS DEACTIVATED>>>")
-            logging.info("<<<Remove comment characters in rucio_mover>>>")
+            logging.info("   <<<PURGE MODUS IS DEACTIVATED>>>")
+            logging.info("   <<<Remove comment characters in rucio_mover>>>")
               ### Notify run database
-              #if self.purge is True:
-                #self.collection.update({'_id': self.run_doc['_id']},
-                                       #{'$pull': {'data': data_doc}})
+            if self.purge is True:
+               print("###self.collection.update({'_id': self.run_doc['_id']},{'$pull': {'data': data_doc}})")
 
               ### Perform operation
-              #self.log.info("Removing %s" % (self.location))
-              #if os.path.isdir( location ):
-                #shutil.rmtree( location )
-              #else:
-                #os.remove( location )
 
-              #break
+            self.log.info("Removing %s" % (location))
+            if os.path.isdir( location ):
+               print("shutil.rmtree( location )")
+            else:
+               print("os.remove( location )")
+
+            break
 
 class RucioConfig():
     """A class to configure basic Anaconda3 environments
