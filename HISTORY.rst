@@ -1,6 +1,15 @@
   History
 =======
 
+4.11.2 (2016-12-27)
+-------------------
+* Decrease purge threshold to 5 days (from 25)
+* Allow purge of Rn220, disallow AmBe
+* Do not purge until processed
+* Switch processed dir back to /project (from /project2)
+* Request 9 cores per job (instead of 4)
+* Specify 8 cores for pax (instead of 4), 1 extra for I/O worker
+
 4.11.1 (2016-12-22)
 -------------------
 * Switch to /project2 space on Midway
