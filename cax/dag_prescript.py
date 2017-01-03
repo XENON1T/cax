@@ -12,7 +12,6 @@ import json
 #from pymongo import ReturnDocument
 
 from cax import config
-from cax.task import Task
 from cax.api import api
 
 def has_tag(doc, name):
@@ -124,4 +123,6 @@ def pre_script(run_number, pax_version, update_database=True):
 def main():
     pre_script(*sys.argv[1:])
 
-main()
+
+if __name__ == "__main__":
+    main()

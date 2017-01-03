@@ -14,6 +14,12 @@ echo $@ >> $post_log
 
 rawdir=$1
 
+source activate evan-testing 
+
+cd /home/ershockley/cax/
+export PYTHONPATH=/home/ershockley/cax/lib/python3.4/site-packages/:$PYTHONPATH
+python setup.py install --prefix ${PWD}
+
 python /home/ershockley/cax/osg_scripts/upload.py $1 $2 >> $post_log 2>&1
 
 if [[ $? -ne 0 ]]; then

@@ -13,11 +13,13 @@ import time
 import pax
 import checksumdir
 import json
+from bson import json_util
 #from pymongo import ReturnDocument
 
 from cax import qsub, config
 from cax.task import Task
 from cax.api import api
+from cax.dag_prescript import clear_errors
 
 def verify():
     """Verify the file
@@ -223,8 +225,8 @@ class ProcessBatchQueue(Task):
         self.log.info(script)
 
         if self.thishost == 'login':
-            outer_dag_dir = "/xenon/ershockley/cax/{pax_version}/{name}/dags".format(name=name,
-                                                                                      pax_version=self.pax_version)
+            logdir = "/xenon/ershockley/cax/{pax_version}/{name}".format(name=name, pax_version=self.pax_version)
+            outer_dag_dir = logdir + "/dags"
             inner_dag_dir = outer_dag_dir + "/inner_dags"
 
             if not os.path.exists(inner_dag_dir):
@@ -238,7 +240,7 @@ class ProcessBatchQueue(Task):
             outer_dag_file = outer_dag_dir + "/{name}_outer.dag".format(name=name)
             inner_dag_file = inner_dag_dir + "/{name}_inner.dag".format(name=name)
 
-            qsub.submit_dag_job(number, outer_dag_file, inner_dag_file, out_location, script, self.pax_version, json_file)
+            qsub.submit_dag_job(number, logdir, outer_dag_file, inner_dag_file, out_location, script, self.pax_version, json_file)
 
         else:
             qsub.submit_job(self.thishost, script, name + "_" + self.pax_version)
@@ -302,12 +304,12 @@ class ProcessBatchQueue(Task):
 
             json_file = "/xenon/ershockley/jsons/" + str(self.run_doc['name']) + ".json"
             with open(json_file, "w") as f:
-                json.dump(self.run_doc, f)
+                json.dump(self.run_doc, f, default=json_util.default)
 
             self.submit(have_raw['location'], out_location, ncpus, disable_updates, json_file)
 
             if config.DATABASE_LOG == True:
-                self.API.add_location(doc['_id'], datum)
+                self.API.add_location(self.run_doc['_id'], datum)
 
             time.sleep(5)
 
@@ -335,7 +337,6 @@ class ProcessBatchQueue(Task):
                     have_processed= True
 
         return have_processed, have_raw
-
 
 # Arguments from process function: (name, in_location, host, pax_version,
 #                                   out_location, ncpus):

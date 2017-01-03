@@ -77,29 +77,29 @@ def submit_job(script, name='', extra=''):
 
     delete_script(fileobj)
 
-def submit_dag_job(run_number, outer_dag, inner_dag, outputdir, submitscript, paxversion, json_file):
+def submit_dag_job(run_number, logdir, outer_dag, inner_dag, outputdir, submitscript, paxversion, json_file):
 
     from cax.dag_writer import dag_writer
 
     which('condor_submit_dag')
 
     # create submit file, which in turn is used by dag file.
-    submitfileobj = create_script(submitscript)
+    #submitfileobj = create_script(submitscript)
 
     # check if inner dag file exists already
-    if not os.path.isfile(inner_dag):
-        print("No INNER dag file exists, writing one now")
-        # create inner dag file. In creation of instance, must put run number in a list
-        DAG = dag_writer([run_number], paxversion)
-        DAG.write_inner_dag(run_number, inner_dag, outputdir, submitfileobj.name, json_file)
+    #if not os.path.isfile(inner_dag):
+    #    print("No INNER dag file exists, writing one now")
+    #    # create inner dag file. In creation of instance, must put run number in a list
+    #    DAG = dag_writer([run_number], paxversion, logdir)
+    #    DAG.write_inner_dag(run_number, inner_dag, outputdir, submitfileobj.name, json_file)
 
     # now check if outer dag exists
     if not os.path.isfile(outer_dag):
         print("No OUTER dag file exists, writing one now")
-        DAG = dag_writer([run_number], paxversion)
-        DAG.write_outer_dag(outer_dag, inner_dag)
+        DAG = dag_writer([run_number], paxversion, logdir)
+        DAG.write_outer_dag(outer_dag)
 
-    submit_command = ('condor_submit_dag {script}'.format(script=outer_dag))
+    submit_command = ('condor_submit_dag -maxpre 5 -maxpost 5 -maxjobs 10000 {script}'.format(script=outer_dag))
 
     logging.info('submit job:\n %s' % submit_command)
 

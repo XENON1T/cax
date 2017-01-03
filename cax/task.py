@@ -5,6 +5,7 @@ import pymongo
 from bson.json_util import dumps
 
 from cax import config
+from cax.dag_prescript import clear_errors
 
 class Task():
     def __init__(self, query = {}):
@@ -20,9 +21,12 @@ class Task():
         """Run this periodically"""
 
         # argument can be run number or run name
+        #TODO modify clear_errors so that it can handle run names instead of numbers
         if specify_run is not None:
             if isinstance(specify_run,int):
                 self.query['number'] = specify_run
+                if 'data' in self.query:
+                    clear_errors(specify_run, self.query["data"]["$not"]["$elemMatch"]['pax_version'])
             elif isinstance(specify_run,str):
                 self.query['name'] = specify_run
 
@@ -36,9 +40,12 @@ class Task():
                                                               projection=('_id'),
                                                               sort=(('start', -1),))]
         except pymongo.errors.CursorNotFound:
-            self.log.warning("Curson not found exception.  Skipping")
+            self.log.info("Curson not found exception.  Skipping")
             return
 
+        if len(ids) == 0:
+            self.log.info("Query matches no entry. Skipping.")
+            return
         # Iterate over each run
         for id in ids:
             # Make sure up to date
