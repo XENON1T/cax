@@ -187,7 +187,7 @@ def processing_script(args={}):
     default_args = dict(host=host,
                         use='cax',
                         number=333,
-                        ncpus=9 if midway else 1,
+                        ncpus=5 if midway else 1,
                         pax_version=(('v%s' % pax.__version__) if midway else 'head'),
 #                        partition='sandyb' if midway else 'main',
                         partition='xenon1t' if midway else 'main',
