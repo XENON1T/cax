@@ -317,10 +317,10 @@ class RucioBase(Task):
                                         metakey  = None).format(rucio_account=config.get_config( self.remote_host )["rucio_account"],
                                                                 location=location,
                                                                 rse_remote=rse_remote,
-                                                                dataset_lifetime=lifetime,
+                                                                dataset_lifetime=int(lifetime),
                                                                 rule_id=i_rule_ad)  
 
-        logging.debug( trrule )
+        logging.info( trrule )
         
         msg_std, msg_err = self.doRucio( trrule )
         for i in msg_std:
@@ -1025,18 +1025,37 @@ class RucioBase(Task):
         return 0
       print("testafter")
       #1.1) Upload      
-      upload_name = self.RucioCommandLine(self.host, 
-                                          "upload-advanced", 
-                                          filelist = upload_file_s,
-                                          metakey = None).format(rucio_account=raccount,
+      
+      upload_folder_p = files[0].replace( files[0].split("/")[-1], "")
+      upload_folder = self.RucioCommandLine(self.host, 
+                                            "upload-folder", 
+                                            filelist = None,
+                                            metakey = None).format(rucio_account=raccount,
                                                                  scope=rscope_upload,
-                                                                 dataset=dataset_name,
+                                                                 datasetpath=upload_folder_p,
                                                                  rse=rrse)
-      logging.debug( upload_name )
-      print(upload_name)
-      msg_std, msg_err = self.doRucio( upload_name )
+      
+      print(":", dataset_name, files[0].replace( files[0].split("/")[-1], ""))
+      print(":", datapath)
+      print(upload_folder)
+      msg_std, msg_err = self.doRucio( upload_folder )
       for i in msg_std:
-        logging.info("Rucio (upload-advanced): %s", i)
+        logging.info("Rucio (upload-folder): %s", i)
+      
+      #exit()
+      
+      #upload_name = self.RucioCommandLine(self.host, 
+                                          #"upload-advanced", 
+                                          #filelist = upload_file_s,
+                                          #metakey = None).format(rucio_account=raccount,
+                                                                 #scope=rscope_upload,
+                                                                 #dataset=dataset_name,
+                                                                 #rse=rrse)
+      #logging.debug( upload_name )
+      #print(upload_name)
+      #msg_std, msg_err = self.doRucio( upload_name )
+      #for i in msg_std:
+        #logging.info("Rucio (upload-advanced): %s", i)
         
       for i in msg_std:
         if i.find("ERROR [The requested service is not available at the moment.") >= 0:
@@ -1329,8 +1348,11 @@ source /cvmfs/oasis.opensciencegrid.org/osg-software/osg-wn-client/3.3/current/e
                  }
       
       upload_simple = """
-cd {path_to_data}
-rucio upload {dataset} --rse {rse}
+rucio upload {dataset} --rse {rse} --scope {scope} 
+      """
+      
+      upload_folder = """
+rucio upload --rse {rse} --scope {scope} {datasetpath} 
       """
       
       upload_adv = """
@@ -1437,6 +1459,8 @@ rucio download --no-subdir {rse_dw} {dir} {scope}:{name}
       
       if method == "upload-simple":
           return general[host] + upload_simple
+      elif method == "upload-folder":
+          return general[host] + upload_folder
       elif method == "get-metadata":
           return general[host] + get_metadata
       elif method == "set-metadata":
@@ -1606,6 +1630,138 @@ class RucioPull(RucioBase):
     """
     option_type = 'download'
     
+class RucioLocator(Task):
+    """Remove a single raw data or a bunch
+    This notifies the run database and delete raw data from
+    xe1t-datamanager
+    """
+    def __init__(self, rse=None, copies=None, method=None, status=None):
+        # Perform base class initialization
+        Task.__init__(self)
+        self.rse = rse
+        self.copies = copies
+        self.method = method
+        self.status = status
+        
+        if self.method == None:
+          logging.info("Nothing to do")
+          exit()
+        
+    def each_run(self):
+      
+      if self.method == "SingleRun":
+        for data_doc in self.run_doc['data']:
+          #Check for rucio-catalogue entries in runDB
+          if data_doc['host'] != "rucio-catalogue":
+            continue
+          
+          rse_storage = data_doc['rse']
+          status      = data_doc['status']
+          location    = data_doc['location']
+          
+          logging.info("---SingleRun---")
+          logging.info("File location: %s", location)
+          logging.info("Transfer status: %s", status)
+          logging.info("Rucio storage elements:")
+          for i in rse_storage:
+            logging.info("  - %s", i)
+          logging.info("-----------------------------------")
+      
+      elif self.method == "Status":
+        
+        if self.status == None:
+          logging.info("Nothing to be done here - Define --status")
+          exit()  
+          
+        for data_doc in self.run_doc['data']:
+          #Check for rucio-catalogue entries in runDB
+          if data_doc['host'] != "rucio-catalogue":
+            continue
+          
+          if data_doc['status'] != self.status:
+            continue
+          
+          rse_storage = data_doc['rse']
+          status      = data_doc['status']
+          location    = data_doc['location']
+          logging.info("<%s> : Location: %s | Run name: %s | Run number: %s | RSE: %s", status, location, self.run_doc['name'], self.run_doc['number'], ', '.join(rse_storage))
+          
+      elif self.method == "MultiCopies":
+        
+        if self.copies == None:
+          logging.info("Nothing to be done here - Define --copies")
+          exit()
+        
+        for data_doc in self.run_doc['data']:
+          #Check for rucio-catalogue entries in runDB
+          if data_doc['host'] != "rucio-catalogue":
+            continue
+          
+          if self.status != None and data_doc['status'] != self.status:
+            continue
+          
+          rse_storage = data_doc['rse']
+          status      = data_doc['status']
+          location    = data_doc['location']  
+          
+          if len(rse_storage) == self.copies:
+            logging.info("<%s> : Location: %s | Run name: %s | Run number: %s | RSE: %s", status, location, self.run_doc['name'], self.run_doc['number'], ', '.join(rse_storage))
+      
+      elif self.method == "CheckRSESingle":
+          
+        if self.rse == None:
+          logging.info("Nothing to be done here - Define --rse")
+          exit()  
+          
+        for data_doc in self.run_doc['data']:
+          #Check for rucio-catalogue entries in runDB
+          if data_doc['host'] != "rucio-catalogue":
+            continue
+          
+          if self.status != None and data_doc['status'] != self.status:
+            continue
+          
+          
+          rse_storage = data_doc['rse']
+          status      = data_doc['status']
+          location    = data_doc['location']
+          
+          if len(rse_storage) != 1:
+            continue
+          #print(self.rse, rse_storage)
+          #print("y: ", set(self.rse).issubset(rse_storage))
+          if set(self.rse).issubset(rse_storage) == True:
+            logging.info("<%s> : Location: %s | Run name: %s | Run number: %s | RSE: %s", status, location, self.run_doc['name'], self.run_doc['number'], ', '.join(rse_storage))  
+      
+      elif self.method == "CheckRSEMultiple":
+          
+        if self.rse == None:
+          logging.info("Nothing to be done here - Define --rse")
+          exit()  
+          
+        for data_doc in self.run_doc['data']:
+          #Check for rucio-catalogue entries in runDB
+          if data_doc['host'] != "rucio-catalogue":
+            continue
+          
+          if self.status != None and data_doc['status'] != self.status:
+            continue
+          
+          
+          rse_storage = data_doc['rse']
+          status      = data_doc['status']
+          location    = data_doc['location']
+          
+          if len(rse_storage) == 1:
+            continue
+          #print(self.rse, rse_storage)
+          #print("y: ", set(self.rse).issubset(rse_storage))
+          if set(self.rse).issubset(rse_storage) == True:
+            logging.info("<%s> : Location: %s | Run name: %s | Run number: %s | RSE: %s", status, location, self.run_doc['name'], self.run_doc['number'], ', '.join(rse_storage))
+      
+      else:
+        logging.info("Nothing chosen, nothing to be done here")
+          
 class RucioPurge(Task):
     """Remove a single raw data or a bunch
     This notifies the run database and delete raw data from
@@ -1640,7 +1796,7 @@ class RucioPurge(Task):
             continue
           
           #Evaluate when rucio-purge is allowed to delete a data set from xe1t datamanager:
-          if len( data_doc['rse'] ) >= 2 and \
+          if len( data_doc['rse'] ) >= 1 and \
              nb_copies_xe1tdatamanager_b == True and \
              nb_copies_tape_b == True:                              
              logging.info("<-\____________________________________________/->>>")
@@ -1662,19 +1818,18 @@ class RucioPurge(Task):
             logging.info("   Dataset %s is set for deletion.", self.run_doc['name'] )
             logging.info("   Location on xe1t-datamanager: %s", location )
             logging.info("   Purge mode is activate manually: %s", self.purge)
-            logging.info("<<<PURGE MODUS IS DEACTIVATED>>>")
-            logging.info("<<<Remove comment characters in rucio_mover>>>")
-              ### Notify run database
-              #if self.purge is True:
-                #self.collection.update({'_id': self.run_doc['_id']},
-                                       #{'$pull': {'data': data_doc}})
+            
+            # Notify run database
+            if self.purge is True:
+              self.collection.update({'_id': self.run_doc['_id']},
+                                     {'$pull': {'data': data_doc}})
 
-              ### Perform operation
-              #self.log.info("Removing %s" % (self.location))
-              #if os.path.isdir( location ):
-                #shutil.rmtree( location )
-              #else:
-                #os.remove( location )
+            ## Perform operation
+              self.log.info("Removing %s" % (location))
+              if os.path.isdir( location ):
+                shutil.rmtree( location )
+              else:
+                os.remove( location )
 
               #break
 

@@ -278,6 +278,8 @@ def remove():
                         help="Location of file or folder to be removed")
     parser.add_argument('--disable_database_update', action='store_true',
                         help="Disable the update function the run data base")
+    parser.add_argument('--run', type=int, required= True,
+                        help="Disable the update function the run data base")
 
     args = parser.parse_args()
 
@@ -287,7 +289,7 @@ def remove():
     config.set_database_log(database_log)
     config.mongo_password()
 
-    filesystem.RemoveSingle(args.location).go()
+    filesystem.RemoveSingle(args.location).go(args.run)
 
 def stray():
     parser = argparse.ArgumentParser(description="Find stray files.")
@@ -1176,6 +1178,62 @@ def ruciax_download():
       number_name = args.run
     
     rucio_mover.RucioDownload(args.data_rse, args.data_dir, args.data_type).go(number_name)
+
+def ruciax_locator():
+    #Ask the database for the actual status of the file or folder:
+    
+    parser = argparse.ArgumentParser(description="Check the database status")
+    
+    parser.add_argument('--run', type=int, required=False,
+                        help="Select a single run by number")
+    parser.add_argument('--name', type=str, required=False,
+                        help="Select a single run by name")    
+    parser.add_argument('--rse', type=str, required=False,
+                        dest='rse', action='append',
+                        help="Select an rucio storage element")
+    parser.add_argument('--copies', type=int, required=False,
+                        dest='copies',
+                        help="Select how many copies are requested")
+    parser.add_argument('--status', type=str, required=False,
+                        dest='status',
+                        help="Select the requested status")
+    parser.add_argument('--method', type=str, required=True,
+                        dest='method',
+                        help="Select method: [SingleRun(--run)/Status(--status)/CheckRSEMultiple(--rse)/CheckRSESingle(--rse)/MultiCopies(--copies)]")
+    
+    args = parser.parse_args()
+
+
+    # Setup logging
+    cax_version = 'cax_v%s - ' % __version__
+    logging.basicConfig(filename='ruciax_locator.log',
+                        level="INFO",
+                        format=cax_version + '%(asctime)s [%(levelname)s] '
+                                             '%(message)s')
+    
+    # define a Handler which writes INFO messages or higher to the sys.stderr
+    console = logging.StreamHandler()
+    console.setLevel("INFO")
+
+    # set a format which is simpler for console use
+
+    formatter = logging.Formatter('%(name)-12s: %(levelname)-8s %(message)s')
+    # tell the handler to use this format
+    console.setFormatter(formatter)
+    # add the handler to the root logger
+    logging.getLogger('').addHandler(console)
+    
+
+    # Set information to update the run database
+    config.mongo_password()
+    
+    number_name = None
+    if args.name is not None:
+      number_name = args.name
+    else:
+      number_name = args.run
+    
+    rucio_mover.RucioLocator(args.rse, args.copies, args.method, args.status).go(number_name)
 
 if __name__ == '__main__':
     main()

@@ -66,6 +66,7 @@ setup(
             'ruciax-check = cax.main:ruciax_status',
             'ruciax-purge = cax.main:ruciax_purge',
             'ruciax-download = cax.main:ruciax_download',
+            'ruciax-locator = cax.main:ruciax_locator',
         ],
     },
 )
