@@ -1118,6 +1118,9 @@ def ruciax_download():
                         help="Select a single run by number")
     parser.add_argument('--name', type=str, required=False,
                         help="Select a single run by name")    
+    parser.add_argument('--location', type=str, required=False,
+                        dest='location',
+                        help="Select a single run by rucio location") 
     parser.add_argument('--type', type=str, required=False,
                         dest='data_type',
                         help="Select what kind of data you want to download [raw/processed]")    
@@ -1126,7 +1129,10 @@ def ruciax_download():
                         help="Select a specific rucio storage endpoint for download")  
     parser.add_argument('--dir', type=str, required=True,
                         dest='data_dir',
-                        help="Select a download directory")  
+                        help="Select a download directory")
+    parser.add_argument('--restore', type=bool, required=False, default=False,
+                        dest='restore',
+                        help="Enable restore mode to recover data from the rucio catalogue")
     parser.add_argument('--config', action='store', type=str,
                         dest='config_file',
                         help="Load a custom .json config file into cax")
@@ -1177,7 +1183,7 @@ def ruciax_download():
     else:
       number_name = args.run
     
-    rucio_mover.RucioDownload(args.data_rse, args.data_dir, args.data_type).go(number_name)
+    rucio_mover.RucioDownload(args.data_rse, args.data_dir, args.data_type, args.restore, args.location).go(number_name)
 
 def ruciax_locator():
     #Ask the database for the actual status of the file or folder:
@@ -1197,9 +1203,12 @@ def ruciax_locator():
     parser.add_argument('--status', type=str, required=False,
                         dest='status',
                         help="Select the requested status")
+    parser.add_argument('--config', action='store', type=str,
+                        dest='config_file',
+                        help="Load a custom .json config file into cax")
     parser.add_argument('--method', type=str, required=True,
                         dest='method',
-                        help="Select method: [SingleRun(--run)/Status(--status)/CheckRSEMultiple(--rse)/CheckRSESingle(--rse)/MultiCopies(--copies)]")
+                        help="Select method: [SingleRun] (--run) | [Status] (--status) | [CheckRSEMultiple] (--rse) |  [CheckRSESingle] (--rse) | [MultiCopies] (--copies) | [ListSingleRules] (--run/--name)")
     
     args = parser.parse_args()
 
@@ -1226,6 +1235,14 @@ def ruciax_locator():
 
     # Set information to update the run database
     config.mongo_password()
+    
+    if args.config_file:
+      if not os.path.isfile(args.config_file):
+        logging.error("Config file %s not found", args.config_file)
+      else:
+        logging.info("Using custom config file: %s",
+                     args.config_file)
+        config.set_json(args.config_file)
     
     number_name = None
     if args.name is not None:

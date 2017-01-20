@@ -16,7 +16,7 @@ from ..task import Task
 class ChecksumMethods():
     """Implement own checksum methods"""
     
-    def get_adler32( fname ):
+    def get_adler32(self, fname ):
         """Calcualte an Adler32 checksum in python
             Used for cross checks with Rucio
         """

@@ -112,6 +112,7 @@ class TSMclient(Task):
     def download(self, tape_source, dw_destination, raw_data_filename):
         """Download a folder from the tape storage"""
         
+        
         script_download = self.tsm_commands("restore-path").format(path_tsm = tape_source,
                                                                    path_restore = dw_destination)
         
@@ -277,7 +278,7 @@ dsmc incr {path}/
         """
         
         restore_path = """
-dsmc rest {path_tsm}/ {path_restore}/ -su=yes
+dsmc rest {path_tsm}/ {path_restore}/ -followsymbolic=yes
         """
         
         check_install = """

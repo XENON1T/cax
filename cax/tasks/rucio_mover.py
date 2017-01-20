@@ -31,6 +31,7 @@ from paramiko import SSHClient, util
 
 from cax import config
 from cax.task import Task
+from cax.tasks.checksum import ChecksumMethods
 
 
 
@@ -83,6 +84,74 @@ class RucioBase(Task):
           rse_usage_summary['rse_usage_source'] = i.split(":")[1].replace(" ", "")
     
       return rse_usage_summary
+    
+    def list_file_rules(self, location):
+      """List individual rules of data sets if they exists"""
+      rules = {}
+      
+      files, file_info = self.list_files( location.split(":")[0] , location.split(":")[1] )
+      
+      for i_file in files:
+        new_location = "{scope}:{ifile}".format( scope=location.split(":")[0],
+                                                 ifile=i_file)
+      
+        lirule = self.RucioCommandLine( self.host,
+                                      "list-rules",
+                                      filelist = None,
+                                      metakey  = None).format(rucio_account=config.get_config( self.remote_host )["rucio_account"],
+                                                              location=new_location)
+      
+        logging.debug( lirule )
+      
+        msg_std, msg_err = self.doRucio( lirule )
+
+        for i in msg_std:
+          if i.find( new_location ) >= 0:
+            line = i.split(" ")
+            line = list(filter(None, line))
+            single_rule = {
+                           "rule_id": line[0],
+                           "rule_account": line[1],
+                           "rule_status": line[3],
+                           "rule_host": line[4]
+                           }
+            if len(line) > 6:
+              single_rule['rule_expired'] = "{date}_{time}".format(date=line[6], time=line[7])
+            else:
+              single_rule['rule_expired'] = "valid"
+            rules[ i_file ] = single_rule
+      return rules
+    
+    def list_all_rules(self, location, rse_remote=None):
+      
+      rules = {}
+      lirule = self.RucioCommandLine( self.host,
+                                      "list-rules",
+                                      filelist = None,
+                                      metakey  = None).format(rucio_account=config.get_config( self.remote_host )["rucio_account"],
+                                                              location=location)
+      
+      logging.debug( lirule )
+      
+      rule_summary = {}
+      msg_std, msg_err = self.doRucio( lirule )
+
+      for i in msg_std:
+        if i.find( location ) >= 0:
+          line = i.split(" ")
+          line = list(filter(None, line))
+          single_rule = {
+                         "rule_id": line[0],
+                         "rule_account": line[1],
+                         "rule_status": line[3]
+                         }
+          if len(line) > 6:
+            single_rule['rule_expired'] = "{date}_{time}".format(date=line[6], time=line[7])
+          else:
+            single_rule['rule_expired'] = "valid"
+          rules[ line[4] ] = single_rule
+          
+      return rules
     
     def list_rules(self, location, rse_remote):
       
@@ -150,7 +219,7 @@ class RucioBase(Task):
                                                           scope=scope,
                                                           name=name)
       
-      logging.debug( dw )
+      logging.info( dw )
       
       sum_dw = {}
       
@@ -252,8 +321,84 @@ class RucioBase(Task):
             logging.info("Ups... Something went wrong with your rule ID")
           
       return rule_summary_new
-        
     
+    def update_rule_force(self, location, rse_remote, lifetime = "-2"):
+      #This is pure rule updater. It allows to change the lifetime of the rule
+      #Can also used to delete a rule before the 24h condition
+      
+      i_rule_id = None
+      i_rule_status = None
+      i_rse     = None
+      i_path    = None
+      i_expired = None
+      i_rule_account = None
+      
+      rule_summary = self.list_rules( location, rse_remote)
+      
+      i_rule_id = rule_summary['rule_id']
+      i_rse     = rule_summary['rse']
+      i_expired = rule_summary['expires']
+      i_rule_account = config.get_config( self.remote_host )["rucio_account"]
+      
+      if i_rule_id != "n/a" and int(lifetime) > 0:
+        trrule = self.RucioCommandLine( self.host,
+                                      "update-rule",
+                                      filelist = None,
+                                      metakey  = None).format(rucio_account=config.get_config( self.remote_host )["rucio_account"],
+                                                              location=location,
+                                                              rse_remote=rse_remote,
+                                                              dataset_lifetime=lifetime,
+                                                              rule_id=i_rule_id)  
+
+        logging.debug( trrule )
+        
+        msg_std, msg_err = self.doRucio( trrule )
+        for i in msg_std:
+          if i.find("Updated Rule") >= 0:
+            logging.info("Update rule sucessful from valid to %s seconds unitl termination.", lifetime)   
+      
+      else:
+        logging.info("Location %s was not updated", location)
+    
+    def update_rule(self, location, rse_remote, lifetime = "-2"):
+      #This is pure rule updater. It allows to change the lifetime of the rule
+      #Can also used to delete a rule before the 24h condition
+      
+      i_rule_id = None
+      i_rule_status = None
+      i_rse     = None
+      i_path    = None
+      i_expired = None
+      i_rule_account = None
+      
+      rule_summary = self.list_rules( location, rse_remote)
+      
+      i_rule_id = rule_summary['rule_id']
+      i_rse     = rule_summary['rse']
+      i_expired = rule_summary['expires']
+      i_rule_account = config.get_config( self.remote_host )["rucio_account"]
+      
+      if rule_summary['status'].find("OK") >= 0 and i_rule_id != "n/a" and int(lifetime) > 0:
+        trrule = self.RucioCommandLine( self.host,
+                                      "update-rule",
+                                      filelist = None,
+                                      metakey  = None).format(rucio_account=config.get_config( self.remote_host )["rucio_account"],
+                                                              location=location,
+                                                              rse_remote=rse_remote,
+                                                              dataset_lifetime=lifetime,
+                                                              rule_id=i_rule_id)  
+
+        logging.debug( trrule )
+        
+        msg_std, msg_err = self.doRucio( trrule )
+        for i in msg_std:
+          if i.find("Updated Rule") >= 0:
+            logging.info("Update rule sucessful from valid to %s seconds unitl termination.", lifetime)   
+      
+      else:
+        logging.info("Location %s was not updated", location)
+        
+        
     def set_rule(self, location, rse_remote, lifetime = "-2"):
       """ A general approach to define a rule """
       
@@ -273,11 +418,14 @@ class RucioBase(Task):
       i_rule_account = config.get_config( self.remote_host )["rucio_account"]
       
       if rule_summary['status'].find("OK") >= 0 and i_rule_id != "n/a":
-        #return array of files and file properties  
+        #return array of files and file properties
         files, file_info = self.list_files( location.split(":")[0] , location.split(":")[1] )
+        
         #get all file loations for a single rse:
-        #pathlists = self.get_file_locations_keep( location.split(":")[0] , files )
-        pathlists = self.get_file_locations( location.split(":")[0] , files )
+        if len(files) == 1:
+          pathlists = self.get_file_locations_keep( location.split(":")[0] , files )
+        else:  
+          pathlists = self.get_file_locations( location.split(":")[0] , files )
         #create a super string out of it
         super_string = []
         for i_n, i_f in enumerate(files):
@@ -307,30 +455,30 @@ class RucioBase(Task):
         i_path = "n/a"
         i_rule_status = "STUCK"
       
-      elif i_rule_id != "n/a" and i_expired == "valid" and lifetime != "-1" and int(lifetime) > 0:
-        logging.info("Update the rule for %s with setting to %s sec", rse_remote, lifetime)
+      #elif i_rule_id != "n/a" and lifetime != "-1" and int(lifetime) > 0:
+        #logging.info("Update the rule for %s with setting to %s sec", rse_remote, lifetime)
         
         
-        trrule = self.RucioCommandLine( self.host,
-                                        "update-rule",
-                                        filelist = None,
-                                        metakey  = None).format(rucio_account=config.get_config( self.remote_host )["rucio_account"],
-                                                                location=location,
-                                                                rse_remote=rse_remote,
-                                                                dataset_lifetime=int(lifetime),
-                                                                rule_id=i_rule_ad)  
+        #trrule = self.RucioCommandLine( self.host,
+                                        #"update-rule",
+                                        #filelist = None,
+                                        #metakey  = None).format(rucio_account=config.get_config( self.remote_host )["rucio_account"],
+                                                                #location=location,
+                                                                #rse_remote=rse_remote,
+                                                                #dataset_lifetime=lifetime,
+                                                                #rule_id=i_rule_ad)  
 
-        logging.info( trrule )
+        #logging.info( trrule )
         
-        msg_std, msg_err = self.doRucio( trrule )
-        for i in msg_std:
-          if i.find("Updated Rule") >= 0:
-            logging.info("Update rule sucessful from valid to %s seconds unitl termination.", lifetime) 
+        #msg_std, msg_err = self.doRucio( trrule )
+        #for i in msg_std:
+          #if i.find("Updated Rule") >= 0:
+            #logging.info("Update rule sucessful from valid to %s seconds unitl termination.", lifetime) 
     
       
-      elif i_rule_id != "n/a" and len(i_rule_id) == 32 and lifetime != "-1":
-        logging.info("Evaluate the rule ID again for %s", rse_remote)
-        print("ADAAAAAAAAAAAAAAAAAAAAAA")
+      #elif i_rule_id != "n/a" and len(i_rule_id) == 32 and lifetime != "-1":
+        #logging.info("Evaluate the rule ID again for %s", rse_remote)
+        #print("ADAAAAAAAAAAAAAAAAAAAAAA")
         
 
       elif i_rule_id == "n/a" and lifetime == "-2":
@@ -696,7 +844,6 @@ class RucioBase(Task):
         #Prepare the dictionary for filename and rse summary:
         for i_filename in ifilelist:
           ii_filename = i_filename.split("/")[-1]
-          
           file_location_rse = {}
           for irse in rse_list:
             file_location_rse[irse] = ""  
@@ -716,9 +863,7 @@ class RucioBase(Task):
               file_location_sub['size']     = ii[3].replace(" ", "")
               file_location_sub['checksum'] = ii[4].replace(" ", "")
               file_location_sub['path']     = ii[5].split(":", 1)[1].replace(" ", "")
-              
               file_location_rse[ irse ] = file_location_sub
-              
               file_location[ file_location_sub['name'] ][ irse ] = file_location_sub
 
         return file_location
@@ -870,6 +1015,10 @@ class RucioBase(Task):
       logging.info("Data path: %s", datapath)
       logging.info("Files: %s", files)
       
+      #Store the information about which files are uploaded to the rucio catalogue
+      self.return_rucio['file_list'] = files
+      self.return_rucio['rse'] = rrse
+      
       #Sanity check for the number of uploaded files: If zero files gathered -> error and abort!
       if len( files ) == 0:
         logging.info("The data path %s/%s does not exists on %s or does not contain any data",
@@ -943,6 +1092,13 @@ class RucioBase(Task):
       logging.info("Rucio - Science Run Container: %s", over_container_name)
       logging.info("Rucio - Container name: %s", container_name)
       logging.info("Rucio - Dataset name (depend on raw/processed upload type): %s", dataset_name)
+      
+      #Store information which scopes, datasets, containser are going to be used
+      self.return_rucio['scope_basic'] = rscope_basic
+      self.return_rucio['scope_upload'] = rscope_upload
+      self.return_rucio['sr_container'] = over_container_name
+      self.return_rucio['container'] = container_name
+      self.return_rucio['dataset_name'] = dataset_name
       
       #0) Create the container and datasets:
       #-----------------------------------------------------------------
@@ -1042,7 +1198,6 @@ class RucioBase(Task):
       for i in msg_std:
         logging.info("Rucio (upload-folder): %s", i)
       
-      #exit()
       
       #upload_name = self.RucioCommandLine(self.host, 
                                           #"upload-advanced", 
@@ -1635,13 +1790,14 @@ class RucioLocator(Task):
     This notifies the run database and delete raw data from
     xe1t-datamanager
     """
-    def __init__(self, rse=None, copies=None, method=None, status=None):
+    def __init__(self, rse=None, copies=None, method=None, status=None, location=None):
         # Perform base class initialization
         Task.__init__(self)
         self.rse = rse
         self.copies = copies
         self.method = method
         self.status = status
+        self.location = location
         
         if self.method == None:
           logging.info("Nothing to do")
@@ -1759,6 +1915,72 @@ class RucioLocator(Task):
           if set(self.rse).issubset(rse_storage) == True:
             logging.info("<%s> : Location: %s | Run name: %s | Run number: %s | RSE: %s", status, location, self.run_doc['name'], self.run_doc['number'], ', '.join(rse_storage))
       
+      elif self.method == "ListSingleRules":
+        #List individual rules of the uploaded raw data (if exists)
+        logging.info("Check for single rucio dataset rules")
+        
+        rucio_basic_conf_class = RucioConfig()
+        rucio_conf = rucio_basic_conf_class.get_config( config.get_hostname() )
+        
+        self.rucio = RucioBase(self.run_doc)
+        self.rucio.set_host( config.get_hostname() )
+        self.rucio.set_remote_host( "rucio-catalogue" )
+        
+        for data_doc in self.run_doc['data']:
+          #Check for rucio-catalogue entries in runDB
+          if data_doc['host'] != "rucio-catalogue":
+            continue
+          scope = data_doc['location'].split(":")[0]
+          dname = data_doc['location'].split(":")[1]
+          
+          list_dataset_rules = self.rucio.list_all_rules( data_doc['location'])
+          logging.info("Rucio DID %s:%s has:", scope, dname)
+          for key, num in list_dataset_rules.items():
+            logging.info("RSE: %s -> Rule: %s (%s)", key, num['rule_id'], num['rule_expired'])
+          
+          logging.info("-----individual rules (if exists)-----")
+          list_sfile_rules = self.rucio.list_file_rules( data_doc['location'])
+          if len(list_sfile_rules) > 0:
+            for key, value in list_sfile_rules.items():
+              logging.info("Host %s | Rucio DID: %s:%s -> Rule: %s (%s)", value['rule_host'], scope, key, value['rule_id'], value['rule_expired']) 
+          
+      elif self.method == "DeleteSingleFileRules":
+        #List individual rules of the uploaded raw data (if exists)
+        logging.info("Check for single rucio dataset rules")
+        
+        rucio_basic_conf_class = RucioConfig()
+        rucio_conf = rucio_basic_conf_class.get_config( config.get_hostname() )
+        
+        self.rucio = RucioBase(self.run_doc)
+        self.rucio.set_host( config.get_hostname() )
+        self.rucio.set_remote_host( "rucio-catalogue" )
+        
+        for data_doc in self.run_doc['data']:
+          #Check for rucio-catalogue entries in runDB
+          if data_doc['host'] != "rucio-catalogue":
+            continue
+          scope = data_doc['location'].split(":")[0]
+          dname = data_doc['location'].split(":")[1]
+          
+          list_dataset_rules = self.rucio.list_all_rules( data_doc['location'])
+          logging.info("Rucio DID %s:%s has:", scope, dname)
+          count_copies = 0
+          for key, num in list_dataset_rules.items():
+            logging.info("RSE: %s -> Rule: %s (%s)", key, num['rule_id'], num['rule_expired'])
+            if len(num['rule_id'] ) == 32:
+              count_copies += 1
+          
+          print("copies: ", count_copies)
+          logging.info("-----individual rules (if exists)-----")
+          list_sfile_rules = self.rucio.list_file_rules( data_doc['location'])
+          if len(list_sfile_rules) > 0:
+            for key, value in list_sfile_rules.items():
+              logging.info("Host %s | Rucio DID: %s:%s -> Rule: %s (%s)", value['rule_host'], scope, key, value['rule_id'], value['rule_expired']) 
+              location_single = "{scope}:{file}".format(scope=scope,
+                                                        file=key)
+              print("A: ", location_single)
+              self.rucio.update_rule_force( location_single, value['rule_host'], 10)
+      
       else:
         logging.info("Nothing chosen, nothing to be done here")
           
@@ -1839,6 +2061,7 @@ class RucioConfig():
        -> important for massive-ruciax
     """
     
+    
     def get_config(self, host ):
       general = {"xe1t-datamanager": self.config_xe1tdatamanager(),
                  "midway-login1":    self.config_midway_rcc(),
@@ -1852,10 +2075,9 @@ class RucioConfig():
     def config_tegner(self):
       # Configuration pre-bash script for Tegner
       tegner = """#!/bin/bash
-voms-proxy-init -voms xenon.biggrid.nl -valid 168:00
 export PATH="/cfs/klemming/nobackup/b/bobau/ToolBox/TestEnv/Anaconda3/bin:$PATH"
-#source activate rucio_p3
-source activate test_upload
+source activate rucio_p3
+#source activate test_upload
 export PATH=~/.local/bin:$PATH
 cd /cfs/klemming/nobackup/b/bobau/ToolBox/gfal-tools
 source /cfs/klemming/nobackup/b/bobau/ToolBox/gfal-tools/setup.sh
@@ -1906,21 +2128,24 @@ source activate rucio_p3
       return yourhost
      
 class RucioDownload(Task):
-    """Remove a single raw data or a bunch
-    This notifies the run database and delete raw data from
-    xe1t-datamanager
-    """
-    def __init__(self, data_rse, data_dir, data_type='raw'):
+    """The rucio downloader"""
+    def __init__(self, data_rse, data_dir, data_type='raw', data_restore=False, location=None):
         self.data_rse  = data_rse
         self.data_dir  = data_dir
+        self.data_host = data_dir
         self.data_type = data_type
-        
+        self.data_restore = data_restore
         # Perform base class initialization
         Task.__init__(self)
 
     def each_run(self):
         """Download from rucio catalogue"""
-       
+        
+        #Get a list of hosts
+        list_hosts = []
+        for data_doc in self.run_doc['data']:
+          list_hosts.append( data_doc['host'] )
+        
         for data_doc in self.run_doc['data']:
           #Check if the requested data set is registered to the rucio catalogue
           if data_doc['host'] != "rucio-catalogue":
@@ -1934,16 +2159,43 @@ class RucioDownload(Task):
           if data_doc['rse'] and self.data_rse in data_doc['rse']:
             rse = self.data_rse
           
+          if self.data_dir == None:
+            logging.info("Exit rucio-download: No download destination selected!")
+            logging.info("Choose: A standard host ( --restore True )")
+            logging.info("Choose: A certain folder for download")
+            exit()
+          
           location = data_doc['location']
           scope    = location.split(":")[0]
-          name    = location.split(":")[1]
+          name     = location.split(":")[1]
+          dname    = self.run_doc['name']
+
+          if self.data_restore == False:
+            #Download to a folder
+            if os.path.isabs(self.data_dir) == False:
+              self.data_dir = os.path.abspath(self.data_dir)    
           
-          if os.path.isabs(self.data_dir) == False:
-            self.data_dir = os.path.abspath(self.data_dir)    
+            if not os.path.exists(self.data_dir):
+              os.makedirs(self.data_dir)
+            logging.info("Download to pre-selected folder: %s", self.data_dir)
+            logging.info("Data are not registered at the host!")
           
-          if not os.path.exists(self.data_dir):
-            os.makedirs(self.data_dir)
+          elif self.data_restore == True and self.data_host == config.get_hostname() and self.data_host not in list_hosts:
+            #This section is dedicated to restore/copy from rucio catalogue to a host:
+            r_path = config.get_config( self.data_dir )['dir_raw']
+            restore_path = os.path.join(r_path, dname)
             
+            self.data_dir = os.path.abspath(restore_path)
+            if os.path.exists(self.data_dir):
+              logging.info("The path %s exists already on host %s", self.data_dir, self.data_host)
+              logging.info("Exit rucio-download to avoid data loss/overwrite")
+              exit()
+            if not os.path.exists(self.data_dir):
+              os.makedirs(self.data_dir)
+            
+            logging.info("Restore to host %s from rucio-catalogue", self.data_host)
+            logging.info("Folder: %s", self.data_dir)
+          
           self.rucio = RucioBase(self.run_doc)
           self.rucio.set_host( config.get_hostname() )
           self.rucio.set_remote_host( "rucio-catalogue" )
@@ -1951,7 +2203,7 @@ class RucioDownload(Task):
             return 0
           
           result = self.rucio.download(location, rse, self.data_dir) 
-          
+          download_file_list = []
           logging.info("Summary:")
           logging.info("Downloaded DID: %s", result['did'])
           logging.info("Total number of files: %s", result['total_files'])
@@ -1960,16 +2212,56 @@ class RucioDownload(Task):
           logging.info("Number of downloaded files: %s", result['dw_files'])
           logging.info("Number of failed downloaded files: %s", result['dwfail_files'])
           logging.info("Download status: %s", result['status'])
+          
+          #Extract all rucio checksums:
+          lf = self.rucio.list_files(scope, name)
+          count_checksum   = 0
+          
           for key, value in result['details'].items():
+              
+              cksum_download = ChecksumMethods().get_adler32(os.path.join(self.data_dir, key) )
+              cksum_rucio = lf[1][key]['checksum']
+              if cksum_download == cksum_rucio:
+                count_checksum += 1
+                
               logging.info("File %s", key)
               logging.info("-- Download size: %s kB", value['dw_size'])
               logging.info("-- Download time: %s seconds", value['dw_time'])
               logging.info("-- Downloaded from RSE: %s", value['dw_rse'])
+              logging.info("-- Checksum (rucio): %s", cksum_rucio)
+              logging.info("-- Checksum (file): %s", cksum_download )
+              download_file_list.append( key )
           
           
+          if count_checksum == len( lf[0] ) and count_checksum == len(download_file_list):
+            logging.info("Download %s:%s [sucessful]", scope, name)
+            logging.info("Checksum test [successful]")
+            #Create new entry to the run data base for the target host:
+            if self.data_restore == True and self.data_host == config.get_hostname() and self.data_host not in list_hosts:
+              #Create an entry for the data base:
+              datum_new = {'type'         : data_doc['type'],
+                           'host'         : self.data_host,
+                           'status'       : 'verifying',
+                           'location'     : self.data_dir,
+                           'checksum'     : None,
+                           'creation_time': datetime.datetime.utcnow(),
+                          }  
+              logging.info("New entry for Xenon1T data base: %s", datum_new )
+            
+              if config.DATABASE_LOG == True:
+                result = self.collection.update_one({'_id': self.run_doc['_id'],
+                                                   },
+                                     {'$push': {'data': datum_new}})
+
+                if result.matched_count == 0:
+                  self.log.error("Race condition!  Could not copy because another "
+                             "process seemed to already start.")
+                  return 
+            
+          else:
+            logging.info("Download %s:%s [failed]", scope, name)
+            logging.info("Checksum test [failed]")  
           
-          
-        
     
 class RucioRule(Task):
     
@@ -2388,7 +2680,16 @@ class RucioRule(Task):
           logging.info("Delete file %s from RSE %s", there['location'], i_rse)
           self.rucio.delete_rule(there['location'], i_rse)
                           
-        
+    
+    def delete_rule(self, location, rse):
+      self.rucio.delete_rule( location, rse)
+    
+    def set_rule(self, location, rse, lifetime="-2"):
+      self.rucio.set_rule( location, rse, lifetime)
+    
+    def update_rule(self, location, rse, lifetime="-2"):
+      self.rucio.update_rule( location, rse, lifetime)
+    
     def get_rundb_entry(self, data_type):
       """Get a specified runDB entry"""
       db_entry = None

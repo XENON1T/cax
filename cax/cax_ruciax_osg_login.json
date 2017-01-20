@@ -14,7 +14,7 @@
     "name": "midway-login1",
     "method": "scp",
     "hostname": "midway-login1.rcc.uchicago.edu",
-    "dir_raw": "/project/lgrandi/xenon1t/raw",
+    "dir_raw": "/project2/lgrandi/xenon1t/raw",
     "dir_processed": "/project/lgrandi/xenon1t/processed",
     "upload_options": null,
     "username": "tunnell",
@@ -68,7 +68,7 @@
     "download_options": null,
     "rucio_upload_rse": "UC_OSG_USERDISK",
     "rucio_account": "production",
-    "rucio_transfer": ["NIKHEF_USERDISK"]
+    "rucio_transfer": null
   },  
   {
     "name": "lfc",

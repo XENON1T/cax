@@ -717,13 +717,26 @@ class CopyBase(Task):
             datum_new['status'] = self.rucio.get_rucio_info()['status'] 
             datum_new['location'] = self.rucio.get_rucio_info()['location']
             datum_new['checksum'] = self.rucio.get_rucio_info()['checksum']
-            datum_new['rse'] = self.rucio.get_rucio_info()['rse']  
+            datum_new['rse'] = self.rucio.get_rucio_info()['rse']
+            
             #Init the RucioRule module and set its runDB entry manually
             self.rucio_rule = RucioRule()
             self.rucio_rule.set_db_entry_manually( self.run_doc )
             #Perform the initial rule setting:
             self.rucio_rule.set_possible_rules(data_type=datum['type'], dbinfo = datum_new)
-            self.log.info("Status: transferred -> Transfer rules are set")
+            self.log.info("Status: transferred -> Transfer rules are set for %s", self.rucio.get_rucio_info()['rse'])
+            
+            #let it sleep for 5 seconds:
+            print("Sleep")
+            time.sleep(15)
+            print("sleep end: ")
+            self.log.info("Delete individual rules of the uploaded files:")
+            for i_file in self.rucio.get_rucio_info()['file_list']:
+              i_location = "{iscope}:{ifile}".format( iscope=self.rucio.get_rucio_info()['scope_upload'],
+                                                      ifile=i_file.split("/")[-1] )
+              
+              self.log.info("Time out for %s", i_location)
+              self.rucio_rule.update_rule( i_location, self.rucio.get_rucio_info()['rse'][0], "10" )
           else:
             self.log.info("Something went wrong during the upload (error). No rules are set")
 
