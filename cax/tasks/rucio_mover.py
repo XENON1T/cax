@@ -2524,6 +2524,10 @@ class RucioRule(Task):
       '''Set Possible rules according a set of mandatory pre definitions'''
       logging.info("Set rules for data transfers")
       
+      #Define the RSE list for asked deletions already here
+      #-> become availabe later del_possible_rules()
+      self.delete_list = []
+      
       if dbinfo == None:
         there = self.get_rundb_entry( data_type )  
         logging.info("Side load DISABLED: set_possible_rules()")
@@ -2570,7 +2574,6 @@ class RucioRule(Task):
                         }
 
         #Get rule definition from json file
-        self.delete_list = []
         transfer_lifetime = {}
         rule_def = self.rule_definition()
         if rule_def != 0:
@@ -2699,7 +2702,9 @@ class RucioRule(Task):
         for i_rse in self.delete_list:
           logging.info("Delete file %s from RSE %s", there['location'], i_rse)
           self.rucio.delete_rule(there['location'], i_rse)
-                          
+      elif there == None:
+        logging.info("There is no runDB information for rucio-catalogue available: SKIP")
+          
     
     def delete_rule(self, location, rse):
       self.rucio.delete_rule( location, rse)
