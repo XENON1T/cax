@@ -488,6 +488,15 @@ class CopyBase(Task):
 
         if self.tsm.check_client_installation() == False:
           logging.info("There is a problem with your dsmc client")
+          if config.DATABASE_LOG:
+            self.collection.update({'_id' : self.run_doc['_id'],
+                                  'data': {
+                                        '$elemMatch': datum_new}},
+                                   {'$set': {'data.$.status': "error",
+                                             'data.$.location': "n/a",
+                                             'data.$.checksum': "n/a",
+                                             }
+                                   })
           return
 
         #Prepare a copy from raw data location to tsm location ( including renaming)
@@ -726,17 +735,19 @@ class CopyBase(Task):
             self.rucio_rule.set_possible_rules(data_type=datum['type'], dbinfo = datum_new)
             self.log.info("Status: transferred -> Transfer rules are set for %s", self.rucio.get_rucio_info()['rse'])
             
+            # Commented out due to upload section (rucio_mover) option 3!
+            # No need to delete single file rules manually after upload
             #let it sleep for 5 seconds:
-            print("Sleep")
-            time.sleep(15)
-            print("sleep end: ")
-            self.log.info("Delete individual rules of the uploaded files:")
-            for i_file in self.rucio.get_rucio_info()['file_list']:
-              i_location = "{iscope}:{ifile}".format( iscope=self.rucio.get_rucio_info()['scope_upload'],
-                                                      ifile=i_file.split("/")[-1] )
+            #logging.info("Sleep")
+            #time.sleep(15)
+            #logging.info("Sleep time finished ")
+            #self.log.info("Delete individual rules of the uploaded files:")
+            #for i_file in self.rucio.get_rucio_info()['file_list']:
+              #i_location = "{iscope}:{ifile}".format( iscope=self.rucio.get_rucio_info()['scope_upload'],
+                                                      #ifile=i_file.split("/")[-1] )
               
-              self.log.info("Time out for %s", i_location)
-              self.rucio_rule.update_rule( i_location, self.rucio.get_rucio_info()['rse'][0], "10" )
+              #self.log.info("Time out for %s", i_location)
+              #self.rucio_rule.update_rule( i_location, self.rucio.get_rucio_info()['rse'][0], "10" )
           else:
             self.log.info("Something went wrong during the upload (error). No rules are set")
 

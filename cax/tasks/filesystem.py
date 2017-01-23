@@ -309,7 +309,8 @@ class RemoveRucioEntry(Task):
             
             if self.status != None and data_doc['status'] != self.status:
                 continue
-            
+            print("----------")
+            print(data_doc)
             # Notify run database
             if config.DATABASE_LOG is True:
               print("Delete this: ", data_doc)

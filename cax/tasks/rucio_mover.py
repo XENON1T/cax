@@ -1169,36 +1169,32 @@ class RucioBase(Task):
             
       #1) Upload the raw/processed data and set the meta tags:
       #-----------------------------------------------------------------    
-      print("test")
       if data_type == "raw":
         upload_file_s = files
-        print("testraw")
       elif data_type == "processed":
         upload_file_s = [files]
-        print("testpr")
       else:
         logging.info("No files for upload are specified")
         return 0
-      print("testafter")
       #1.1) Upload      
       
-      upload_folder_p = files[0].replace( files[0].split("/")[-1], "")
-      upload_folder = self.RucioCommandLine(self.host, 
-                                            "upload-folder", 
-                                            filelist = None,
-                                            metakey = None).format(rucio_account=raccount,
-                                                                 scope=rscope_upload,
-                                                                 datasetpath=upload_folder_p,
-                                                                 rse=rrse)
+      ##Option 1) Upload-folder
+      #upload_folder_p = files[0].replace( files[0].split("/")[-1], "")
+      #upload_folder = self.RucioCommandLine(self.host, 
+                                            #"upload-folder", 
+                                            #filelist = None,
+                                            #metakey = None).format(rucio_account=raccount,
+                                                                 #scope=rscope_upload,
+                                                                 #datasetpath=upload_folder_p,
+                                                                 #rse=rrse)
       
-      print(":", dataset_name, files[0].replace( files[0].split("/")[-1], ""))
-      print(":", datapath)
-      print(upload_folder)
-      msg_std, msg_err = self.doRucio( upload_folder )
-      for i in msg_std:
-        logging.info("Rucio (upload-folder): %s", i)
+      #logging.debug(upload_folder)
+      #msg_std, msg_err = self.doRucio( upload_folder )
+      #for i in msg_std:
+        #logging.info("Rucio (upload-folder): %s", i)
       
       
+      #Option 2) upload-advanced: (upload each file alone - sets one rule per file)
       #upload_name = self.RucioCommandLine(self.host, 
                                           #"upload-advanced", 
                                           #filelist = upload_file_s,
@@ -1210,8 +1206,26 @@ class RucioBase(Task):
       #print(upload_name)
       #msg_std, msg_err = self.doRucio( upload_name )
       #for i in msg_std:
-        #logging.info("Rucio (upload-advanced): %s", i)
-        
+        #logging.info("Rucio (upload-advanced): %s", i)      
+      
+      #Option 3) upload-folder-with-did:
+      upload_folder_p = files[0].replace( files[0].split("/")[-1], "")
+      data_identifiyer = "{scope}:{dname}".format(scope=rscope_upload, dname=dataset_name)
+      upload_folder = self.RucioCommandLine(self.host, 
+                                            "upload-folder-with-did", 
+                                            filelist = None,
+                                            metakey = None).format(rucio_account=raccount,
+                                                                 scope=rscope_upload,
+                                                                 datasetpath=upload_folder_p,
+                                                                 rse=rrse,
+                                                                 did=data_identifiyer)
+      
+      logging.debug(upload_folder)
+      msg_std, msg_err = self.doRucio( upload_folder )
+      for i in msg_std:
+        logging.info("Rucio (upload-folder-with-did): %s", i)
+      
+
       for i in msg_std:
         if i.find("ERROR [The requested service is not available at the moment.") >= 0:
           logging.info("ERROR: Rucio service is not available")
@@ -1272,19 +1286,19 @@ class RucioBase(Task):
           logging.info("Rucio (set-metadata): %s to file %s", i, ifile)
 
       #2) Attach the files to the data set:
-      #-----------------------------------------------------------------
-      attach_name = self.RucioCommandLine(self.host,
-                                          "attach",
-                                          filelist = files,
-                                          metakey  = None).format(rucio_account=raccount,
-                                                                  up_scope=rscope_upload,
-                                                                  up_did=dataset_name,
-                                                                  scope=rscope_upload
-                                                                  )
-      logging.debug(attach_name)
-      msg_std, msg_err = self.doRucio( attach_name )
-      for i in msg_std:
-        logging.info("Rucio (attach): %s", i)
+      #---removed due to upload option 3)--------------------------------
+      #attach_name = self.RucioCommandLine(self.host,
+                                          #"attach",
+                                          #filelist = files,
+                                          #metakey  = None).format(rucio_account=raccount,
+                                                                  #up_scope=rscope_upload,
+                                                                  #up_did=dataset_name,
+                                                                  #scope=rscope_upload
+                                                                  #)
+      #logging.debug(attach_name)
+      #msg_std, msg_err = self.doRucio( attach_name )
+      #for i in msg_std:
+        #logging.info("Rucio (attach): %s", i)
         
 
       #3) Set Meta tags to Data set
@@ -1510,6 +1524,10 @@ rucio upload {dataset} --rse {rse} --scope {scope}
 rucio upload --rse {rse} --scope {scope} {datasetpath} 
       """
       
+      upload_folder_with_did = """
+rucio upload --rse {rse} --scope {scope} {did} {datasetpath}       
+      """
+      
       upload_adv = """
 \n
       """
@@ -1616,6 +1634,8 @@ rucio download --no-subdir {rse_dw} {dir} {scope}:{name}
           return general[host] + upload_simple
       elif method == "upload-folder":
           return general[host] + upload_folder
+      elif method == "upload-folder-with-did":
+          return general[host] + upload_folder_with_did
       elif method == "get-metadata":
           return general[host] + get_metadata
       elif method == "set-metadata":
