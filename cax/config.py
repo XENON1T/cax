@@ -202,7 +202,7 @@ def processing_script(args={}):
 #                        partition='kicp' if midway else 'main',
                         base='/project/lgrandi/xenon1t' if midway else '/cfs/klemming/projects/xenon/xenon1t',
                         account='pi-lgrandi' if midway else 'xenon',
-                        anaconda='/project/lgrandi/anaconda3/bin' if midway else '/afs/pdc.kth.se/projects/xenon/software/Anaconda3/bin',
+                        anaconda='/project/lgrandi/anaconda3/bin' if midway else '/cfs/klemming/nobackup/b/bobau/ToolBox/TestEnv/Anaconda3/bin',
                         extra='#SBATCH --mem-per-cpu=2000\n#SBATCH --qos=xenon1t' if midway else '#SBATCH -t 72:00:00',
 #                        extra='#SBATCH --mem-per-cpu=2000\n#SBATCH --qos=xenon1t-kicp' if midway else '#SBATCH -t 72:00:00',
 #                        extra2='source /cvmfs/oasis.opensciencegrid.org/osg-software/osg-wn-client/3.3/current/el6-x86_64/setup.sh' if midway else '',
@@ -238,10 +238,11 @@ mkdir -p ${{JOB_WORKING_DIR}}
 cd ${{JOB_WORKING_DIR}}
 
 rm -f pax_event_class*
-source activate pax_{pax_version}
+#source activate pax_{pax_version}
+source activate rucio_p3
 
-
-HOSTNAME={host} {command}
+HOSTNAME={host}
+{command}
 
 {stats}
 """.format(**args)

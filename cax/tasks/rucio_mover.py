@@ -2149,7 +2149,7 @@ source activate rucio_p3
      
 class RucioDownload(Task):
     """The rucio downloader"""
-    def __init__(self, data_rse, data_dir, data_type='raw', data_restore=False, location=None):
+    def __init__(self, data_rse, data_dir=None, data_type='raw', data_restore=False, location=None):
         self.data_rse  = data_rse
         self.data_dir  = data_dir
         self.data_host = data_dir
@@ -2161,10 +2161,11 @@ class RucioDownload(Task):
     def each_run(self):
         """Download from rucio catalogue"""
         
-        #Get a list of hosts
+        #Get a list of hosts (depending on the data type)
         list_hosts = []
         for data_doc in self.run_doc['data']:
-          list_hosts.append( data_doc['host'] )
+          if data_doc['type'] == self.data_type:  
+            list_hosts.append( data_doc['host'] )
         
         for data_doc in self.run_doc['data']:
           #Check if the requested data set is registered to the rucio catalogue
@@ -2200,6 +2201,9 @@ class RucioDownload(Task):
             logging.info("Download to pre-selected folder: %s", self.data_dir)
             logging.info("Data are not registered at the host!")
           
+          elif self.data_restore == True and self.data_host == config.get_hostname() and self.data_host in list_hosts:
+            logging.info("There are already %s data at host %s -> No download necessary", self.data_type, self.data_host)
+            exit()
           elif self.data_restore == True and self.data_host == config.get_hostname() and self.data_host not in list_hosts:
             #This section is dedicated to restore/copy from rucio catalogue to a host:
             r_path = config.get_config( self.data_dir )['dir_raw']
@@ -2216,6 +2220,7 @@ class RucioDownload(Task):
             logging.info("Restore to host %s from rucio-catalogue", self.data_host)
             logging.info("Folder: %s", self.data_dir)
           
+          logging.info("Start download...")
           self.rucio = RucioBase(self.run_doc)
           self.rucio.set_host( config.get_hostname() )
           self.rucio.set_remote_host( "rucio-catalogue" )
