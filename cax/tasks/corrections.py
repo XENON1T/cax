@@ -9,6 +9,7 @@ import sympy
 import time
 import pytz
 import requests
+import hax
 from hax import slow_control
 from pax import configuration, units
 from sympy.parsing.sympy_parser import parse_expr
@@ -75,10 +76,6 @@ class CorrectionBase(Task):
 
 
 class AddElectronLifetime(CorrectionBase):
-    """Copy data to here
-
-    If data exists at a reachable host but not here, pull it.
-    """
     key = 'processor.DEFAULT.electron_lifetime_liquid'
     correction_units = units.us
 
@@ -94,6 +91,39 @@ class AddElectronLifetime(CorrectionBase):
         return lifetime * self.correction_units
 
 
+class AddDriftVelocity(CorrectionBase):
+    key = 'processor.DEFAULT.drift_velocity_liquid'
+    correction_units = units.km / units.s
+
+    def evaluate(self):
+        run_number = self.run_doc['number']
+
+        # Minimal init of hax. It's ok if hax is inited again with different settings before or after this.
+        hax.init(use_runs_db=False, pax_version_policy='loose', main_data_paths=[])
+
+        # Compute voltage difference between anode and cathode in kV
+        dv_kv = hax.slow_control.get('XE1T.GEN_HEINZVMON.PI', run_number).mean()
+        dv_kv += 1e-3 * hax.slow_control.get('XE1T.CTPC.BOARD14.CHAN000.VMON', run_number).mean()
+
+        # Get the drift velocity
+        value = self.vd(dv_kv)
+
+        self.log.info("Run %d: calculated drift velocity of %0.3f km/sec" % (run_number, value))
+        return value * self.correction_units
+
+    @staticmethod
+    def vd(dv_kv):
+        """Return the drift velocity in XENON1T in km/sec for an anode-cathode voltage difference in kv of dv_kv
+        Power-law fit to the datapoints in xenon:xenon1t:aalbers:drift_and_diffusion
+
+        When we're well beyond the range of the fit, we will take the value to be constant (to avoid crazy things like
+        nan or negative values).
+        """
+        dv = np.asarray(dv_kv).copy()
+        dv = np.clip(dv, 12, 25)
+        return (41.9527213 * dv - 434.23)**0.0670935
+
+
 class AddSlowControlInformation(CorrectionBase):
     """Add all slow control highlight information to run db
     """
@@ -104,6 +134,8 @@ class AddSlowControlInformation(CorrectionBase):
         pass
 
     def evaluate(self):
+        raise NotImplementedError("hax's slow control interface has changed. The code below would crash if you tried to"
+                                  "run it.")
         time_range = self.get_time_range()
 
         data = defaultdict(dict)

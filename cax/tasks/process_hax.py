@@ -21,8 +21,8 @@ from cax.task import Task
 
 def init_hax(in_location, pax_version, out_location):
     hax.init(experiment='XENON1T',
-         main_data_paths=[in_location+'pax_'+pax_version],
-         minitree_paths = [out_location])
+             main_data_paths=[in_location+'pax_'+pax_version],
+             minitree_paths = [out_location])
 
 def verify():
     """Verify the file
