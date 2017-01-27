@@ -171,6 +171,7 @@ class TSMclient(Task):
     
         script_upload = self.tsm_commands("incr-upload-path").format(path=raw_data_location)
         
+        print(script_upload)
         logging.debug( script_upload )
                 
         tno_dict = {
@@ -253,16 +254,17 @@ class TSMclient(Task):
     def tsm_commands(self, method=None):
         
         host_xe1t_datamanager = """#!/bin/bash
-echo "Basic Config"
+echo "Basic Config@xe1tdatamanager"
 source /home/xe1ttransfer/tsm_config/init_tsm.sh   
         """
         
         host_teger = """#!/bin/bash
-echo "Basic Config But No TSM CLIENT
+echo "Basic Config@Tegner"
+export PATH="/cfs/klemming/projects/xenon/.adm/xenon-tsm/:$PATH"
         """
         
         general = {"xe1t-datamanager":host_xe1t_datamanager,
-                "tegner-login-1": host_teger}
+                   "tegner-login-1": host_teger}
         
         
         check_for_raw_data = """

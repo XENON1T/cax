@@ -784,7 +784,8 @@ def massive_tsmclient():
       
     # Setup logging
     log_path = {"xe1t-datamanager": "/home/xe1ttransfer/tsm_log",
-                "midway-login1": "n/a"}
+                "midway-login1": "n/a",
+                "tegner-login-1": "/afs/pdc.kth.se/home/b/bobau/tsm_log"}
     
     if log_path[config.get_hostname()] == "n/a":
         print("Modify the log path in main.py")

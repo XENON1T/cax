@@ -35,13 +35,16 @@
   },
   {
     "name": "tegner-login-1",
-    "method": "scp",
+    "method": "tsm",
     "hostname": "tegner-login-1.pdc.kth.se",
-    "dir_raw": "/cfs/klemming/projects/xenon/xenon1t/raw",
-    "dir_processed": "/cfs/klemming/projects/xenon/xenon1t/processed",
-    "upload_options": null,
     "username": "bobau",
-    "download_options": ["xe1t-datamanager", "midway-login1"]
+    "dir_raw": "/cfs/klemming/projects/xenon/xenon1t/raw",
+    "dir_tsm": "/cfs/klemming/projects/xenon/xenon1t/tsm",
+    "dir_processed": "/cfs/klemming/projects/xenon/xenon1t/processed",
+    "upload_options": [],
+    "download_options": ["tsm-server"],
+    "data_type": ["raw"],
+    "task_list": ["CopyPull","CopyPush"]
   },
   {
     "name": "xe1t-datamanager",

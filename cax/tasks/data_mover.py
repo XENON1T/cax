@@ -269,6 +269,19 @@ class CopyBase(Task):
                                                              option_type,
                                                              remote_host)
 
+            #for i_d in self.run_doc['data']:
+              #print(i_d)
+              #if i_d['host'] == "xe1t-datamanager":
+                #res = self.collection.update({'_id': self.run_doc['_id']},
+                                           #{'$pull': {'data': i_d}}
+                                           #)  
+                #for key, value in res.items():
+                  #print( " * " + str(key) + ": " + str(value) )
+                
+            
+            
+            #exit()
+
             #Delete the old data base entry if rucio transfers are requested
             #and an old upload failed by a bad connection error.
             if method == "rucio" and datum_there != None and datum_there['status'] == 'RSEreupload' and config.DATABASE_LOG == True:
@@ -349,7 +362,7 @@ class CopyBase(Task):
         logging.info("Path to raw data: %s", raw_data_path)
         logging.info("Path to tsm data: %s", raw_data_tsm)
         logging.info("File/Folder for backup: %s", raw_data_filename)
-
+        
         self.log.debug("Notifying run database")
         datum_new = {'type'         : datum['type'],
                      'host'         : destination,
@@ -359,6 +372,8 @@ class CopyBase(Task):
                      'creation_time': datetime.datetime.utcnow(),
                      }
         logging.info("new entry for rundb: %s", datum_new )
+        
+
 
         if config.DATABASE_LOG == True:
             result = self.collection.update_one({'_id': self.run_doc['_id'],
@@ -378,10 +393,20 @@ class CopyBase(Task):
           return
 
         #Do download:
-        tsm_download_result = self.tsm.download( raw_data_tsm + raw_data_filename, raw_data_path, raw_data_filename)
+        tsm_download_result = self.tsm.download( raw_data_location, raw_data_path, raw_data_filename)
         if os.path.exists( raw_data_path + raw_data_filename ) == False:
           logging.info("Download to %s failed.", raw_data_path)
-          #Notify the database and break up
+          if config.DATABASE_LOG:
+            #Notify the database if something went wrong during the download:
+            logging.info("Notifiy the runDB: error")
+            self.collection.update({'_id' : self.run_doc['_id'],
+                                  'data': {
+                                        '$elemMatch': datum_new}},
+                                   {'$set': {'data.$.status': "error",
+                                             'data.$.location': "n/a",
+                                             'data.$.checksum': "n/a",
+                                             }
+                                   })
 
         #Rename
         file_list = []
@@ -544,7 +569,10 @@ class CopyBase(Task):
         logging.info("Network transfer rate: %s", tsm_upload_result["tno_network_transfer_rate"])
         logging.info("MD5 Hash (raw data): %s", checksum_before_tsm)
 
-        test_download = "/data/xenon/tsm/tsm_verify_download"
+        test_download = os.path.join(raw_data_tsm, "tsm_verify_download")
+        #Make sure that temp. download directory exists:
+        if not os.path.exists(test_download):
+          os.makedirs(test_download)
         tsm_download_result = self.tsm.download( raw_data_tsm + raw_data_filename, test_download, raw_data_filename)
         if os.path.exists( raw_data_tsm + raw_data_filename ) == False:
           logging.info("Download to %s failed. Checksum will not match", test_download)

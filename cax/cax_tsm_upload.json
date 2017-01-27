@@ -35,18 +35,18 @@
   },
   {
     "name": "tegner-login-1",
-    "method": "rucio",
+    "method": "tsm",
     "hostname": "tegner-login-1.pdc.kth.se",
-    "dir_raw": "/cfs/klemming/projects/xenon/xenon1t/raw",
-    "dir_processed": "/cfs/klemming/projects/xenon/xenon1t/processed",
+    "dir_raw": "/cfs/klemming/projects/xenon/xenon1t/raw/",
+    "dir_tsm": "/cfs/klemming/projects/xenon/xenon1t/tsm/",
+    "dir_processed": "/cfs/klemming/projects/xenon/xenon1t/processed/",
     "username": "bobau",
-    "method": "rucio",
-    "upload_options": ["rucio-catalogue"],
     "download_options": null,
     "pax_processing_versions": null,
-    "task_list": ["CopyPull", "CopyPush"],
+    "upload_options": ["tsm-server"],
+    "download_options": null,
     "data_type": ["raw"],
-    "download_options": ["xe1t-datamanager", "midway-login1"]
+    "task_list": ["CopyPull","CopyPush"]
   },
   {
     "name": "xe1t-datamanager",
