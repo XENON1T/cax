@@ -101,24 +101,29 @@ class AddDriftVelocity(CorrectionBase):
         # Minimal init of hax. It's ok if hax is inited again with different settings before or after this.
         hax.init(use_runs_db=False, pax_version_policy='loose', main_data_paths=[])
 
-        # Compute voltage difference between anode and cathode in kV
-        dv_kv = hax.slow_control.get('XE1T.GEN_HEINZVMON.PI', run_number).mean()
-        dv_kv += 1e-3 * hax.slow_control.get('XE1T.CTPC.BOARD14.CHAN000.VMON', run_number).mean()
+        # Get the cathode voltage in kV
+        cathode_kv = hax.slow_control.get('XE1T.GEN_HEINZVMON.PI', run_number).mean()
 
         # Get the drift velocity
-        value = self.vd(dv_kv)
+        value = self.vd(cathode_kv)
 
         self.log.info("Run %d: calculated drift velocity of %0.3f km/sec" % (run_number, value))
         return value * self.correction_units
 
     @staticmethod
-    def vd(dv_kv):
-        """Return the drift velocity in XENON1T in km/sec for an anode-cathode voltage difference in kv of dv_kv
+    def vd(cathode_v):
+        """Return the drift velocity in XENON1T in km/sec for a given cathode voltage in kV
         Power-law fit to the datapoints in xenon:xenon1t:aalbers:drift_and_diffusion
 
         When we're well beyond the range of the fit, we will take the value to be constant (to avoid crazy things like
         nan or negative values).
         """
+        cathode_v = np.asarray(cathode_v).copy()
+        cathode_v = np.clip(cathode_v, 7, 20)
+        return (42.2266 * cathode_v - 268.6557)**0.067018
+
+    @staticmethod
+    def vd(dv_kv):
         dv = np.asarray(dv_kv).copy()
         dv = np.clip(dv, 12, 25)
         return (41.9527213 * dv - 434.23)**0.0670935
