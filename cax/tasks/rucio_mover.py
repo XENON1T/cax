@@ -1496,17 +1496,18 @@ export RUCIO_HOME=/cvmfs/xenon.opensciencegrid.org/software/rucio-py27/1.8.3/
 export RUCIO_ACCOUNT={rucio_account}
       """
 
-      general_string_midway = """#!/bin/bash
-#set the environment path directly
-export PATH=/project/lgrandi/anaconda3/envs/rucio_basic/bin:$PATH
-
-#Set up the PATH and Rucio account information
-export PATH=~/.local/bin:$PATH  
-export RUCIO_HOME=~/.local/rucio
-export RUCIO_ACCOUNT={rucio_account}
-
+      general_string_midway = """#!/bin/bash      
 #Source gfal commands:
 source /cvmfs/oasis.opensciencegrid.org/osg-software/osg-wn-client/3.3/current/el6-x86_64/setup.sh
+
+#Source the anaconda installation with python2.7 env.
+source /cvmfs/xenon.opensciencegrid.org/software/rucio-py26/setup_rucio_1_8_3.sh
+
+#Set up the PATH and Rucio account information
+export RUCIO_ACCOUNT={rucio_account}
+
+#Get proxy ticket
+voms-proxy-init -voms xenon.biggrid.nl -valid 168:00
       """
       
       general = {
