@@ -269,19 +269,6 @@ class CopyBase(Task):
                                                              option_type,
                                                              remote_host)
 
-            #for i_d in self.run_doc['data']:
-              #print(i_d)
-              #if i_d['host'] == "xe1t-datamanager":
-                #res = self.collection.update({'_id': self.run_doc['_id']},
-                                           #{'$pull': {'data': i_d}}
-                                           #)  
-                #for key, value in res.items():
-                  #print( " * " + str(key) + ": " + str(value) )
-                
-            
-            
-            #exit()
-
             #Delete the old data base entry if rucio transfers are requested
             #and an old upload failed by a bad connection error.
             if method == "rucio" and datum_there != None and datum_there['status'] == 'RSEreupload' and config.DATABASE_LOG == True:
@@ -627,24 +614,27 @@ class CopyBase(Task):
                                                       destination))
 
         # Determine where data should be copied to
-        base_dir = destination_config['dir_%s' % datum['type']]
-        if base_dir is None:
+        if destination_config['dir_%s' % datum['type']] != None:
+          base_dir = destination_config['dir_%s' % datum['type']]
+          if base_dir is None:
             self.log.info("no directory specified for %s" % datum['type'])
             return
 
-        if datum['type'] == 'processed':
+          if datum['type'] == 'processed':
             self.log.info(datum)
             base_dir = os.path.join(base_dir, 'pax_%s' % datum['pax_version'])
 
-        # Check directory existence on local host for download only
-        if option_type == 'download' and not os.path.exists(base_dir):
+          # Check directory existence on local host for download only
+          if option_type == 'download' and not os.path.exists(base_dir):
             if destination != config.get_hostname():
-                raise NotImplementedError("Cannot create directory on another "
+              raise NotImplementedError("Cannot create directory on another "
                                           "machine.")
 
             # Recursively make directories
             os.makedirs(base_dir)
-
+        else:
+          base_dir = "none"
+          
         # Directory or filename to be copied
         filename = datum['location'].split('/')[-1]
 
