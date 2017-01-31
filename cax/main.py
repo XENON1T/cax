@@ -20,6 +20,9 @@ def main():
                                                  "data.")
     parser.add_argument('--once', action='store_true',
                         help="Run all tasks just one, then exits")
+    parser.add_argument('--version', action='store_true',
+                        help="Print the cax version, then exits")
+
     parser.add_argument('--config', action='store', type=str,
                         dest='config_file',
                         help="Load a custom .json config file into cax")
@@ -36,8 +39,11 @@ def main():
     parser.add_argument('--host', type=str,
                         help="Host to pretend to be")
 
-
     args = parser.parse_args()
+
+    if args.version:
+        print(__version__)
+        exit()
 
     print(args.run, config.get_hostname())
 
@@ -143,6 +149,9 @@ def massive():
     parser = argparse.ArgumentParser(description="Submit cax tasks to batch queue.")
     parser.add_argument('--once', action='store_true',
                         help="Run all tasks just one, then exits")
+    parser.add_argument('--version', action='store_true',
+                        help="Print the cax version, then exits")
+
     parser.add_argument('--config', action='store', type=str,
                         dest='config_file',
                         help="Load a custom .json config file into cax")
@@ -153,6 +162,10 @@ def massive():
     parser.add_argument('--stop', type=int,
                         help="Select the last run")
     args = parser.parse_args()
+
+    if args.version:
+        print(__version__)
+        exit()
 
     run_once = args.once
 

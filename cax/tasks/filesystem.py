@@ -19,11 +19,11 @@ class SetPermission(Task):
     def __init__(self):
 
         self.raw_data = {"tegner-login-1": "/cfs/klemming/projects/xenon/xenon1t/raw/",
-                         "midway-login1": "/project/lgrandi/xenon1t/raw/"}
-
+                         "midway-login1": "/project2/lgrandi/xenon1t/raw/"}
+        
         self.proc_data = {"tegner-login-1": "/cfs/klemming/projects/xenon/xenon1t/processed/",
-                          "midway-login1": "/project/lgrandi/xenon1t/processed/"}
-
+                          "midway-login1": "/project2/lgrandi/xenon1t/processed/"}
+        
         self.chown_user = {"tegner-login-1": "bobau",
                            "midway-login1": "tunnell"}
 

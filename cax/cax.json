@@ -13,14 +13,14 @@
   {
     "name": "midway-login1",
     "method": "scp",
-    "hostname": "midway-login1.rcc.uchicago.edu",
-    "dir_raw": "/project/lgrandi/xenon1t/raw",
+    "hostname": "midway2-login1.rcc.uchicago.edu",
+    "dir_raw": "/project2/lgrandi/xenon1t/raw",
     "dir_processed": "/project/lgrandi/xenon1t/processed",
     "dir_minitrees": "/project/lgrandi/xenon1t/minitrees",
     "upload_options": [],
     "username": "tunnell",
     "download_options": ["xe1t-datamanager"],
-    "purge" : 25,
+    "purge" : 5,
     "grid_cert": "/project/lgrandi/deployHQ/cax/user_cert"
   },
   {
@@ -49,7 +49,7 @@
     "name": "xe1t-datamanager",
     "hostname": "xe1t-datamanager.lngs.infn.it",
     "username": "xe1ttransfer",
-    "method": "scp",
+    "method": "rsync",
     "dir_raw": "/data/xenon/raw/",
     "dir_tsm": "/data/xenon/tsm/",
     "upload_options": null,
