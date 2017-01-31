@@ -189,17 +189,17 @@ def massive():
     while True: # yeah yeah
         query = {}
 
-        #t1 = datetime.datetime.utcnow()
-        #if t1 - t0 < dt:
-            #logging.info("Iterative mode")
+        t1 = datetime.datetime.utcnow()
+        if t1 - t0 < dt:
+            logging.info("Iterative mode")
 
-            ## See if there is something to do
-            #query['start'] = {'$gt' : t0}
+            # See if there is something to do
+            query['start'] = {'$gt' : t0}
 
-            #logging.info(query)
-        #else:
-            #logging.info("Full mode")
-            #t0 = t1
+            logging.info(query)
+        else:
+            logging.info("Full mode")
+            t0 = t1
 
 
         if args.run:
@@ -216,10 +216,6 @@ def massive():
         for doc in docs:
 
             job_name = ''
-            
-            #if doc['number'] >= args.stop:
-              #logging.info("You reached the last run which is submitted")
-              #break
             
             if doc['detector'] == 'tpc':
                 job_name = str(doc['number'])
