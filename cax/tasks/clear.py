@@ -13,6 +13,7 @@ from cax import config
 from cax.task import Task
 from cax.tasks import checksum
 
+import pax
 
 class RetryStalledTransfer(checksum.CompareChecksums):
     """Alert if stale transfer.
@@ -42,23 +43,28 @@ class RetryStalledTransfer(checksum.CompareChecksums):
         difference = datetime.datetime.utcnow() - max(time_modified,
                                                       time_made)
 
-        if data_doc["status"] == "transferred":
+        if data_doc["status"] == "transferred" or data_doc["status"] == "verifying":
             return  # Transfer went fine
 
         self.log.debug(difference)
 
         if difference > datetime.timedelta(hours=2):  # If stale transfer
             self.give_error("Transfer %s from run %d (%s) lasting more than "
-                            "one hour" % (data_doc['type'],
+                            "2 hours" % (data_doc['type'],
                                           self.run_doc['number'],
                                           self.run_doc['name']))
 
-        if difference > datetime.timedelta(hours=24) or \
-                        (data_doc['host'] != 'xe1t-datamanager' and data_doc["status"] == 'error'):
-            self.give_error("Transfer lasting more than 24 hours "
-                            "or errored, retry.")
+        # Do not delete stalled or failed raw data transfers to recover with rsync 
+        # (Warning: do no use scp, which may create nested directories)
+        delete_data = (data_doc['type'] == 'processed')
 
-            self.purge(data_doc)
+        if difference > datetime.timedelta(hours=24):
+            self.give_error("Transfer lasting more than 24 hours, retry.")
+            self.purge(data_doc, delete_data)
+            
+        elif data_doc["status"] == 'error' and data_doc['host'] != 'xe1t-datamanager':
+            self.give_error("Transfer or process errored, retry.")
+            self.purge(data_doc, delete_data)
 
 class RetryBadChecksumTransfer(checksum.CompareChecksums):
     """Alert if stale transfer.
@@ -110,7 +116,7 @@ class BufferPurger(checksum.CompareChecksums):
             return
 
         if data_doc['host'] == 'midway-login1':
-            if self.run_doc['source']['type'] == "Kr83m" or self.run_doc['source']['type'] == "Rn220":
+            if self.run_doc['source']['type'] == "Kr83m" or self.run_doc['source']['type'] == "AmBe":
                 self.log.debug("Do not purge %s data" % self.run_doc['source']['type'])
                 return
         
@@ -132,6 +138,11 @@ class BufferPurger(checksum.CompareChecksums):
             self.log.debug("Not enough copies (%d)" % num_copies)
             return
 
+        # Do not purge from Midway until processed
+        if data_doc['host'] == 'midway-login1' and not self.local_data_finder(config.get_hostname(), 'v%s' % pax.__version__):
+            self.log.debug("Not yet processed")
+            return
+
         # The dt we require
         dt = datetime.timedelta(days=config.purge_settings())
 
@@ -143,3 +154,30 @@ class BufferPurger(checksum.CompareChecksums):
         if t1 - t0 > dt:
             self.log.info("Purging %s" % data_doc['location'])
             self.purge(data_doc)
+        else:
+            self.log.debug("Not enough time elapsed")
+
+
+
+    def local_data_finder(self, thishost, version):
+        have_processed = False
+
+        # Iterate over data locations to know status
+        for datum in self.run_doc['data']:
+
+            # Is host known?
+            if 'host' not in datum:
+                continue
+
+            # If the location doesn't refer to here, skip
+            if datum['host'] != thishost:
+                continue
+
+            # Check if processed data already exists in DB
+            if datum['type'] == 'processed' and datum['status'] == 'transferred':
+                if version == datum['pax_version']:
+                    have_processed = True
+
+        return have_processed
+
+

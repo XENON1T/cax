@@ -130,7 +130,7 @@ class AddGains(CorrectionBase):
     def each_run(self):
         """Only run on data manager at LNGS
         """
-        if config.get_hostname() == 'xe1t-datamanager':
+        if config.get_hostname() == 'midway-login1':
             CorrectionBase.each_run(self)
 
     def evaluate(self):
