@@ -932,9 +932,9 @@ def cax_tape_log_file():
                         help="Select a single run")
     parser.add_argument('--name', type=int,
                         help="Select a single run")
-    parser.add_argument('--config', action='store', type=str,
-                        dest='config_file',
-                        help="Load a custom .json config file into cax")
+    parser.add_argument('--log-path', type=str,
+                        dest='log_path',
+                        help="Point to the directory where the log files are stored.")
     run_once = True
     args = parser.parse_args()
 
@@ -949,24 +949,20 @@ def cax_tape_log_file():
 
     if args.monitor == "logfile":
       """load the logfile watcher class"""
-      a = tsm_mover.TSMLogFileCheck()
+      a = tsm_mover.TSMLogFileCheck(args.log_path)
 
     elif args.monitor == "database":
       """load the data base watcher class"""
-      #a = tsm_mover.TSMDatabaseCheck()
-
-
       total_uploaded_amount = 0
       total_uploaded_datasets = 0
-      #while True: # yeah yeah
+
       while True: # yeah yeah
-        #query = {'detector':'tpc'}
+
         query = {}
 
         docs = list(collection.find(query))
 
         for doc in docs:
-          #tsm_mover.TSMDatabaseCheck()
 
           if 'data' not in doc:
             continue

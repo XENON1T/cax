@@ -171,7 +171,6 @@ class TSMclient(Task):
     
         script_upload = self.tsm_commands("incr-upload-path").format(path=raw_data_location)
         
-        print(script_upload)
         logging.debug( script_upload )
                 
         tno_dict = {
@@ -395,8 +394,11 @@ class AddTSMChecksum(Task):
 #Class: Log-file analyser:
 class TSMLogFileCheck():
     
-    def __init__(self):
-        self.f_folder = "/home/xe1ttransfer/tsm_log/"
+    def __init__(self, f_folder = None):
+        if f_folder != None:
+          self.f_folder = f_folder
+        else:
+          self.f_folder = "/home/xe1ttransfer/tsm_log/"
         
         self.flist = self.init_logfiles_from_path( self.f_folder )        
         self.read_all_logfiles()
@@ -481,28 +483,48 @@ class TSMLogFileCheck():
           nb_inspected_files = int(i[i.find("Number of inspected files:"):].split(":")[1].replace(" ", ""))
         
         if i.find("Upload time:") >= 0:
+          print("TU: ", i)
           upload_time = i[i.find("Upload time:"):].split(":")[1].replace(" ", "").replace(",", "")
           upload_time = upload_time[:len(upload_time)-4]
         
         if i.find("Download time:") >= 0:
+          print("TD: ", i)
           download_time = i[i.find("Download time:"):].split(":")[1].replace(" ", "").replace(",", "")
           download_time = download_time[:len(download_time)-4]
         
         if i.find("Transferred amount of data:") >= 0 and tr_amount_up_counted == False:
-          tr_amount_up = i[i.find("Transferred amount of data:"):].split(":")[1].replace(" ", "")
-          tr_amount_up = tr_amount_up[:len(tr_amount_up)-3]  
+          tr_read = i[i.find("Transferred amount of data:"):].split(":")[1].replace(" ", "")
+          tr_amount_up = tr_read[:len(tr_read)-3]
+          tr_amount_unit = tr_read[len(tr_read)-3:].replace(" ", "")
+          if tr_amount_unit.find("MB") >= 0:
+            tr_amount_up = float(tr_amount_up)/1024.
+          elif tr_amount_unit.find("KB") >= 0:
+            tr_amount_up = float(tr_amount_up)/1024./1024.  
+          elif tr_amount_unit.find("GB") >= 0:
+            tr_amount_up = float(tr_amount_up)
+          print("TUPAmount: ", tr_amount_up)  
           tr_amount_up_counted = True
           
         if i.find("Transferred amount of data:") >= 0 and tr_amount_up_counted == True:
-          tr_amount_dw = i[i.find("Transferred amount of data:"):].split(":")[1].replace(" ", "")
-          tr_amount_dw = tr_amount_dw[:len(tr_amount_dw)-3]   
-        
+          tr_read      = i[i.find("Transferred amount of data:"):].split(":")[1].replace(" ", "")
+          tr_amount_dw = tr_read[:len(tr_read)-3]
+          tr_amount_unit = tr_read[len(tr_read)-3:].replace(" ", "")
+          if tr_amount_unit.find("MB") >= 0:
+            tr_amount_dw = float(tr_amount_dw)/1024.
+          elif tr_amount_unit.find("KB") >= 0:
+            tr_amount_dw = float(tr_amount_dw)/1024./1024.  
+          elif tr_amount_unit.find("GB") >= 0:
+            tr_amount_dw = float(tr_amount_dw)
+          print("TDWAmount: ", tr_amount_dw)
+          
         if i.find("Network transfer rate:") >= 0 and tr_rate_up_counted == False:
+          print("NTR up: ", i)
           tr_rate_up = i[i.find("Network transfer rate:"):].split(":")[1].replace(" ", "").replace(",", "")
           tr_rate_up = tr_rate_up[:len(tr_rate_up)-7]  
           tr_rate_up_counted = True
           
         if i.find("Network transfer rate:") >= 0 and tr_amount_up_counted == True:
+          print("NTR dw: ", i)
           tr_rate_dw = i[i.find("Network transfer rate:"):].split(":")[1].replace(" ", "").replace(",", "")
           tr_rate_dw = tr_rate_dw[:len(tr_rate_dw)-7]   
  
@@ -519,7 +541,7 @@ class TSMLogFileCheck():
             if position.find("_MV") >= 0:
               position = position.split("_MV")[0]
             dataset_time = position
-            
+      
       subinfo = {}
       subinfo['dataset_time'] = dataset
       subinfo['upload_time'] = datetime_str
@@ -695,6 +717,7 @@ class TSMStatusCheck(Task):
         cnt = 0        
         for data_doc in self.run_doc['data']:
             # Is not local, skip
+            #print(data_doc)
             if data_doc['host'] == "xe1t-datamanager":
               data_path_datamanager = data_doc['location']
               
@@ -710,15 +733,7 @@ class TSMStatusCheck(Task):
               else:
                 cksum = "checksum: NO"  
               
-              file_count = 0  
-              if os.path.exists(data_path_datamanager):
-                filelist = []
-                for (dirpath, dirnames, filenames) in os.walk( data_path_datamanager ):
-                  filelist.extend(filenames)
-                  break  
-                file_count = len( filelist )
-              
-              logging.info( "Run %s/%s at %s: Status: %s, Location: %s, %s, FileCount: %s", self.run_doc['number'], self.run_doc['name'], data_doc['host'], data_doc['status'], data_doc['location'],  cksum, file_count)        
+              logging.info( "Run %s/%s at %s: Status: %s, Location: %s, %s", self.run_doc['number'], self.run_doc['name'], data_doc['host'], data_doc['status'], data_doc['location'],  cksum)        
  
         
     
