@@ -116,7 +116,7 @@ class BufferPurger(checksum.CompareChecksums):
             return
 
         if data_doc['host'] == 'midway-login1':
-            if self.run_doc['source']['type'] == "Kr83m" or self.run_doc['source']['type'] == "AmBe":
+            if self.run_doc['source']['type'] == "Kr83m" or self.run_doc['source']['type'] == "AmBe" or self.run_doc['source']['type'] == "Rn220":
                 self.log.debug("Do not purge %s data" % self.run_doc['source']['type'])
                 return
         
