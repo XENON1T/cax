@@ -155,6 +155,7 @@ class AddGains(CorrectionBase):
         """
         V = sympy.symbols('V')
         pmt = sympy.symbols('pmt', integer=True)
+        V = sympy.symbols('t')
 
         # Grab voltages from SC
         self.log.info("Getting voltages at %d" % timestamp)
@@ -174,7 +175,9 @@ class AddGains(CorrectionBase):
         for i, voltage in enumerate(voltages):
             self.log.debug("Deriving HV for PMT %d" % i)
             gain = self.function.evalf(subs={V  : float(voltage),
-                                              pmt: i})
+                                             pmt: i,
+                                             t : self.run_doc['start'].timestamp(),
+                                            })
             gains.append(float(gain) * self.correction_units)
 
         return gains
