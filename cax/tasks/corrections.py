@@ -129,32 +129,6 @@ class AddDriftVelocity(CorrectionBase):
         return (41.9527213 * dv - 434.23)**0.0670935
 
 
-class AddSlowControlInformation(CorrectionBase):
-    """Add all slow control highlight information to run db
-    """
-    key = 'slow_control'
-    correction_units = 1
-
-    def get_correction(self):
-        pass
-
-    def evaluate(self):
-        raise NotImplementedError("hax's slow control interface has changed. The code below would crash if you tried to"
-                                  "run it.")
-        time_range = self.get_time_range()
-
-        data = defaultdict(dict)
-        for key1, value1 in slow_control.VARIABLES.items():
-            for key2, value2 in value1.items():
-                series = slow_control.get_series(value2, time_range)
-                if len(series):
-                    data[key1][key2] = float(series.iloc[0])
-                else:
-                    data[key1][key2] = np.nan
-
-        return data
-
-
 class AddGains(CorrectionBase):
     """Copy data to here
 
