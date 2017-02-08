@@ -229,8 +229,18 @@ class RucioBase(Task):
       sum_file_dw = {}
       for i in msg_std:
         if i.find("successfully downloaded") >= 0 and i.find("successfully downloaded from") >= 0:
+          i = str(i)
+          logging.info("j: %s", i), 
           line = i.split(" ")
-          dw_file = line[7].split(":")[1]
+          
+          #The seventh position in the line array should be standard for scope:filename
+          #but just to be sure, lets evaluate the position everytime.
+          pos = 7
+          for lement in line:
+            if lement.find( scope ) >= 0:
+              pos = line.index(lement)
+          
+          dw_file = line[pos].split(":")[1]
           struct = {
               'dw_file': "-1",
               'dw_size': "-1",
@@ -265,8 +275,16 @@ class RucioBase(Task):
             
           if i.find("successfully downloaded from") >= 0:
             line = i.split(" ")
+            
+            #The seventh position in the line array should be standard for scope:filename
+            #but just to be sure, lets evaluate the position everytime.
+            pos = 7
+            for lement in line:
+              if lement.find( scope ) >= 0:
+                pos = line.index(lement)
+                
             dw_rse = line[-1].split("]")[0]
-            dw_file = line[7].split(":")[1]
+            dw_file = line[pos].split(":")[1]
             sum_file_dw[dw_file]['dw_rse'] = dw_rse
             
             
@@ -1507,7 +1525,7 @@ source /cvmfs/xenon.opensciencegrid.org/software/rucio-py26/setup_rucio_1_8_3.sh
 export RUCIO_ACCOUNT={rucio_account}
 
 #Get proxy ticket
-voms-proxy-init -voms xenon.biggrid.nl -valid 168:00
+#voms-proxy-init -voms xenon.biggrid.nl -valid 168:00
       """
       
       general = {
@@ -2124,7 +2142,7 @@ export RUCIO_ACCOUNT={account}
     def config_midway_rcc(self):
       # Configuration pre-bash script for RCC midway
       midwayrcc="""#!/bin/bash
-voms-proxy-init -voms xenon.biggrid.nl -valid 168:00
+#voms-proxy-init -voms xenon.biggrid.nl -valid 168:00
 export PATH=/project/lgrandi/anaconda3/bin:$PATH
 source activate rucio_work
 export PATH=~/.local/bin:$PATH
@@ -2150,12 +2168,13 @@ source activate rucio_p3
      
 class RucioDownload(Task):
     """The rucio downloader"""
-    def __init__(self, data_rse, data_dir=None, data_type='raw', data_restore=False, location=None):
+    def __init__(self, data_rse, data_dir=None, data_type='raw', data_restore=False, location=None, data_overwrite=False):
         self.data_rse  = data_rse
         self.data_dir  = data_dir
         self.data_host = data_dir
         self.data_type = data_type
         self.data_restore = data_restore
+        self.data_overwrite = data_overwrite
         # Perform base class initialization
         Task.__init__(self)
 
@@ -2203,7 +2222,7 @@ class RucioDownload(Task):
             logging.info("Data are not registered at the host!")
           
           elif self.data_restore == True and self.data_host == config.get_hostname() and self.data_host in list_hosts:
-            logging.info("There are already %s data at host %s -> No download necessary", self.data_type, self.data_host)
+            logging.info("There are already %s data registered at host %s -> No download necessary", self.data_type, self.data_host)
             exit()
           elif self.data_restore == True and self.data_host == config.get_hostname() and self.data_host not in list_hosts:
             #This section is dedicated to restore/copy from rucio catalogue to a host:
@@ -2211,10 +2230,14 @@ class RucioDownload(Task):
             restore_path = os.path.join(r_path, dname)
             
             self.data_dir = os.path.abspath(restore_path)
-            if os.path.exists(self.data_dir):
+            if os.path.exists(self.data_dir) and self.data_overwrite == False:
               logging.info("The path %s exists already on host %s", self.data_dir, self.data_host)
               logging.info("Exit rucio-download to avoid data loss/overwrite")
               exit()
+            if os.path.exists(self.data_dir) and self.data_overwrite == True:
+              logging.info("The path %s exists already on host %s", self.data_dir, self.data_host)
+              logging.info("Data of the rucio-download are overwritten!")
+              
             if not os.path.exists(self.data_dir):
               os.makedirs(self.data_dir)
             

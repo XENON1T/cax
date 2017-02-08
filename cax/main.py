@@ -1148,9 +1148,10 @@ def ruciax_download():
     parser.add_argument('--config', action='store', type=str,
                         dest='config_file',
                         help="Load a custom .json config file into cax")
+    parser.add_argument('--overwrite', action='store_true',
+                        help="Data are overwritten at the host when this opition is activated.")
     parser.add_argument('--disable_database_update', action='store_true',
                         help="Disable the update function the run data base")
-
     args = parser.parse_args()
 
     database_log = not args.disable_database_update
@@ -1195,7 +1196,7 @@ def ruciax_download():
     else:
       number_name = args.run
     
-    rucio_mover.RucioDownload(args.data_rse, args.data_dir, args.data_type, args.restore, args.location).go(number_name)
+    rucio_mover.RucioDownload(args.data_rse, args.data_dir, args.data_type, args.restore, args.location, args.overwrite).go(number_name)
 
 def ruciax_locator():
     #Ask the database for the actual status of the file or folder:
