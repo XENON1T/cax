@@ -6,7 +6,7 @@
 
 * Gains can depend on time (#77)
 * Drift velicity (#75)
-* Tweaks for sciencerun0 data
+* Tweaks for _sciencerun0 data
 
 4.11.2 (2016-12-27)
 -------------------
