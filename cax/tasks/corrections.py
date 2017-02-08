@@ -138,12 +138,6 @@ class AddGains(CorrectionBase):
     key = 'processor.DEFAULT.gains'
     correction_units = units.V  # should be 1
 
-    def each_run(self):
-        """Only run on data manager at LNGS
-        """
-        if config.get_hostname() == 'midway-login1':
-            CorrectionBase.each_run(self)
-
     def evaluate(self):
         """Make an array of all PMT gains."""
         start = self.run_doc['start']
@@ -166,21 +160,12 @@ class AddGains(CorrectionBase):
         """
         V = sympy.symbols('V')
         pmt = sympy.symbols('pmt', integer=True)
-        V = sympy.symbols('t')
+        t = sympy.symbols('t')
 
         # Grab voltages from SC
         self.log.info("Getting voltages at %d" % timestamp)
-        voltages = np.array(self.get_voltages(timestamp))
-
-        number_important = len(slow_control.VARIABLES['pmts'])
-        if -1 in voltages[0:number_important]:
-            missing_pmts = np.where(voltages[0:number_important] == -1)[0]
-            names = [slow_control.VARIABLES['pmts']['pmt_%03d_bias_V' % mp]
-                     for mp in missing_pmts]
-            self.log.error("SCfail %d %d %s" % (self.run_doc['number'],
-                                                timestamp,
-                                                " ".join(names)))
-            raise RuntimeError("Missing SC variable")
+        voltages = hax.slow_control.get(['PMT %03d' % x for x in range(254)],
+                                         self.run_doc['number']).median().values
 
         gains = []
         for i, voltage in enumerate(voltages):
@@ -193,35 +178,4 @@ class AddGains(CorrectionBase):
 
         return gains
 
-    def get_voltages(self, timestamp):
-        try:
-            r = requests.post('https://xenon1t-daq.lngs.infn.it/slowcontrol/getLastMeasuredPMTValues',
-                          data = {'EndDateUnix' : int(timestamp),
-                                  'username':'slowcontrolwebserver',
-                                  'api_key' : os.environ.get('api_key'),
-                              },
-                          verify=False)
-
-            r.raise_for_status()
-        except requests.exceptions.HTTPError as e:
-            self.log.exception(e)
-            self.log.info("Sleeping 10 seconds, then retrying")
-            time.sleep(10)
-            return self.get_voltages(timestamp)
-
-        pmts = slow_control.VARIABLES['pmts']
-        mapping = {v: int(k.split('_')[1]) for k,v in pmts.items()}
-
-        voltages = len(PAX_CONFIG['DEFAULT']['pmts'])*[-1]
-
-        json_value = r.json()
-
-        if not isinstance(json_value, list):
-            raise RuntimeError(str(json_value))
-
-        for doc in json_value:
-            if doc['tagname'] in mapping.keys():
-                voltages[mapping[doc['tagname']]] = doc['value'] if doc['value'] > 1 else 0
-
-        return voltages
 
