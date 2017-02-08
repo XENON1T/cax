@@ -9,6 +9,7 @@ import sympy
 import time
 import pytz
 import requests
+import hax
 from hax import slow_control
 from pax import configuration, units
 from sympy.parsing.sympy_parser import parse_expr
@@ -75,10 +76,6 @@ class CorrectionBase(Task):
 
 
 class AddElectronLifetime(CorrectionBase):
-    """Copy data to here
-
-    If data exists at a reachable host but not here, pull it.
-    """
     key = 'processor.DEFAULT.electron_lifetime_liquid'
     correction_units = units.us
 
@@ -94,28 +91,42 @@ class AddElectronLifetime(CorrectionBase):
         return lifetime * self.correction_units
 
 
-class AddSlowControlInformation(CorrectionBase):
-    """Add all slow control highlight information to run db
-    """
-    key = 'slow_control'
-    correction_units = 1
-
-    def get_correction(self):
-        pass
+class AddDriftVelocity(CorrectionBase):
+    key = 'processor.DEFAULT.drift_velocity_liquid'
+    correction_units = units.km / units.s
 
     def evaluate(self):
-        time_range = self.get_time_range()
+        run_number = self.run_doc['number']
 
-        data = defaultdict(dict)
-        for key1, value1 in slow_control.VARIABLES.items():
-            for key2, value2 in value1.items():
-                series = slow_control.get_series(value2, time_range)
-                if len(series):
-                    data[key1][key2] = float(series.iloc[0])
-                else:
-                    data[key1][key2] = np.nan
+        # Minimal init of hax. It's ok if hax is inited again with different settings before or after this.
+        hax.init(use_runs_db=False, pax_version_policy='loose', main_data_paths=[])
 
-        return data
+        # Get the cathode voltage in kV
+        cathode_kv = hax.slow_control.get('XE1T.GEN_HEINZVMON.PI', run_number).mean()
+
+        # Get the drift velocity
+        value = self.vd(cathode_kv)
+
+        self.log.info("Run %d: calculated drift velocity of %0.3f km/sec" % (run_number, value))
+        return value * self.correction_units
+
+    @staticmethod
+    def vd(cathode_v):
+        """Return the drift velocity in XENON1T in km/sec for a given cathode voltage in kV
+        Power-law fit to the datapoints in xenon:xenon1t:aalbers:drift_and_diffusion
+
+        When we're well beyond the range of the fit, we will take the value to be constant (to avoid crazy things like
+        nan or negative values).
+        """
+        cathode_v = np.asarray(cathode_v).copy()
+        cathode_v = np.clip(cathode_v, 7, 20)
+        return (42.2266 * cathode_v - 268.6557)**0.067018
+
+    @staticmethod
+    def vd(dv_kv):
+        dv = np.asarray(dv_kv).copy()
+        dv = np.clip(dv, 12, 25)
+        return (41.9527213 * dv - 434.23)**0.0670935
 
 
 class AddGains(CorrectionBase):

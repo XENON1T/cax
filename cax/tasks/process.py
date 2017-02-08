@@ -144,6 +144,7 @@ class ProcessBatchQueue(Task):
 
         processing_parameters = self.run_doc['processor']['DEFAULT']
         if 'gains' not in processing_parameters or \
+            'drift_velocity_liquid' not in processing_parameters or \
             'electron_lifetime_liquid' not in processing_parameters:
             self.log.info("gains or e-lifetime not in run_doc, skip processing")
             return
