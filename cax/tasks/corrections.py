@@ -99,7 +99,7 @@ class AddDriftVelocity(CorrectionBase):
         run_number = self.run_doc['number']
 
         # Minimal init of hax. It's ok if hax is inited again with different settings before or after this.
-        hax.init(use_runs_db=False, pax_version_policy='loose', main_data_paths=[])
+        hax.init(pax_version_policy='loose', main_data_paths=[])
 
         # Get the cathode voltage in kV
         cathode_kv = hax.slow_control.get('XE1T.GEN_HEINZVMON.PI', run_number).mean()
@@ -139,7 +139,6 @@ class AddGains(CorrectionBase):
     correction_units = units.V  # should be 1
 
     def evaluate(self):
-        """Make an array of all PMT gains."""
         start = self.run_doc['start']
         timestamp = start.replace(tzinfo=pytz.utc).timestamp()
 
@@ -162,6 +161,8 @@ class AddGains(CorrectionBase):
         pmt = sympy.symbols('pmt', integer=True)
         t = sympy.symbols('t')
 
+        hax.init(pax_version_policy='loose', main_data_paths=[])
+
         # Grab voltages from SC
         self.log.info("Getting voltages at %d" % timestamp)
         voltages = hax.slow_control.get(['PMT %03d' % x for x in range(254)],
@@ -173,6 +174,7 @@ class AddGains(CorrectionBase):
             gain = self.function.evalf(subs={V  : float(voltage),
                                              pmt: i,
                                              t : self.run_doc['start'].timestamp(),
+                                             't0' : 0
                                             })
             gains.append(float(gain) * self.correction_units)
 
