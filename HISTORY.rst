@@ -1,7 +1,12 @@
   History
 =======
 
-4.11.3 (2017-02-08)
+4.11.5 (2017-02-10)
+-------------------
+
+* Gains for acquisition monitor
+
+4.11.4 (2017-02-08)
 -------------------
 
 * Tweaks for getting the slow control interface to be used for gains.
