@@ -4,6 +4,11 @@
 4.11.3 (2017-02-08)
 -------------------
 
+* Tweaks for getting the slow control interface to be used for gains.
+
+4.11.3 (2017-02-08)
+-------------------
+
 * Gains can depend on time (#77)
 * Drift velicity (#75)
 * Tweaks for _sciencerun0 data
