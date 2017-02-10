@@ -162,10 +162,16 @@ class AddGains(CorrectionBase):
         pmt = sympy.symbols('pmt', integer=True)
         t = sympy.symbols('t')
 
+        # Minimal init of hax. It's ok if hax is inited again with different settings before or after this.
+        hax.init(pax_version_policy='loose', main_data_paths=[])
+
         # Grab voltages from SC
         self.log.info("Getting voltages at %d" % timestamp)
         voltages = hax.slow_control.get(['PMT %03d' % x for x in range(254)],
                                          self.run_doc['number']).median().values
+
+        # Resize for acquisition monitor, where 0 voltage here
+        voltages.resize(len(PAX_CONFIG['DEFAULT']['pmts']))
 
         gains = []
         for i, voltage in enumerate(voltages):
