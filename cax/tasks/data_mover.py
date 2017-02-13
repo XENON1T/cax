@@ -12,6 +12,8 @@ import shutil
 import scp
 from paramiko import SSHClient, util
 
+import pax
+
 from cax import config
 from cax.task import Task
 from cax import qsub
@@ -268,7 +270,7 @@ class CopyBase(Task):
         client.close()
 
     def each_run(self):
-        for data_type in ['raw', 'processed']:
+        for data_type in ['processed']:  # Skip raw for Midway now
             self.log.debug("%s" % data_type)
             self.do_possible_transfers(option_type=self.option_type,
                                        data_type=data_type)
@@ -347,6 +349,9 @@ class CopyBase(Task):
     def local_data_finder(self, data_type, option_type, remote_host):
         datum_here = None  # Information about data here
         datum_there = None  # Information about data there
+
+        version = 'v%s' % pax.__version__
+
         # Iterate over data locations to know status
         for datum in self.run_doc['data']:
 
@@ -361,11 +366,20 @@ class CopyBase(Task):
                 # If uploading, we should have data
                 if option_type == 'upload' and not transferred:
                     continue
+
+                if datum['type'] == 'processed' and not version == datum['pax_version']:
+                    continue 
+                
                 datum_here = datum.copy()
+
             elif datum['host'] == remote_host:  # This the remote host?
                 # If downloading, they should have data
                 if option_type == 'download' and not transferred:
                     continue
+
+                if datum['type'] == 'processed' and not version == datum['pax_version']:
+                    continue
+
                 datum_there = datum.copy()
 
         return datum_here, datum_there
