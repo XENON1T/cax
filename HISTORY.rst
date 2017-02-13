@@ -1,11 +1,28 @@
   History
 =======
 
-4.11.3 (2017-02-13)
+4.11.6 (2017-02-13)
 -------------------
 * Switch to kicp partition
 * Copy only processed files, not raw, and fix version check
 * Disable iterative mode to always work on old runs
+
+4.11.5 (2017-02-10)
+-------------------
+
+* Gains for acquisition monitor
+
+4.11.4 (2017-02-08)
+-------------------
+
+* Tweaks for getting the slow control interface to be used for gains.
+
+4.11.3 (2017-02-08)
+-------------------
+
+* Gains can depend on time (#77)
+* Drift velicity (#75)
+* Tweaks for _sciencerun0 data
 
 4.11.2 (2016-12-27)
 -------------------
