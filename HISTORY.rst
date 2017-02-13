@@ -1,6 +1,12 @@
   History
 =======
 
+4.11.3 (2017-02-13)
+-------------------
+* Switch to kicp partition
+* Copy only processed files, not raw, and fix version check
+* Disable iterative mode to always work on old runs
+
 4.11.2 (2016-12-27)
 -------------------
 * Decrease purge threshold to 5 days (from 25)
