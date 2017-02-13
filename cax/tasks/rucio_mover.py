@@ -1238,7 +1238,7 @@ class RucioBase(Task):
                                                                  rse=rrse,
                                                                  did=data_identifiyer)
       
-      logging.debug(upload_folder)
+      logging.info(upload_folder)
       msg_std, msg_err = self.doRucio( upload_folder )
       for i in msg_std:
         logging.info("Rucio (upload-folder-with-did): %s", i)
@@ -1495,7 +1495,7 @@ export RUCIO_ACCOUNT={rucio_account}
       
       general_string_tegner = """#!/bin/bash
 
-#export PATH="/cfs/klemming/nobackup/b/bobau/ToolBox/TestEnv/Anaconda3/bin:$PATH"
+export PATH="/cfs/klemming/nobackup/b/bobau/ToolBox/TestEnv/Anaconda3/bin:$PATH"
 source deactivate
 source activate rucio_p2
 export PATH=~/.local/bin:$PATH
@@ -1518,7 +1518,7 @@ export RUCIO_ACCOUNT={rucio_account}
 #Source gfal commands:
 source /cvmfs/oasis.opensciencegrid.org/osg-software/osg-wn-client/3.3/current/el6-x86_64/setup.sh
 
-#Source the anaconda installation with python2.7 env.
+#Source the anaconda installation with python2.6 env.
 source /cvmfs/xenon.opensciencegrid.org/software/rucio-py26/setup_rucio_1_8_3.sh
 
 #Set up the PATH and Rucio account information
@@ -2210,6 +2210,9 @@ class RucioDownload(Task):
           scope    = location.split(":")[0]
           name     = location.split(":")[1]
           dname    = self.run_doc['name']
+          
+          #check if data set is tpc or mv:
+          print("TEST: ", self.run_doc['detector'])
 
           if self.data_restore == False:
             #Download to a folder
@@ -2228,7 +2231,10 @@ class RucioDownload(Task):
             #This section is dedicated to restore/copy from rucio catalogue to a host:
             r_path = config.get_config( self.data_dir )['dir_raw']
             restore_path = os.path.join(r_path, dname)
+            if self.run_doc['detector'] == "muon_veto":
+              restore_path += "_MV"
             
+            print( "TEST: ", restore_path)
             self.data_dir = os.path.abspath(restore_path)
             if os.path.exists(self.data_dir) and self.data_overwrite == False:
               logging.info("The path %s exists already on host %s", self.data_dir, self.data_host)
