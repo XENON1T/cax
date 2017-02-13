@@ -1280,7 +1280,13 @@ class RucioBase(Task):
           self.return_rucio['rse']      = []
           self.return_rucio['status'] = "RSEreupload"
           return  
-
+        elif i.find("Details: (_mysql_exceptions.OperationalError) (1040, 'Too many connections')") >= 0:
+          logging.info("ERROR: Too many connections")
+          self.return_rucio['checksum'] = "n/a"
+          self.return_rucio['location'] = "n/a"
+          self.return_rucio['rse']      = []
+          self.return_rucio['status'] = "RSEreupload"
+          return 
         #Not yet sure if necessary:
         #elif i.find("ERROR [The file already exists.") >=0:
           #self.return_rucio['checksum'] = "n/a"
@@ -1302,7 +1308,17 @@ class RucioBase(Task):
         metadata_msg, metadata_err = self.doRucio( set_metadata_string )
         for i in metadata_msg:
           logging.info("Rucio (set-metadata): %s to file %s", i, ifile)
-
+        
+        #catch errors from set-metadata:
+        for i in metadata_msg:
+          if i.find("Details: (_mysql_exceptions.OperationalError) (1040, 'Too many connections')") >= 0:
+            logging.info("ERROR: Too many connections")
+            self.return_rucio['checksum'] = "n/a"
+            self.return_rucio['location'] = "n/a"
+            self.return_rucio['rse']      = []
+            self.return_rucio['status'] = "RSEreupload"
+            return 
+          
       #2) Attach the files to the data set:
       #---removed due to upload option 3)--------------------------------
       #attach_name = self.RucioCommandLine(self.host,
@@ -1331,6 +1347,16 @@ class RucioBase(Task):
       metadata_msg, metadata_err = self.doRucio( set_metadata_string )
       for i in metadata_msg:
         logging.info("Rucio (set-metadata): %s", i)
+      
+      #catch errors from set-metadata:
+      for i in metadata_msg:
+        if i.find("Details: (_mysql_exceptions.OperationalError) (1040, 'Too many connections')") >= 0:
+          logging.info("ERROR: Too many connections")
+          self.return_rucio['checksum'] = "n/a"
+          self.return_rucio['location'] = "n/a"
+          self.return_rucio['rse']      = []
+          self.return_rucio['status'] = "RSEreupload"
+          return   
         
       #4) Attach the data set to containter
       #-----------------------------------------------------------------
@@ -2154,7 +2180,7 @@ export RUCIO_ACCOUNT={account}
     def config_stash(self):
       # Configuration pre-bash script for Stash/OSG  
       osgchicago="""#!/bin/bash
-voms-proxy-init -voms xenon.biggrid.nl -valid 168:00
+#voms-proxy-init -voms xenon.biggrid.nl -valid 168:00
 export PATH="/home/bauermeister/anaconda2/bin:$PATH"
 source activate rucio_p3
       """
@@ -2210,9 +2236,6 @@ class RucioDownload(Task):
           scope    = location.split(":")[0]
           name     = location.split(":")[1]
           dname    = self.run_doc['name']
-          
-          #check if data set is tpc or mv:
-          print("TEST: ", self.run_doc['detector'])
 
           if self.data_restore == False:
             #Download to a folder
@@ -2231,10 +2254,10 @@ class RucioDownload(Task):
             #This section is dedicated to restore/copy from rucio catalogue to a host:
             r_path = config.get_config( self.data_dir )['dir_raw']
             restore_path = os.path.join(r_path, dname)
+            #Detector choice: If it is a MV file then add _MV to the restore path
             if self.run_doc['detector'] == "muon_veto":
               restore_path += "_MV"
             
-            print( "TEST: ", restore_path)
             self.data_dir = os.path.abspath(restore_path)
             if os.path.exists(self.data_dir) and self.data_overwrite == False:
               logging.info("The path %s exists already on host %s", self.data_dir, self.data_host)
