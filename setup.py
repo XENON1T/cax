@@ -60,6 +60,13 @@ setup(
             'massive-tsm = cax.main:massive_tsmclient',
             'cax-tsm-remove = cax.main:remove_from_tsm',
             'cax-tsm-watch = cax.main:cax_tape_log_file',
+            'ruciax = cax.main:ruciax',
+            'ruciax-rm = cax.main:remove_from_rucio',
+            'massive-ruciax = cax.main:massiveruciax',
+            'ruciax-check = cax.main:ruciax_status',
+            'ruciax-purge = cax.main:ruciax_purge',
+            'ruciax-download = cax.main:ruciax_download',
+            'ruciax-locator = cax.main:ruciax_locator',
         ],
     },
 )

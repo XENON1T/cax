@@ -1,0 +1,19 @@
+[
+  {
+    "version": "1.0",
+    "verification_only": true,
+    "run_nb": null,
+    "run_nb_exclude": null,
+    "run_name": null,
+    "run_name_exclude": null,
+    "detector_type": null,
+    "source_type": null,
+    "destination_rse": ["UC_OSG_USERDISK", "NIKHEF_USERDISK"],
+    "destination_livetime":{
+                            "UC_OSG_USERDISK": "-1",
+                            "NIKHEF_USERDISK": "-1"
+                            },
+    "destination_condition": "blabla",
+    "remove_rse": null
+  }
+]

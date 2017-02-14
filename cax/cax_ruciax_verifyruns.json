@@ -8,66 +8,60 @@
     "upload_options": null,
     "username": "ctunnell",
     "download_options": null,
-    "purge" : 2
+    "pax_processing_versions": null
   },
   {
     "name": "midway-login1",
-    "method": "scp",
-    "hostname": "midway-login1.rcc.uchicago.edu",
-    "dir_raw": "/project/lgrandi/xenon1t/raw",
+    "method": "rucio",
+    "hostname": "midway2-login1.rcc.uchicago.edu",
+    "dir_raw": "/project2/lgrandi/xenon1t/raw",
     "dir_processed": "/project/lgrandi/xenon1t/processed",
-    "upload_options": null,
+    "dir_minitrees": "/project/lgrandi/xenon1t/minitrees",
+    "upload_options": ["rucio-catalogue"],
     "username": "tunnell",
-    "download_options": ["xe1t-datamanager"],
-    "purge" : 60
+    "download_options": null,
+    "grid_cert": "/project/lgrandi/deployHQ/cax/user_cert",
+    "pax_processing_versions": null,
+    "task_list": ["RucioRule"],
+    "data_type": ["raw"]
   },
   {
     "name": "login",
-    "method": "scp",
+    "method": "rucio",
     "hostname": "login.ci-connect.uchicago.edu",
-    "dir_raw": "/xenon/xenon1t_test",
+    "dir_raw": "/xenon/xenon1t/raw",
     "dir_processed": null,
-    "upload_options": null,
+    "upload_options": ["rucio-catalogue"],
     "username": "pdeperio",
-    "download_options": [
-      "midway-login1"
-    ]
+    "download_options": null,
+    "pax_processing_versions": null,
+    "task_list": ["RucioRule"],
+    "data_type": ["raw"]
   },
   {
     "name": "tegner-login-1",
-    "method": "tsm",
+    "method": "rucio",
     "hostname": "tegner-login-1.pdc.kth.se",
-    "dir_raw": "/cfs/klemming/projects/xenon/xenon1t/raw/",
-    "dir_tsm": "/cfs/klemming/projects/xenon/xenon1t/tsm/",
-    "dir_processed": "/cfs/klemming/projects/xenon/xenon1t/processed/",
+    "dir_raw": "/cfs/klemming/projects/xenon/xenon1t/raw",
+    "dir_processed": "/cfs/klemming/projects/xenon/xenon1t/processed",
+    "upload_options": ["rucio-catalogue"],
     "username": "bobau",
     "download_options": null,
     "pax_processing_versions": null,
-    "upload_options": ["tsm-server"],
-    "download_options": null,
-    "data_type": ["raw"],
-    "task_list": ["CopyPull","CopyPush"]
+    "task_list": ["RucioRule"],
+    "data_type": ["raw"]
   },
   {
     "name": "xe1t-datamanager",
     "hostname": "xe1t-datamanager.lngs.infn.it",
     "username": "xe1ttransfer",
-    "method": "tsm",
-    "dir_raw": "/data/xenon/raw/",
-    "dir_tsm": "/data/xenon/tsm/",
-    "upload_options": ["tsm-server"],
+    "method": "rucio",
+    "dir_raw": "/data/xenon/raw",
+    "upload_options": ["rucio-catalogue"],
     "download_options": null,
-    "data_type": ["raw"],
-    "task_list": ["CopyPull","CopyPush"]
-  },
-  {
-    "name": "tsm-server",
-    "hostname": null,
-    "username": null,
-    "method": "tsm",
-    "dir_raw": null,
-    "upload_options": null,
-    "download_options": null
+    "pax_processing_versions": null,
+    "task_list": ["RucioRule"],
+    "data_type": ["raw"]    
   },
   {
     "name": "rucio-catalogue",
@@ -79,7 +73,7 @@
     "download_options": null,
     "rucio_upload_rse": "NIKHEF_USERDISK",
     "rucio_account": "production",
-    "rucio_transfer": ["UC_OSG_USERDISK"]
+    "rucio_transfer": []    
   },
   {
     "name": "lfc",

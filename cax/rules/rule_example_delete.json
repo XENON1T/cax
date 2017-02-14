@@ -1,0 +1,19 @@
+[
+  {
+    "version": "1.0",
+    "verification_only": false,
+    "run_nb": "5115, 5116, 5155, 5188, 5390",
+    "run_nb_exclude": null,
+    "run_name": null,
+    "run_name_exclude": null,
+    "detector_type": null,
+    "source_type": null,
+    "destination_rse": [],
+    "destination_livetime":{
+                            
+                            },
+    "destination_condition": "blabla",
+    "remove_rse": ["LNGS_USERDISK"]
+  }
+
+]
