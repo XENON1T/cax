@@ -2179,8 +2179,8 @@ export PATH=/project/lgrandi/anaconda3/bin:$PATH
 source activate pax_head
 
 #bauermeister/own environment
-export PATH=/project/lgrandi/anaconda3/bin:$PATH
-source activate rucio_work
+#export PATH=/project/lgrandi/anaconda3/bin:$PATH
+#source activate rucio_work
 
 #additional but not necessary
 #export PATH=~/.local/bin:$PATH

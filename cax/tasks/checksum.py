@@ -41,8 +41,8 @@ class AddChecksum(Task):
     """
 
     def each_location(self, data_doc):
-        # Only raw data waiting to be verified
-        if data_doc['status'] != 'verifying' and data_doc['status'] != 'transferred':
+        # Only data waiting to be verified
+        if data_doc['status'] != 'verifying':  # and data_doc['status'] != 'transferred':
             self.log.debug('Location does not qualify')
             return
         
@@ -208,8 +208,8 @@ class CompareChecksums(Task):
                 else:
                     self.log.error('did not exist, notify run database.')
 
-        if config.DATABASE_LOG == True:
-            resp = self.collection.update({'_id': self.run_doc['_id']},
-                                          {'$pull': {'data': data_doc}})
-            self.log.info('Removed from run database: %s' % data_doc['location'])
-            self.log.debug(resp)
+            if config.DATABASE_LOG == True:
+                resp = self.collection.update({'_id': self.run_doc['_id']},
+                                              {'$pull': {'data': data_doc}})
+                self.log.info('Removed from run database: %s' % data_doc['location'])
+                self.log.debug(resp)

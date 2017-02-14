@@ -198,8 +198,8 @@ def processing_script(args={}):
                         ncpus=1 if midway else 1,
                         pax_version=(('v%s' % pax.__version__) if midway else 'head'),
 #                        partition='sandyb' if midway else 'main',
-#                        partition='xenon1t' if midway else 'main',
-                        partition='kicp' if midway else 'main',
+                        partition='xenon1t' if midway else 'main',
+#                        partition='kicp' if midway else 'main',
                         base='/project/lgrandi/xenon1t' if midway else '/cfs/klemming/projects/xenon/xenon1t',
                         account='pi-lgrandi' if midway else 'xenon',
 
@@ -240,8 +240,7 @@ mkdir -p ${{JOB_WORKING_DIR}}
 cd ${{JOB_WORKING_DIR}}
 
 rm -f pax_event_class*
-#source activate pax_{pax_version}
-source activate rucio_p3
+source activate pax_{pax_version}
 
 HOSTNAME={host}
 {command}
