@@ -2155,10 +2155,14 @@ export RUCIO_ACCOUNT={account}
     def config_xe1tdatamanager(self):
       # Configuration pre-bash script for xe1t-datamanager
       xe1tdatam="""#!/bin/bash
-voms-proxy-init -voms xenon.biggrid.nl -valid 168:00
+#voms-proxy-init -voms xenon.biggrid.nl -valid 168:00
+
 export PATH=/home/SHARED/anaconda3/bin:$PATH
-source activate rucio_client_p3.4
+#source activate rucio_client_p3.4
 #source activate develop_p3
+source activate pax_head
+
+#additional but not necessary:
 export PATH=/home/xe1ttransfer/.local/bin:$PATH
 export RUCIO_HOME=~/.local/rucio
 export RUCIO_ACCOUNT={account}
@@ -2169,20 +2173,31 @@ export RUCIO_ACCOUNT={account}
       # Configuration pre-bash script for RCC midway
       midwayrcc="""#!/bin/bash
 #voms-proxy-init -voms xenon.biggrid.nl -valid 168:00
+
+#pax_head
+export PATH=/project/lgrandi/anaconda3/bin:$PATH
+source activate pax_head
+
+#bauermeister/own environment
 export PATH=/project/lgrandi/anaconda3/bin:$PATH
 source activate rucio_work
-export PATH=~/.local/bin:$PATH
-export RUCIO_HOME=~/.local/rucio
-export RUCIO_ACCOUNT={account}
+
+#additional but not necessary
+#export PATH=~/.local/bin:$PATH
+#export RUCIO_HOME=~/.local/rucio
+#export RUCIO_ACCOUNT={account}
       """
       return midwayrcc
     
     def config_stash(self):
       # Configuration pre-bash script for Stash/OSG  
       osgchicago="""#!/bin/bash
+export PATH="/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/bin:$PATH"
+source activate pax_head
+
 #voms-proxy-init -voms xenon.biggrid.nl -valid 168:00
-export PATH="/home/bauermeister/anaconda2/bin:$PATH"
-source activate rucio_p3
+#export PATH="/home/bauermeister/anaconda2/bin:$PATH"
+#source activate rucio_p3
       """
       return osgchicago
         
