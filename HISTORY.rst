@@ -1,6 +1,14 @@
   History
 =======
 
+5.0.0 (2017-02-14)
+-------------------
+* First Ruciax merge
+* Revert to checksumming "verifying" only
+* Fix: only modify RunsDB if actually deleting data
+* Add check of pax version when deleting processed data
+* Switch back to xenon1t partition
+
 4.11.6 (2017-02-13)
 -------------------
 
