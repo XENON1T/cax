@@ -224,6 +224,8 @@ def massive():
         if args.start:
             query['number'] = {'$gte' : args.start}
 
+        query['tags.name'] = '_sciencerun0_candidate'
+
         docs = list(collection.find(query,
                                     sort=sort_key,
                                     projection=['start', 'number','name',

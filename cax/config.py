@@ -195,19 +195,18 @@ def processing_script(args={}):
     default_args = dict(host=host,
                         use='cax',
                         number=333,
-                        ncpus=1 if midway else 1,
+                        ncpus=2 if midway else 1,
                         pax_version=(('v%s' % pax.__version__) if midway else 'head'),
 #                        partition='sandyb' if midway else 'main',
-                        partition='xenon1t' if midway else 'main',
-#                        partition='kicp' if midway else 'main',
+#                        partition='xenon1t' if midway else 'main',
+                        partition='kicp' if midway else 'main',
                         base='/project/lgrandi/xenon1t' if midway else '/cfs/klemming/projects/xenon/xenon1t',
                         account='pi-lgrandi' if midway else 'xenon',
 
                         anaconda='/project/lgrandi/anaconda3/bin' if midway else '/cfs/klemming/nobackup/b/bobau/ToolBox/TestEnv/Anaconda3/bin',
-                        extra='#SBATCH --mem-per-cpu=2000\n#SBATCH --qos=xenon1t' if midway else '#SBATCH -t 72:00:00',
-#                        extra='#SBATCH --mem-per-cpu=2000\n#SBATCH --qos=xenon1t-kicp' if midway else '#SBATCH -t 72:00:00',
-
-#                        extra2='source /cvmfs/oasis.opensciencegrid.org/osg-software/osg-wn-client/3.3/current/el6-x86_64/setup.sh' if midway else '',
+#                        extra='#SBATCH --mem-per-cpu=2000' if midway else '#SBATCH -t 72:00:00',
+#                        extra='#SBATCH --mem-per-cpu=2000\n#SBATCH --qos=xenon1t' if midway else '#SBATCH -t 72:00:00',
+                        extra='#SBATCH --mem-per-cpu=2000\n#SBATCH --qos=xenon1t-kicp' if midway else '#SBATCH -t 72:00:00',
 #                        extra='#SBATCH --mem-per-cpu=2000' if midway else '#SBATCH -t 72:00:00',
                         stats='sacct -j $SLURM_JOB_ID --format="JobID,NodeList,Elapsed,AllocCPUS,CPUTime,MaxRSS"' if midway else ''
                         )

@@ -50,18 +50,17 @@ class Task():
                 self.log.error("pymongo.errors.AutoReconnect, skipping...")
                 continue
 
-
             if 'data' not in self.run_doc:
                 continue
-
-            # DAQ experts only:
-            # Find location of untriggered DAQ data (if exists)
-            self.untriggered_data = self.get_daq_buffer()
 
             # Operate on only user-specified datasets
             if datasets:
                 if self.run_doc['name'] not in datasets:
                     continue
+
+            # DAQ experts only:
+            # Find location of untriggered DAQ data (if exists)
+            self.untriggered_data = self.get_daq_buffer()
 
             self.each_run()
 
