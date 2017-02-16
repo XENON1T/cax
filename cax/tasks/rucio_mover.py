@@ -261,6 +261,8 @@ class RucioBase(Task):
           logging.info("There is no replica of %s at RSE %s [ERROR]", location, rse_remote)
         elif i.find("WARNING [Provided RSE expression is considered invalid.") >= 0:
           logging.info("The download was done without specifiying the RSE before! [WARNING]")
+        elif i.find("Details: (_mysql_exceptions.OperationalError) (1040, 'Too many connections')") >= 0:
+          logging.info("ERROR: Too many connections.")
         elif i.find("successfully downloaded") >= 0:
           #logging.info("Rucio-download: %s", i)
           count_dw_successmessages += 1
