@@ -223,9 +223,12 @@ def massive():
 
         if args.start:
             query['number'] = {'$gte' : args.start}
-	
-	if args.stop:
-            query['number'] = {'$lte' : args.stop}
+        if args.stop:
+            if 'number' not in query:
+                query['number'] = {}
+            query['number']['$lte'] = args.stop
+
+
 
         query['tags.name'] = '_sciencerun0_candidate'
 
