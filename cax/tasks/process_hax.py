@@ -121,7 +121,7 @@ class ProcessBatchQueueHax(Task):
                 have_raw = datum
 
             # Check if processed data already exists in DB
-            if datum['type'] == 'processed':
+            if datum['type'] == 'processed' and datum['status'] == 'transferred':
                 if version == datum['pax_version']:
                     have_processed = True
                     
