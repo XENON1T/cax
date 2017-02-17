@@ -1,6 +1,11 @@
   History
 =======
 
+5.0.3 (2017-02-16)
+-------------------
+* Switch to rsync for processed data
+* Fix drift velocity function bug (#79)
+
 5.0.2 (2017-02-16)
 -------------------
 * Allow for massive cax to have stop range
