@@ -1513,55 +1513,9 @@ class RucioBase(Task):
       """Define a general command line interface
          for Rucio calls
       """
-      
-      
-      general_string_xe1tdata = """#!/bin/bash
-export PATH=/home/xe1ttransfer/.local/bin:$PATH
-export RUCIO_HOME=~/.local/rucio
-export RUCIO_ACCOUNT={rucio_account}
-      """
-      
-      general_string_tegner = """#!/bin/bash
-
-export PATH="/cfs/klemming/nobackup/b/bobau/ToolBox/TestEnv/Anaconda3/bin:$PATH"
-source deactivate
-source activate rucio_p2
-export PATH=~/.local/bin:$PATH
-cd /cfs/klemming/nobackup/b/bobau/ToolBox/gfal-tools
-source /cfs/klemming/nobackup/b/bobau/ToolBox/gfal-tools/setup.sh
-cd
-export RUCIO_HOME=~/.local/rucio
-export RUCIO_ACCOUNT={rucio_account}
-echo "Rucio load"
-      """
-
-      general_string_stash = """#!/bin/bash
-module load python/2.7
-source /cvmfs/xenon.opensciencegrid.org/software/rucio-py27/setup_rucio_1_8_3.sh
-export RUCIO_HOME=/cvmfs/xenon.opensciencegrid.org/software/rucio-py27/1.8.3/
-export RUCIO_ACCOUNT={rucio_account}
-      """
-
-      general_string_midway = """#!/bin/bash      
-#Source gfal commands:
-source /cvmfs/oasis.opensciencegrid.org/osg-software/osg-wn-client/3.3/current/el6-x86_64/setup.sh
-
-#Source the anaconda installation with python2.6 env.
-source /cvmfs/xenon.opensciencegrid.org/software/rucio-py26/setup_rucio_1_8_3.sh
-
-#Set up the PATH and Rucio account information
-export RUCIO_ACCOUNT={rucio_account}
-
-#Get proxy ticket
-#voms-proxy-init -voms xenon.biggrid.nl -valid 168:00
-      """
-      
-      general = {
-          "xe1t-datamanager": general_string_xe1tdata,
-          "tegner-login-1": general_string_tegner,
-          "midway-login1": general_string_midway,
-          "login": general_string_stash
-                 }
+      #Get the bash configuration for the requested host and python2.x and rucio:
+      RucioBashConfig = RucioConfig()
+      general = RucioBashConfig.load_host_config( config.get_hostname(), "py2" )
       
       upload_simple = """
 rucio upload {dataset} --rse {rse} --scope {scope} 
@@ -1678,57 +1632,57 @@ rucio download --no-subdir {rse_dw} {dir} {scope}:{name}
       """
       
       if method == "upload-simple":
-          return general[host] + upload_simple
+          return general + upload_simple
       elif method == "upload-folder":
-          return general[host] + upload_folder
+          return general + upload_folder
       elif method == "upload-folder-with-did":
-          return general[host] + upload_folder_with_did
+          return general + upload_folder_with_did
       elif method == "get-metadata":
-          return general[host] + get_metadata
+          return general + get_metadata
       elif method == "set-metadata":
-          return general[host] + set_metadata
+          return general + set_metadata
       elif method == "add-container":
-          return general[host] + add_container
+          return general + add_container
       elif method == "add-dataset":
-          return general[host] + add_dataset
+          return general + add_dataset
       elif method == "upload-advanced":
-          return general[host] + upload_adv
+          return general + upload_adv
       elif method == "attach":
-          return general[host] + attach
+          return general + attach
       elif method == "attach-to-container":
-          return general[host] + attach_to_container
+          return general + attach_to_container
       elif method == "add-scope":
-          return general[host] + add_scope
+          return general + add_scope
       elif method == "check-scope":
-          return general[host] + check_for_scope
+          return general + check_for_scope
       elif method == "get-checksum":
-          return general[host] + get_checksum
+          return general + get_checksum
       elif method == "list-rses":
-          return general[host] + list_rses
+          return general + list_rses
       elif method == "check-rucio-installation":
-          return general[host] + check_rucio_installation
+          return general + check_rucio_installation
       elif method == "list-accounts":
-          return general[host] + list_accounts
+          return general + list_accounts
       elif method == "get-file-replicas":
-          return general[host] + get_file_replicas
+          return general + get_file_replicas
       elif method == "list-files":
-          return general[host] + list_files
+          return general + list_files
       elif method == "add-rule":
-          return general[host] + add_rule
+          return general + add_rule
       elif method == "add-rule-lifetime":
-          return general[host] + add_rule_lifetime
+          return general + add_rule_lifetime
       elif method == "list-rules":
-          return general[host] + list_rules
+          return general + list_rules
       elif method == "update-rule":
-          return general[host] + update_rule
+          return general + update_rule
       elif method == "ping-rucio":
-          return general[host] + ping_rucio
+          return general + ping_rucio
       elif method == "delete-rule":
-          return general[host] + delete_rule
+          return general + delete_rule
       elif method == "list-rse-usage":
-          return general[host] + list_rse_usage
+          return general + list_rse_usage
       elif method == "download":
-          return general[host] + download_from_rucio
+          return general + download_from_rucio
       else:
           return 0
         
@@ -2128,86 +2082,73 @@ class RucioConfig():
        -> important for massive-ruciax
     """
     
+    def load_host_config(self, host_select, py_version=None):
+      
+      #This member function takes care about the configuration of python2.x / python3.x
+      #at several hosts
+      
+      #Make sure that a python version request. No defaults allowed!
+      python_config = ""
+      if py_version == None:
+        logging.info("Please be sure that you request a certain python version!")
+        logging.info("Choose: py2 / py3")
+        exit()
+      elif py_version == "py2":
+        python_config = "rucio_config_p2"
+        logging.debug("Chosen python environment loaded by bash script: %s", py_version)
+      elif py_version == "py3":
+        python_config = "rucio_config_p3"
+        logging.debug("Chosen python environment loaded by bash script: %s", py_version)
+      
+      h_load = None
+      host_string = ""
+      python_file = config.get_config( host_select )[python_config]
+      #Check if the requested python bash script (2.x or 3.x) is an external
+      #file or if ruciax should use its pre-installed bash_py.config scripts
+      if os.path.isfile(  python_file ) == True:
+        #The requested bash script for this host exists - Take it
+        logging.debug("The file %s exists! Use this for python2.x/3.x configuration", python_file)
+        h_load = open(python_file, 'r')
+      else:
+        #The requested bash script does not exists - Take the pre-installed configuration  
+        logging.debug("The file %s does not exists! Use pre-configured python2.x/3.x bash scripts for host %s", python_file, config.get_hostname() )
+
+        p_path = os.path.realpath(__file__).replace( "tasks/rucio_mover.py", "")
+        python_file = self.bash_config( config.get_hostname(), py_version ) # Create the filename of the standard installation
+
+        if os.path.join( p_path, "host_config", python_file) == False:
+          logging.info("Check the file %s for the pre-installed bash configuration:", python_file)
+          logging.info("Path: %s", p_path)
+          logging.info("Hint: Checkout rucio_mover.py, memberfunction: bash_config() --> Check hard coded standard names")
+          exit()
+        h_load = open(os.path.join(p_path, 'host_config', python_file), 'r')
+      
+      #create a string
+      for i_line in h_load:
+        if i_line.find("#&7#") == -1:  
+          host_string +=  i_line
+      
+      #return generated string:
+      return host_string
     
-    def get_config(self, host ):
-      general = {"xe1t-datamanager": self.config_xe1tdatamanager(),
-                 "midway-login1":    self.config_midway_rcc(),
-                 "tegner-login-1":   self.config_tegner(),
-                 "login":            self.config_stash()
+    def bash_config(self, host, py_version):
+      #hard coded names for standard configurations
+      general = {"xe1t-datamanager": "xe1tdatamanager_bash",
+                 "midway-login1":    "midway_bash",
+                 "tegner-login-1":   "tegner_bash",
+                 "login":            "stash_bash"
                  #"yourhost":        self.config_yourhost()
                  }
+      name = general[ host ]
+      if py_version == "py2":
+        name += "_p2.config"
+      elif py_version == "py3":
+        name += "_p3.config"
+      else:
+        logging.info("You did not specified a python environment")
+        exit()
       
-      return general[host]
-      
-    def config_tegner(self):
-      # Configuration pre-bash script for Tegner
-      tegner = """#!/bin/bash
-export PATH="/cfs/klemming/nobackup/b/bobau/ToolBox/TestEnv/Anaconda3/bin:$PATH"
-source activate rucio_p3
-#source activate test_upload
-export PATH=~/.local/bin:$PATH
-cd /cfs/klemming/nobackup/b/bobau/ToolBox/gfal-tools
-source /cfs/klemming/nobackup/b/bobau/ToolBox/gfal-tools/setup.sh
-cd
-export RUCIO_HOME=~/.local/rucio
-export RUCIO_ACCOUNT={account}
-      """    
-      return tegner
-    
-    def config_xe1tdatamanager(self):
-      # Configuration pre-bash script for xe1t-datamanager
-      xe1tdatam="""#!/bin/bash
-#voms-proxy-init -voms xenon.biggrid.nl -valid 168:00
-
-export PATH=/home/SHARED/anaconda3/bin:$PATH
-#source activate rucio_client_p3.4
-#source activate develop_p3
-source activate pax_head
-
-#additional but not necessary:
-export PATH=/home/xe1ttransfer/.local/bin:$PATH
-export RUCIO_HOME=~/.local/rucio
-export RUCIO_ACCOUNT={account}
-      """
-      return xe1tdatam
-    
-    def config_midway_rcc(self):
-      # Configuration pre-bash script for RCC midway
-      midwayrcc="""#!/bin/bash
-#voms-proxy-init -voms xenon.biggrid.nl -valid 168:00
-
-#pax_head
-export PATH=/project/lgrandi/anaconda3/bin:$PATH
-source activate pax_head
-
-#bauermeister/own environment
-#export PATH=/project/lgrandi/anaconda3/bin:$PATH
-#source activate rucio_work
-
-#additional but not necessary
-#export PATH=~/.local/bin:$PATH
-#export RUCIO_HOME=~/.local/rucio
-#export RUCIO_ACCOUNT={account}
-      """
-      return midwayrcc
-    
-    def config_stash(self):
-      # Configuration pre-bash script for Stash/OSG  
-      osgchicago="""#!/bin/bash
-export PATH="/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/bin:$PATH"
-source activate pax_head
-
-#voms-proxy-init -voms xenon.biggrid.nl -valid 168:00
-#export PATH="/home/bauermeister/anaconda2/bin:$PATH"
-#source activate rucio_p3
-      """
-      return osgchicago
-        
-        
-    def config_yourhost(self):
-      yourhost="""#!/bin/bash
-      """
-      return yourhost
+      return name
      
 class RucioDownload(Task):
     """The rucio downloader"""
