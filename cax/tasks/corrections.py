@@ -122,12 +122,6 @@ class AddDriftVelocity(CorrectionBase):
         cathode_v = np.clip(cathode_v, 7, 20)
         return (42.2266 * cathode_v - 268.6557)**0.067018
 
-    @staticmethod
-    def vd(dv_kv):
-        dv = np.asarray(dv_kv).copy()
-        dv = np.clip(dv, 12, 25)
-        return (41.9527213 * dv - 434.23)**0.0670935
-
 
 class AddGains(CorrectionBase):
     """Copy data to here
