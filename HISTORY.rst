@@ -1,6 +1,14 @@
   History
 =======
 
+5.0.2 (2017-02-16)
+-------------------
+* Allow for massive cax to have stop range
+
+5.0.1 (2017-02-16)
+-------------------
+* Make proximity trees
+
 5.0.0 (2017-02-14)
 -------------------
 * First Ruciax merge
