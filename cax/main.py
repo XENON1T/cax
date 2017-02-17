@@ -164,6 +164,13 @@ def massive():
                         help="Select a starting run")
     parser.add_argument('--stop', type=int,
                         help="Select the last run")
+    parser.add_argument('--tag', type=str,
+                        help="Select the tag")
+    parser.add_argument('--ncpu', type=int,
+                        help="Number of CPU per job")
+    parser.add_argument('--partition', type=str,
+                        help="Select the cluster partition")
+
     args = parser.parse_args()
 
     if args.version:
@@ -180,6 +187,29 @@ def massive():
             logging.info("Using custom config file: %s",
                          args.config_file)
             config_arg = '--config ' + os.path.abspath(args.config_file)
+
+    tag = ''
+    if args.tag:
+        tag = args.tag
+        #logging.info("Running only on tag: ", str(tag))
+
+    ncpu = 1
+    if args.ncpu:
+        ncpu = args.ncpu
+
+    partition = ''
+    qos = ''
+    if args.partition:
+        partition = args.partition
+
+        if partition == 'xenon1t':
+            qos = 'xenon1t'
+
+        elif partition == 'kicp':
+            qos = 'xenon1t-kicp'
+
+        #else:  # logging not working...
+        #    logging.error("Unkown partition", partition)
 
     # Setup logging
     cax_version = 'cax_v%s - ' % __version__
@@ -224,10 +254,11 @@ def massive():
         if args.start:
             query['number'] = {'$gte' : args.start}
 	
-	if args.stop:
+        if args.stop:
             query['number'] = {'$lte' : args.stop}
 
-        query['tags.name'] = '_sciencerun0_candidate'
+        if tag is not '':
+            query['tags.name'] = str(tag)
 
         docs = list(collection.find(query,
                                     sort=sort_key,
@@ -241,11 +272,15 @@ def massive():
             if doc['detector'] == 'tpc':
                 job_name = str(doc['number'])
                 job = dict(command='cax --once --run {number} '+config_arg,
-                           number=int(job_name))
+                           number=int(job_name), ncpus=ncpu)
             elif doc['detector'] == 'muon_veto':
                 job_name = doc['name']
                 job = dict(command='cax --once --name {number} '+config_arg,
-                           number=job_name)
+                           number=job_name, ncpus=ncpu)
+
+            if qos is not '':
+                job['partition'] = partition
+                job['extra'] = '#SBATCH --qos='+qos
 
             script = config.processing_script(job)
 
