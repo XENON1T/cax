@@ -3,6 +3,10 @@
 
 5.0.3 (2017-02-16)
 -------------------
+* Fix bug in run range in massive cax
+
+5.0.3 (2017-02-16)
+-------------------
 * Switch to rsync for processed data
 * Fix drift velocity function bug (#79)
 
