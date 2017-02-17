@@ -6,7 +6,7 @@
 * Implement command line arguments for:
   * Run tag (e.g. "_sciencerun0")
   * Cluster partition (e.g. "xenon1t", "kicp")
-  * Number of CPUs per job
+  * Number of CPUs per job 
     
 5.0.3 (2017-02-16)
 -------------------
