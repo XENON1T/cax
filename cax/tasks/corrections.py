@@ -127,12 +127,6 @@ class AddGains(CorrectionBase):
     key = 'processor.DEFAULT.gains'
     correction_units = units.V  # should be 1
 
-    def each_run(self):
-        """Only run on data manager at LNGS
-        """
-        if config.get_hostname() == 'xe1t-datamanager':
-            CorrectionBase.each_run(self)
-
     def evaluate(self):
         """Make an array of all PMT gains."""
         start = self.run_doc['start']
@@ -176,6 +170,9 @@ class AddGains(CorrectionBase):
             gain = self.function.evalf(subs={V  : float(voltage),
                                               pmt: i})
             gains.append(float(gain) * self.correction_units)
+
+        # Add gains for acquisition monitor channels
+        gains += [2.5e6 / 31.25] + [1e5] * 5
 
         return gains
 
