@@ -35,6 +35,10 @@ def _process(name, in_location, host, pax_version,
     """
     print('Welcome to cax-process')
 
+
+    if pax_version != 'v' + pax.__version__:
+        print("This pax version is %s, not %s. Abort processing." % ("v" + pax.__version__, pax_version))
+        sys.exit(1)
     # Import pax so can process the data
     from pax import core, parallel, configuration   
 
@@ -117,7 +121,6 @@ def _process(name, in_location, host, pax_version,
         
     config_dict = {'pax': {'input_name' : in_location,
                            'output_name': output_fullname,
-                           'n_cpus'     : ncpus,
                            'look_for_config_in_runs_db' : pax_db_call
                            }}
 
@@ -144,6 +147,11 @@ def _process(name, in_location, host, pax_version,
         
         pax_kwargs = dict(config_names=pax_config,
                           config_dict=config_dict)
+
+        # allows for ncpus to be passed as argument to cax-process bash command
+
+        if not isinstance(ncpus, int):
+            ncpus = int(ncpus)
         
         if ncpus > 1:
             parallel.multiprocess_locally(n_cpus=ncpus, **pax_kwargs)

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-## takes 8 arguments: ##
+## takes 10 arguments: ##
 
   # 1 - name of run being processed
   # 2 - uri of input raw data file
@@ -10,14 +10,20 @@
   # 6 - uri for output root file
   # 7 - number of cpus used to process
   # 8 - disable_updates  
+  # 9 - json file
+  # 10 - on rucio? (True or False)
 
+echo $@
+echo
 echo $HOSTNAME
+echo
 echo $LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/envs/evan-testing/lib:$LD_LIBRARY_PATH
 echo $LD_LIBRARY_PATH
-env
 # df -h
-
+echo 
+env | grep -i glidein 
+echo
 
 which gfal-copy > /dev/null 2>&1
 if [[ $? -eq 1 ]];
@@ -74,9 +80,31 @@ cd ${work_dir}
 
 #gfal-copy --cert ${start_dir}/user_cert -T 36000 -t 36000 --checksum md5 $2 file://${rawdata_path}
 
-time gfal-copy -v -f -p -t 36000 -T 36000 -K md5 --cert ${start_dir}/user_cert $2 file://${rawdata_path}
+# setup rucio commands
 
-#module load pax/evan-testing
+echo ${10}
+if [[ ${10} == 'True' ]]; then
+
+    sleep $[ ( $RANDOM % 600 )  + 1 ]s
+    echo "Performing rucio download"
+        unset X509_USER_KEY
+    unset X509_USER_CERT
+    source /cvmfs/xenon.opensciencegrid.org/software/rucio-py26/setup_rucio_1_8_3.sh
+    export RUCIO_HOME=/cvmfs/xenon.opensciencegrid.org/software/rucio-py26/1.8.3/rucio/
+    export RUCIO_ACCOUNT=ershockley
+    export X509_USER_PROXY=${start_dir}/user_cert
+
+    env | grep X509
+    rucio download $2 --no-subdir --dir ${rawdata_path}
+    #rucio --certificate ${start_dir}/user_cert download $2 --no-subdir --dir ${rawdata_path}
+fi
+
+if [[ ${10} == 'False' ]]; then
+    sleep $[ ( $RANDOM % 600 )  + 1 ]s
+    echo "Performing gfal copy"
+    time gfal-copy -v -f -p -t 18000 -T 18000 -K md5 --cert ${start_dir}/user_cert $2 file://${rawdata_path}
+fi
+
 export PATH=/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/bin:$PATH
 cd /cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/envs/evan-testing/
 if [[ $? -ne 0 ]];
@@ -92,9 +120,13 @@ mkdir $start_dir/output/
 echo "output directory: ${start_dir}/output"
 cd $start_dir
 echo 'Processing...'
-cax-process $1 $rawdata_path $3 $4 $5 output $7 $8 $start_dir/$1.json
+
+echo "cax-process $1 $rawdata_path $3 $4 output $7 $8 $start_dir/$1.json" 
+cax-process $1 $rawdata_path $3 $4 output $7 $8 $start_dir/$1.json
+
 if [[ $? -ne 0 ]];
 then 
+    echo "exiting with status 255"
     exit 255
 fi
 # mv ${rawdata_path}/*.root $start_dir/output/
@@ -120,12 +152,15 @@ then
 fi
 # fi
 
+
 echo "---- Test line ----"
+
 
 time gfal-copy --cert ${start_dir}/user_cert -T 36000 -t 36000 -f -p --checksum md5 file://${start_dir}/output/$1.root $6 
 
 if [[ $? -ne 0 ]];
 then 
+    echo "exiting with status 255"
     exit 255
 fi
 # 'gsiftp://gridftp.grid.uchicago.edu:2811/cephfs/srm/xenon/ershockley/processed/'
