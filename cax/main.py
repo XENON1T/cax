@@ -197,7 +197,7 @@ def massive():
     if args.ncpu:
         ncpu = args.ncpu
 
-    partition = ''
+    partition = 'sandyb'
     qos = ''
     if args.partition:
         partition = args.partition
@@ -288,8 +288,8 @@ def massive():
                 logging.debug('Skip: cax_%s_v%s job exists' % (job_name, pax.__version__))
                 continue
 
-            while qsub.get_number_in_queue() > (500 if config.get_hostname() == 'midway-login1' else 30):
-                logging.info("Speed break 60s because %d in queue" % qsub.get_number_in_queue())
+            while qsub.get_number_in_queue(partition=partition) > (500 if config.get_hostname() == 'midway-login1' else 30):
+                logging.info("Speed break 60s because %d in queue" % qsub.get_number_in_queue(partition=partition))
                 time.sleep(60)
 
 
