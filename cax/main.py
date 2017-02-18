@@ -278,8 +278,8 @@ def massive():
                 job = dict(command='cax --once --name {number} '+config_arg,
                            number=job_name, ncpus=ncpu)
 
+            job['partition'] = partition
             if qos is not '':
-                job['partition'] = partition
                 job['extra'] = '#SBATCH --qos='+qos
 
             script = config.processing_script(job)

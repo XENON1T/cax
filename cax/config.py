@@ -226,7 +226,6 @@ def processing_script(args={}):
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task={ncpus}
 #SBATCH --mem-per-cpu=2000
-#SBATCH --time=0:60:00
 
 #SBATCH --output={base}/{use}/{number}_{pax_version}/{number}_{pax_version}_%J.log
 #SBATCH --error={base}/{use}/{number}_{pax_version}/{number}_{pax_version}_%J.log

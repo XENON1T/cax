@@ -12,7 +12,6 @@ import subprocess
 from cax import config
 from cax.task import Task
 
-
 class SetPermission(Task):
     """Set the correct permissions at the PDC in Stockholm"""
 
@@ -22,7 +21,7 @@ class SetPermission(Task):
                          "midway-login1": "/project2/lgrandi/xenon1t/raw/"}
         
         self.proc_data = {"tegner-login-1": "/cfs/klemming/projects/xenon/xenon1t/processed/",
-                          "midway-login1": "/project2/lgrandi/xenon1t/processed/"}
+                          "midway-login1": "/project/lgrandi/xenon1t/processed/"}
         
         self.chown_user = {"tegner-login-1": "bobau",
                            "midway-login1": "tunnell"}
