@@ -95,11 +95,12 @@ def main():
     tasks = [
         corrections.AddElectronLifetime(),  # Add electron lifetime to run, which is just a function of calendar time
         corrections.AddGains(), #  Adds gains to a run, where this is computed using slow control information
-        corrections.AddDriftVelocity(), #  Adds drift velocity to the run, also computed from slow control info
-        #corrections.AddSlowControlInformation(),  
+        #corrections.AddSlowControlInformation(),
+        data_mover.CopyPull(), # Download data through e.g. scp to this location
         data_mover.CopyPush(),  # Upload data through e.g. scp or gridftp to this location where cax running
         #tsm_mover.AddTSMChecksum(), # Add forgotten Checksum for runDB for TSM client.
-	checksum.CompareChecksums(),  # See if local data corrupted
+        checksum.CompareChecksums(),  # See if local data corrupted
+        checksum.AddChecksum(),  # Add checksum for data here so can know if corruption (useful for knowing when many good copies!)
         clear.RetryStalledTransfer(),  # If data transferring e.g. 48 hours, probably cax crashed so delete then retry
         clear.RetryBadChecksumTransfer(),  # If bad checksum for local data and can fetch from somewhere else, delete our copy
 
@@ -757,7 +758,7 @@ def remove_from_tsm():
                         help="Select a single run by number")
     parser.add_argument('--name', type=str, required=False,
                         help="Select a single run by name")
-    
+
     args = parser.parse_args()
 
     database_log = not args.disable_database_update
@@ -765,7 +766,7 @@ def remove_from_tsm():
     # Set information to update the run database
     config.set_database_log(database_log)
     config.mongo_password()
-    
+
     number_name = None
     if args.name is not None:
       number_name = args.name
@@ -786,9 +787,9 @@ def massive_tsmclient():
                         help="Load a custom .json config file into cax")
     parser.add_argument('--run', type=int,
                         help="Select a single run")
-    parser.add_argument('--from-run', dest='from_run', type=int, 
+    parser.add_argument('--from-run', dest='from_run', type=int,
                         help="Choose: run number start")
-    parser.add_argument('--to-run', dest='to_run', type=int, 
+    parser.add_argument('--to-run', dest='to_run', type=int,
                         help="Choose: run number end")
     parser.add_argument('--log', dest='log', type=str, default='INFO',
                         help="Logging level e.g. debug")
@@ -798,7 +799,7 @@ def massive_tsmclient():
                         help="Disable the update function the run data base")
 
     args = parser.parse_args()
-    
+
     log_level = args.log
     #if not isinstance(log_level, int):
         #raise ValueError('Invalid log level: %s' % args.log)
@@ -821,8 +822,8 @@ def massive_tsmclient():
       run_window = True
       beg_run = args.from_run
       end_run = args.to_run
-    
-    
+
+
     #configure cax.json
     config_arg = ''
     if args.config_file:
@@ -833,7 +834,7 @@ def massive_tsmclient():
                          args.config_file)
             config.set_json(args.config_file)
             config_arg = os.path.abspath(args.config_file)
-      
+
     # Setup logging
     log_path = {"xe1t-datamanager": "/home/xe1ttransfer/tsm_log",
                 "midway-login1": "n/a",
@@ -842,14 +843,14 @@ def massive_tsmclient():
     if log_path[config.get_hostname()] == "n/a":
         print("Modify the log path in main.py")
         exit()
-    
+
     if not os.path.exists(log_path[config.get_hostname()]):
         os.makedirs(log_path[config.get_hostname()])
     cax_version = 'massive_tsm-client_v%s - ' % __version__
     logging.basicConfig(filename="{logp}/{logf}".format(logp=log_path[config.get_hostname()], logf=args.logfile),
                         level="INFO",
                         format=cax_version + '%(asctime)s [%(levelname)s] ' '%(message)s')
-    
+
     # define a Handler which writes INFO messages or higher to the sys.stderr
     console = logging.StreamHandler()
     console.setLevel("INFO")
@@ -861,38 +862,38 @@ def massive_tsmclient():
     console.setFormatter(formatter)
     # add the handler to the root logger
     logging.getLogger('').addHandler(console)
-    
+
     # Check Mongo connection
     config.mongo_password()
 
     # Establish mongo connection
     collection = config.mongo_collection()
-    
+
     sort_key = (('start', -1),
                 ('number', -1),
                 ('detector', -1),
                 ('_id', -1))
-    
+
     while True: # yeah yeah
-        
+
         query = {}
         docs = list(collection.find(query))
-        
+
         for doc in docs:
-            
+
             #Select a single run for rucio upload (massive-ruciax -> ruciax)
             if args.run:
               if args.run != doc['number']:
                 continue
-            
+
             #Rucio upload only of certain run numbers in a sequence
             if doc['number'] < beg_run or doc['number'] > end_run and run_window == True:
               continue
-            
+
             #Double check if a 'data' field is defind in doc (runDB entry)
             if 'data' not in doc:
               continue
-            
+
             #Double check that tsm uploads are only triggered when data exists at the host
             host_data = False
             for idoc in doc['data']:
@@ -902,7 +903,7 @@ def massive_tsmclient():
             if host_data == False:
               #Do not try upload data which are not registered in the runDB
               continue
-            
+
             #Detector choice
             local_time = time.strftime("%Y%m%d_%H%M%S", time.localtime())
             if doc['detector'] == 'tpc':
@@ -911,52 +912,52 @@ def massive_tsmclient():
                   number=doc['number'],
                   log_path=log_path[config.get_hostname()],
                   timestamp=local_time)
-                
+
             elif doc['detector'] == 'muon_veto':
               job = "--config {conf} --name {number} --log-file {log_path}/tsm_log_{number}_{timestamp}.txt".format(
                   conf=config_arg,
                   number=doc['name'],
                   log_path=log_path[config.get_hostname()],
                   timestamp=local_time)
-            
+
             #start the time for an upload:
             time_start = datetime.datetime.utcnow()
-            
+
             #Create the command and execute the job only once
             command="cax --once {job}".format(job=job)
-            
+
             #Disable runDB notifications
             if args.disable_database_update == True:
               command = command + " --disable_database_update"
-            
+
             #command = general[config.get_hostname()]+command
-                        
+
             logging.info("Command: %s", command)
-            
+
             command = command.replace("\n", "")
             command = command.split(" ")
-            execute = subprocess.Popen( command , 
+            execute = subprocess.Popen( command ,
                                   stdin=subprocess.PIPE,
                                   stdout=subprocess.PIPE,
                                   stderr=subprocess.STDOUT, shell=False )
             stdout_value, stderr_value = execute.communicate()
             stdout_value = stdout_value.decode()
-      
+
             stdout_value = str(stdout_value).split("\n")
             stderr_value = str(stderr_value).split("\n")
-      
+
             stdout_value.remove('') #remove '' entries from an array
-            
+
             #Return command output:
             for i in stdout_value:
               logging.info("massive-tsm: %s", i)
-            
+
             #Manage the upload time:
             time_end = datetime.datetime.utcnow()
             diff = time_end-time_start
             dd = divmod(diff.total_seconds(), 60)
             logging.info("Upload time: %s min %s", str(dd[0]), str(dd[1]))
-            
+
         if run_once:
           break
         else:

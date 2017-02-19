@@ -26,13 +26,22 @@
   },
   {
     "name": "login",
+<<<<<<< HEAD
+    "method": "gfal-copy",
+    "hostname": "gsiftp://gridftp.grid.uchicago.edu:2811/cephfs/srm",
+    "dir_raw": "/xenon/xenon1t/raw",
+    "dir_processed": "/xenon/xenon1t_processed",
+    "upload_options": ["midway-login1"],
+=======
     "method": "rsync",
     "hostname": "login.ci-connect.uchicago.edu",
     "dir_raw": "/xenon/xenon1t_test",
     "dir_processed": null,
     "upload_options": [],
+>>>>>>> origin
     "username": "pdeperio",
     "download_options": [],
+    "task_list": ["ProcessBatchQueue"],
     "nstreams": 2,
     "grid_cert": "/stash2/project/@xenon1t/deployHQ/cax/user_cert"
   },
@@ -65,7 +74,7 @@
     "dir_raw": null,
     "upload_options": null,
     "download_options": null
-  },  
+  },
   {
     "name": "lfc",
     "method": "gfal-copy",

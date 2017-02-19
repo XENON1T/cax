@@ -11,6 +11,7 @@ import time
 import shutil
 import scp
 from paramiko import SSHClient, util
+import subprocess
 
 import pax
 
@@ -21,8 +22,7 @@ from cax import qsub
 from cax.tasks.tsm_mover import TSMclient
 from cax.tasks.rucio_mover import RucioBase, RucioRule
 
-
-import subprocess
+import pax
 
 class CopyBase(Task):
 
@@ -158,7 +158,7 @@ class CopyBase(Task):
                 full_command = command+ \
                            server_original+datum_original['location']+" "+ \
                            server+datum_destination['location'] #+" "+ \
-                           #lfc_address+"/"+dataset                  
+                           #lfc_address+"/"+dataset
 
             # Use SRM address instead of POSIX from Midway (to avoid worker nodes)
             #elif config.get_hostname() == 'midway-login1':
@@ -166,13 +166,13 @@ class CopyBase(Task):
             #    full_command = command+ \
             #               server_original+datum_original['location']+" "+ \
             #               server+datum_destination['location'] #+" "+ \
-                           #lfc_address+"/"+dataset                  
-           
+                           #lfc_address+"/"+dataset
+
             else:
                 full_command = command+ \
                            "file://"+datum_original['location']+" "+ \
                            server+datum_destination['location'] #+" "+ \
-                           #lfc_address+"/"+dataset                  
+                           #lfc_address+"/"+dataset
 
         else: # download
             logging.info(option_type+": %s to %s" % (server+datum_original['location'],
@@ -274,9 +274,10 @@ class CopyBase(Task):
         client.close()
 
     def each_run(self):
-
-        for data_type in config.get_config( config.get_hostname() )['data_type']:
-            self.log.debug("%s" % data_type)
+        json_config = config.get_config()
+        data_types = json_config["data_types"] if "data_types" in json_config.keys() else ["raw", "processed"]
+        for data_type in data_types:
+            self.log.info("%s" % data_type)
             self.do_possible_transfers(option_type=self.option_type,
                                        data_type=data_type)
 
@@ -364,8 +365,8 @@ class CopyBase(Task):
         version = 'v%s' % pax.__version__
 
         # Iterate over data locations to know status
+        
         for datum in self.run_doc['data']:
-
             # Is host known?
             if 'host' not in datum or datum['type'] != data_type:
                 continue
@@ -382,11 +383,15 @@ class CopyBase(Task):
                     continue 
                 
                 datum_here = datum.copy()
+            elif datum['host'] == remote_host:
 
-            elif datum['host'] == remote_host:  # This the remote host?
                 # If downloading, they should have data
                 if option_type == 'download' and not transferred:
                     continue
+
+                # if uploading and data is there, make note in logs
+                if option_type == 'upload':
+                    logging.info("Data is already at %s. Upload aborted" % remote_host)
 
                 if datum['type'] == 'processed' and not version == datum['pax_version']:
                     continue
@@ -409,7 +414,7 @@ class CopyBase(Task):
         logging.info("Path to raw data: %s", raw_data_path)
         logging.info("Path to tsm data: %s", raw_data_tsm)
         logging.info("File/Folder for backup: %s", raw_data_filename)
-        
+
         self.log.debug("Notifying run database")
         datum_new = {'type'         : datum['type'],
                      'host'         : destination,
@@ -419,7 +424,6 @@ class CopyBase(Task):
                      'creation_time': datetime.datetime.utcnow(),
                      }
         logging.info("new entry for rundb: %s", datum_new )
-        
 
 
         if config.DATABASE_LOG == True:
@@ -443,6 +447,7 @@ class CopyBase(Task):
         tsm_download_result = self.tsm.download( raw_data_location, raw_data_path, raw_data_filename)
         if os.path.exists( raw_data_path + raw_data_filename ) == False:
           logging.info("Download to %s failed.", raw_data_path)
+
           if config.DATABASE_LOG:
             #Notify the database if something went wrong during the download:
             logging.info("Notifiy the runDB: error")
@@ -747,7 +752,7 @@ class CopyBase(Task):
             if method == 'scp' or method == 'rsync':
                 status = 'verifying'
 
-            # Cannot do cax-checksum on GRID sites, 
+            # Cannot do cax-checksum on GRID sites,
             # so assume gfal-copy/lcg-cp checksum is sufficient
             else:
                 status = 'verifying'

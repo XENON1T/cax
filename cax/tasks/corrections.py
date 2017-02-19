@@ -177,6 +177,9 @@ class AddGains(CorrectionBase):
                                             })
             gains.append(float(gain) * self.correction_units)
 
+        # Add gains for acquisition monitor channels
+        gains += [2.5e6 / 31.25] + [1e5] * 5
+
         return gains
 
 
