@@ -112,8 +112,13 @@ class BufferPurger(checksum.CompareChecksums):
         # Do not purge processed data
         # Warning: if you want to enable this here, need to add pax version checking in check()
         if data_doc['type'] == 'processed':
-            self.log.debug("Do not purge processed data")
-            return
+            print("Pax Version: %s " % (data_doc['pax_version']))
+            if(config.purge_type()=='processed' and data_doc['pax_version']==config.purge_version() and data_doc['host'] == 'midway-login1'):
+                print("delete %s pax version: %s"%(config.purge_type(),config.purge_version()))
+            else:
+                print("Do not purge processed data")
+                self.log.debug("Do not purge processed data")
+                return
 
         if data_doc['host'] == 'midway-login1':
             if self.run_doc['source']['type'] == "Kr83m" or self.run_doc['source']['type'] == "AmBe" or self.run_doc['source']['type'] == "Rn220" or self.has_tag('_sciencerun0'):
