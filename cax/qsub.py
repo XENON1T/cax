@@ -134,11 +134,11 @@ def delete_script(fileobj):
     fileobj.close()
 
 
-def get_number_in_queue(host=config.get_hostname()):
-    return len(get_queue(host))
+def get_number_in_queue(host=config.get_hostname(), partition=''):
+    return len(get_queue(host, partition))
 
 
-def get_queue(host=config.get_hostname()):
+def get_queue(host=config.get_hostname(), partition=''):
     """Get list of jobs in queue"""
 
     if host != "login":

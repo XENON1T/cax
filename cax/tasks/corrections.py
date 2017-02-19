@@ -9,6 +9,7 @@ import sympy
 import time
 import pytz
 import requests
+import hax
 from hax import slow_control
 from pax import configuration, units
 from sympy.parsing.sympy_parser import parse_expr
@@ -75,10 +76,6 @@ class CorrectionBase(Task):
 
 
 class AddElectronLifetime(CorrectionBase):
-    """Copy data to here
-
-    If data exists at a reachable host but not here, pull it.
-    """
     key = 'processor.DEFAULT.electron_lifetime_liquid'
     correction_units = units.us
 
@@ -94,28 +91,36 @@ class AddElectronLifetime(CorrectionBase):
         return lifetime * self.correction_units
 
 
-class AddSlowControlInformation(CorrectionBase):
-    """Add all slow control highlight information to run db
-    """
-    key = 'slow_control'
-    correction_units = 1
-
-    def get_correction(self):
-        pass
+class AddDriftVelocity(CorrectionBase):
+    key = 'processor.DEFAULT.drift_velocity_liquid'
+    correction_units = units.km / units.s
 
     def evaluate(self):
-        time_range = self.get_time_range()
+        run_number = self.run_doc['number']
 
-        data = defaultdict(dict)
-        for key1, value1 in slow_control.VARIABLES.items():
-            for key2, value2 in value1.items():
-                series = slow_control.get_series(value2, time_range)
-                if len(series):
-                    data[key1][key2] = float(series.iloc[0])
-                else:
-                    data[key1][key2] = np.nan
+        # Minimal init of hax. It's ok if hax is inited again with different settings before or after this.
+        hax.init(pax_version_policy='loose', main_data_paths=[])
 
-        return data
+        # Get the cathode voltage in kV
+        cathode_kv = hax.slow_control.get('XE1T.GEN_HEINZVMON.PI', run_number).mean()
+
+        # Get the drift velocity
+        value = self.vd(cathode_kv)
+
+        self.log.info("Run %d: calculated drift velocity of %0.3f km/sec" % (run_number, value))
+        return value * self.correction_units
+
+    @staticmethod
+    def vd(cathode_v):
+        """Return the drift velocity in XENON1T in km/sec for a given cathode voltage in kV
+        Power-law fit to the datapoints in xenon:xenon1t:aalbers:drift_and_diffusion
+
+        When we're well beyond the range of the fit, we will take the value to be constant (to avoid crazy things like
+        nan or negative values).
+        """
+        cathode_v = np.asarray(cathode_v).copy()
+        cathode_v = np.clip(cathode_v, 7, 20)
+        return (42.2266 * cathode_v - 268.6557)**0.067018
 
 
 class AddGains(CorrectionBase):
@@ -149,26 +154,27 @@ class AddGains(CorrectionBase):
         """
         V = sympy.symbols('V')
         pmt = sympy.symbols('pmt', integer=True)
+        t = sympy.symbols('t')
+
+        # Minimal init of hax. It's ok if hax is inited again with different settings before or after this.
+        hax.init(pax_version_policy='loose', main_data_paths=[])
 
         # Grab voltages from SC
         self.log.info("Getting voltages at %d" % timestamp)
-        voltages = np.array(self.get_voltages(timestamp))
+        voltages = hax.slow_control.get(['PMT %03d' % x for x in range(254)],
+                                         self.run_doc['number']).median().values
 
-        number_important = len(slow_control.VARIABLES['pmts'])
-        if -1 in voltages[0:number_important]:
-            missing_pmts = np.where(voltages[0:number_important] == -1)[0]
-            names = [slow_control.VARIABLES['pmts']['pmt_%03d_bias_V' % mp]
-                     for mp in missing_pmts]
-            self.log.error("SCfail %d %d %s" % (self.run_doc['number'],
-                                                timestamp,
-                                                " ".join(names)))
-            raise RuntimeError("Missing SC variable")
+        # Resize for acquisition monitor, where 0 voltage here
+        voltages.resize(len(PAX_CONFIG['DEFAULT']['pmts']))
 
         gains = []
         for i, voltage in enumerate(voltages):
             self.log.debug("Deriving HV for PMT %d" % i)
             gain = self.function.evalf(subs={V  : float(voltage),
-                                              pmt: i})
+                                             pmt: i,
+                                             t : self.run_doc['start'].timestamp(),
+                                             't0' : 0
+                                            })
             gains.append(float(gain) * self.correction_units)
 
         # Add gains for acquisition monitor channels
@@ -176,35 +182,4 @@ class AddGains(CorrectionBase):
 
         return gains
 
-    def get_voltages(self, timestamp):
-        try:
-            r = requests.post('https://xenon1t-daq.lngs.infn.it/slowcontrol/getLastMeasuredPMTValues',
-                          data = {'EndDateUnix' : int(timestamp),
-                                  'username':'slowcontrolwebserver',
-                                  'api_key' : os.environ.get('api_key'),
-                              },
-                          verify=False)
-
-            r.raise_for_status()
-        except requests.exceptions.HTTPError as e:
-            self.log.exception(e)
-            self.log.info("Sleeping 10 seconds, then retrying")
-            time.sleep(10)
-            return self.get_voltages(timestamp)
-
-        pmts = slow_control.VARIABLES['pmts']
-        mapping = {v: int(k.split('_')[1]) for k,v in pmts.items()}
-
-        voltages = len(PAX_CONFIG['DEFAULT']['pmts'])*[-1]
-
-        json_value = r.json()
-
-        if not isinstance(json_value, list):
-            raise RuntimeError(str(json_value))
-
-        for doc in json_value:
-            if doc['tagname'] in mapping.keys():
-                voltages[mapping[doc['tagname']]] = doc['value'] if doc['value'] > 1 else 0
-
-        return voltages
 

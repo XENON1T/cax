@@ -13,11 +13,14 @@ import scp
 from paramiko import SSHClient, util
 import subprocess
 
+import pax
+
 from cax import config
 from cax.task import Task
 from cax import qsub
 
 from cax.tasks.tsm_mover import TSMclient
+from cax.tasks.rucio_mover import RucioBase, RucioRule
 
 import pax
 
@@ -49,11 +52,17 @@ class CopyBase(Task):
         if method == 'scp':
             self.copySCP(datum_original, datum_destination, server, username, option_type)
 
+        elif method == 'rsync':
+            self.copyRSYNC(datum_original, datum_destination, server, username, option_type)
+
         elif method == 'gfal-copy':
             self.copyGFAL(datum_original, datum_destination, server, option_type, nstreams, grid_cert)
 
         elif method == 'lcg-cp':
             self.copyLCGCP(datum_original, datum_destination, server, option_type, nstreams)
+
+        elif method == 'rucio':
+            self.rucio.copyRucio(datum_original, datum_destination, option_type)
 
         else:
             print (method+" not implemented")
@@ -191,6 +200,48 @@ class CopyBase(Task):
         else:
             self.log.info(gfal_out_ascii) # To print timing
             
+    def copyRSYNC(self, datum_original, datum_destination, server, username, option_type):
+        """Copy data via rsync function
+        """
+
+        command = "time rsync -r --stats --append "
+
+        status = -1
+
+        if option_type == 'upload':
+            logging.info(option_type+": %s to %s" % (datum_original['location'],
+                                            server+datum_destination['location']))
+
+            full_command = command+ \
+                       datum_original['location']+" "+ \
+                       username+"@"+server+":"+os.path.dirname(datum_destination['location'])
+
+        else: # download
+            logging.info(option_type+": %s to %s" % (server+datum_original['location'],
+                                                     datum_destination['location']))
+
+            full_command = command+ \
+                           username+"@"+server+":"+datum_original['location']+" "+ \
+                           os.path.dirname(datum_destination['location'])
+
+        self.log.info(full_command)
+
+        try:
+            rsync_out = subprocess.check_output(full_command, stderr=subprocess.STDOUT, shell=True)
+
+        except subprocess.CalledProcessError as rsync_exec:
+            self.log.error(rsync_exec.output.rstrip().decode('ascii'))
+            self.log.error("Error: rsync status = %d\n" % rsync_exec.returncode)
+            raise
+
+        rsync_out_ascii = rsync_out.rstrip().decode('ascii')
+        if "error" in rsync_out_ascii.lower(): # Some errors don't get caught above
+            self.log.error(rsync_out_ascii)
+            raise
+
+        else:
+            self.log.info(rsync_out_ascii) # To print timing
+
 
     def copySCP(self, datum_original, datum_destination, server, username, option_type):
         """Copy data via SCP function
@@ -267,16 +318,24 @@ class CopyBase(Task):
                                                              option_type,
                                                              remote_host)
 
-            # Upload logic
-            if option_type == 'upload' and datum_here and datum_there is None:
+            #Delete the old data base entry if rucio transfers are requested
+            #and an old upload failed by a bad connection error.
+            if method == "rucio" and datum_there != None and datum_there['status'] == 'RSEreupload' and config.DATABASE_LOG == True:
+              self.log.info("Former upload of %s failed with error", datum_here['location'])
+              self.log.info("[('Connection aborted.', BadStatusLine('',))] -> Delete runDB status and start again")
+              
+              self.collection.update({'_id': self.run_doc['_id']},
+                                     {'$pull': {'data': datum_there}})
+
+            #Upload logic for everything exepct tape
+            if option_type == 'upload' and method != "tsm" and datum_here and (datum_there is None or                                                           datum_there['status'] == 'RSEreupload'):
                 self.copy_handshake(datum_here, remote_host, method, option_type)
                 break
 
-            # Download logic
+            # Download logic for everything exepct tape
             if option_type == 'download' and datum_there and datum_here is None and method != "tsm":
                 self.copy_handshake(datum_there, config.get_hostname(), method, option_type)
                 break
-
 
             # Upload tsm:
             if option_type == 'upload' and datum_here and datum_there is None and method == "tsm":
@@ -302,10 +361,11 @@ class CopyBase(Task):
     def local_data_finder(self, data_type, option_type, remote_host):
         datum_here = None  # Information about data here
         datum_there = None  # Information about data there
+
+        version = 'v%s' % pax.__version__
+
         # Iterate over data locations to know status
-
-        pax_version_here = 'v' + pax.__version__
-
+        
         for datum in self.run_doc['data']:
             # Is host known?
             if 'host' not in datum or datum['type'] != data_type:
@@ -318,8 +378,12 @@ class CopyBase(Task):
                 # If uploading, we should have data
                 if option_type == 'upload' and not transferred:
                     continue
+
+                if datum['type'] == 'processed' and not version == datum['pax_version']:
+                    continue 
+                
                 datum_here = datum.copy()
-            elif datum['host'] == remote_host and datum["pax_version"] == pax_version_here:  # This the remote host?
+            elif datum['host'] == remote_host:
 
                 # If downloading, they should have data
                 if option_type == 'download' and not transferred:
@@ -328,6 +392,9 @@ class CopyBase(Task):
                 # if uploading and data is there, make note in logs
                 if option_type == 'upload':
                     logging.info("Data is already at %s. Upload aborted" % remote_host)
+
+                if datum['type'] == 'processed' and not version == datum['pax_version']:
+                    continue
 
                 datum_there = datum.copy()
 
@@ -358,6 +425,7 @@ class CopyBase(Task):
                      }
         logging.info("new entry for rundb: %s", datum_new )
 
+
         if config.DATABASE_LOG == True:
             result = self.collection.update_one({'_id': self.run_doc['_id'],
                                                  },
@@ -376,10 +444,21 @@ class CopyBase(Task):
           return
 
         #Do download:
-        tsm_download_result = self.tsm.download( raw_data_tsm + raw_data_filename, raw_data_path, raw_data_filename)
+        tsm_download_result = self.tsm.download( raw_data_location, raw_data_path, raw_data_filename)
         if os.path.exists( raw_data_path + raw_data_filename ) == False:
           logging.info("Download to %s failed.", raw_data_path)
-          #Notify the database and break up
+
+          if config.DATABASE_LOG:
+            #Notify the database if something went wrong during the download:
+            logging.info("Notifiy the runDB: error")
+            self.collection.update({'_id' : self.run_doc['_id'],
+                                  'data': {
+                                        '$elemMatch': datum_new}},
+                                   {'$set': {'data.$.status': "error",
+                                             'data.$.location': "n/a",
+                                             'data.$.checksum': "n/a",
+                                             }
+                                   })
 
         #Rename
         file_list = []
@@ -486,6 +565,15 @@ class CopyBase(Task):
 
         if self.tsm.check_client_installation() == False:
           logging.info("There is a problem with your dsmc client")
+          if config.DATABASE_LOG:
+            self.collection.update({'_id' : self.run_doc['_id'],
+                                  'data': {
+                                        '$elemMatch': datum_new}},
+                                   {'$set': {'data.$.status': "error",
+                                             'data.$.location': "n/a",
+                                             'data.$.checksum': "n/a",
+                                             }
+                                   })
           return
 
         #Prepare a copy from raw data location to tsm location ( including renaming)
@@ -533,7 +621,10 @@ class CopyBase(Task):
         logging.info("Network transfer rate: %s", tsm_upload_result["tno_network_transfer_rate"])
         logging.info("MD5 Hash (raw data): %s", checksum_before_tsm)
 
-        test_download = "/data/xenon/tsm/tsm_verify_download"
+        test_download = os.path.join(raw_data_tsm, "tsm_verify_download")
+        #Make sure that temp. download directory exists:
+        if not os.path.exists(test_download):
+          os.makedirs(test_download)
         tsm_download_result = self.tsm.download( raw_data_tsm + raw_data_filename, test_download, raw_data_filename)
         if os.path.exists( raw_data_tsm + raw_data_filename ) == False:
           logging.info("Download to %s failed. Checksum will not match", test_download)
@@ -588,24 +679,27 @@ class CopyBase(Task):
                                                       destination))
 
         # Determine where data should be copied to
-        base_dir = destination_config['dir_%s' % datum['type']]
-        if base_dir is None:
+        if destination_config['dir_%s' % datum['type']] != None:
+          base_dir = destination_config['dir_%s' % datum['type']]
+          if base_dir is None:
             self.log.info("no directory specified for %s" % datum['type'])
             return
 
-        if datum['type'] == 'processed':
+          if datum['type'] == 'processed':
             self.log.info(datum)
             base_dir = os.path.join(base_dir, 'pax_%s' % datum['pax_version'])
 
-        # Check directory existence on local host for download only
-        if option_type == 'download' and not os.path.exists(base_dir):
+          # Check directory existence on local host for download only
+          if option_type == 'download' and not os.path.exists(base_dir):
             if destination != config.get_hostname():
-                raise NotImplementedError("Cannot create directory on another "
+              raise NotImplementedError("Cannot create directory on another "
                                           "machine.")
 
             # Recursively make directories
             os.makedirs(base_dir)
-
+        else:
+          base_dir = "none"
+          
         # Directory or filename to be copied
         filename = datum['location'].split('/')[-1]
 
@@ -623,8 +717,19 @@ class CopyBase(Task):
             for variable in ('pax_version', 'pax_hash', 'creation_place'):
                 datum_new[variable] = datum.get(variable)
 
-        if method == "tsm":
-            print("select method tsm")
+        if method == "rucio":
+            #Init the rucio module when method==rucio is requested
+            self.log.info("Init rucio_mover module for Rucio transfers")
+            self.rucio = RucioBase(self.run_doc)
+            self.rucio.set_host( config.get_hostname() )
+            self.rucio.set_remote_host( destination )
+            #Sanity check for rucio client
+            if self.rucio.sanity_checks() == False:
+              logging.info("!!! <<The sanity checks fail>>  !!!")
+              return 0
+            #Add two further database entries for rucio related uploads
+            datum_new['rse'] = []
+            datum_new['location'] = "n/a"
 
         if config.DATABASE_LOG == True:
             result = self.collection.update_one({'_id': self.run_doc['_id'],
@@ -644,7 +749,7 @@ class CopyBase(Task):
                       method, 
                       option_type)
             # Checksumming to follow on local site
-            if method == 'scp':
+            if method == 'scp' or method == 'rsync':
                 status = 'verifying'
 
             # Cannot do cax-checksum on GRID sites,
@@ -665,10 +770,69 @@ class CopyBase(Task):
         self.log.debug(method+" done, telling run database")
 
         if config.DATABASE_LOG:
+          if method == "rucio":
+            logging.info("following entries are added to the runDB:")
+            logging.info("Status: %s", self.rucio.get_rucio_info()['status'] )
+            logging.info("Location: %s", self.rucio.get_rucio_info()['location'] )
+            logging.info("Checksum: %s", self.rucio.get_rucio_info()['checksum'] )
+            logging.info("RSE: %s", self.rucio.get_rucio_info()['rse'] )
+            
             self.collection.update({'_id' : self.run_doc['_id'],
                                     'data': {
+                                    '$elemMatch': datum_new}},
+                                 {'$set': {
+                                      'data.$.status': self.rucio.get_rucio_info()['status'],
+                                      'data.$.location': self.rucio.get_rucio_info()['location'],
+                                      'data.$.checksum': self.rucio.get_rucio_info()['checksum'],
+                                      'data.$.rse': self.rucio.get_rucio_info()['rse']
+                                          }
+                                })
+          
+          else:
+          #Fill the data if method is not rucio
+            if config.DATABASE_LOG:  
+              self.collection.update({'_id' : self.run_doc['_id'],
+                                    'data': {
                                         '$elemMatch': datum_new}},
-                                   {'$set': {'data.$.status': status}})
+                                   {'$set': {
+                                        'data.$.status': status
+                                            }
+                                   })
+        
+
+        if method == "rucio":
+          #Rucio 'side load' to set the transfer rules directly after the file upload
+          if self.rucio.get_rucio_info()['status'] == "transferred":
+            self.log.info("Initiate the RucioRule for a first set of transfer rules")
+            #Add: Outcome of the rucio transfers to the new database entry
+            #     without read the runDB again.
+            datum_new['status'] = self.rucio.get_rucio_info()['status'] 
+            datum_new['location'] = self.rucio.get_rucio_info()['location']
+            datum_new['checksum'] = self.rucio.get_rucio_info()['checksum']
+            datum_new['rse'] = self.rucio.get_rucio_info()['rse']
+            
+            #Init the RucioRule module and set its runDB entry manually
+            self.rucio_rule = RucioRule()
+            self.rucio_rule.set_db_entry_manually( self.run_doc )
+            #Perform the initial rule setting:
+            self.rucio_rule.set_possible_rules(data_type=datum['type'], dbinfo = datum_new)
+            self.log.info("Status: transferred -> Transfer rules are set for %s", self.rucio.get_rucio_info()['rse'])
+            
+            # Commented out due to upload section (rucio_mover) option 3!
+            # No need to delete single file rules manually after upload
+            #let it sleep for 5 seconds:
+            #logging.info("Sleep")
+            #time.sleep(15)
+            #logging.info("Sleep time finished ")
+            #self.log.info("Delete individual rules of the uploaded files:")
+            #for i_file in self.rucio.get_rucio_info()['file_list']:
+              #i_location = "{iscope}:{ifile}".format( iscope=self.rucio.get_rucio_info()['scope_upload'],
+                                                      #ifile=i_file.split("/")[-1] )
+              
+              #self.log.info("Time out for %s", i_location)
+              #self.rucio_rule.update_rule( i_location, self.rucio.get_rucio_info()['rse'][0], "10" )
+          else:
+            self.log.info("Something went wrong during the upload (error). No rules are set")
 
         self.log.debug(method+" done, telling run database")
 

@@ -6,7 +6,7 @@ import logging
 import os
 import pax
 import socket
-
+from zlib import adler32
 import pymongo
 
 # global variable to store the specified .json config file
@@ -16,9 +16,21 @@ HOST = os.environ.get("HOSTNAME") if os.environ.get("HOSTNAME") else socket.geth
 DATA_USER_PDC = 'bobau'
 DATA_GROUP_PDC = 'xenon-users'
 
-
 DETECTOR = "tpc"
 API_URL = "https://xenon1t-daq.lngs.infn.it/runs_api/runs/runs/"
+
+
+RUCIO_RSE = ''
+RUCIO_SCOPE = ''
+RUCIO_UPLOAD = None
+RUCIO_CAMPAIGN = ''
+
+PAX_DEPLOY_DIRS = {
+    'midway-login1' : '/project/lgrandi/deployHQ/pax',
+    'tegner-login-1': '/afs/pdc.kth.se/projects/xenon/software/pax'
+}
+
+RUCIO_RULE = ''
 
 
 
@@ -52,13 +64,11 @@ def set_json(config):
     global CAX_CONFIGURE
     CAX_CONFIGURE = config
 
-
 def set_database_log(config):
     """Set the database update
     """
     global DATABASE_LOG
     DATABASE_LOG = config
-
 
 def load():
     # User-specified config file
@@ -280,6 +290,8 @@ def processing_script(args={}):
 #SBATCH --job-name={use}_{number}_{pax_version}
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task={ncpus}
+#SBATCH --mem-per-cpu=2000
+#SBATCH --time=0:60:00
 
 #SBATCH --output={base}/{use}/{number}_{pax_version}/{number}_{pax_version}_%J.log
 #SBATCH --error={base}/{use}/{number}_{pax_version}/{number}_{pax_version}_%J.log
@@ -296,7 +308,10 @@ cd ${{JOB_WORKING_DIR}}
 rm -f pax_event_class*
 source activate pax_{pax_version}
 
-HOSTNAME={host} {command}
+
+HOSTNAME={host}
+{command}
+
 
 {stats}
 """.format(**args)
@@ -358,3 +373,62 @@ def get_minitrees_dir(host, version):
     return os.path.join(get_minitrees_base_dir(host),
                         'pax_%s' % version)
 
+
+def adjust_permission_base_dir(base_dir, destination):
+    """Set ownership and permissons for basic folder of processed data (pax_vX)"""
+
+    if destination=="tegner-login-1":
+      #Change group and set permissions for PDC Stockholm
+      user_group = DATA_USER_PDC + ":" + DATA_GROUP_PDC
+      
+      subprocess.Popen( ["chown", "-R", user_group, base_dir],
+                        stdout=subprocess.PIPE )
+                             
+
+      subprocess.Popen( ["setfacl", "-R", "-M", "/cfs/klemming/projects/xenon/misc/basic", base_dir],
+                        stdout=subprocess.PIPE )
+
+
+def get_adler32( fname ):
+  """Calcualte an Adler32 checksum in python
+     Used for cross checks with Rucio
+  """
+  
+  BLOCKSIZE=256*1024*1024
+  asum = 1
+  with open(fname, "rb") as f:
+    while True:
+      data = f.read(BLOCKSIZE)
+      if not data:
+        break
+      asum = adler32(data, asum)
+      if asum < 0:
+        asum += 2**32
+
+  return hex(asum)[2:10].zfill(8).lower()
+
+#Rucio stuff:
+def set_rucio_rse( rucio_rse):
+    """Set the rucio rse information manually
+    """
+    global RUCIO_RSE
+    RUCIO_RSE = rucio_rse
+
+def set_rucio_scope( rucio_scope):
+    """Set the rucio scope information manually
+    """
+    global RUCIO_SCOPE
+    RUCIO_SCOPE = rucio_scope
+
+def set_rucio_upload( rucio_upload ):
+    global RUCIO_UPLOAD
+    RUCIO_UPLOAD = rucio_upload
+
+def set_rucio_campaign( rucio_campaign ):
+    global RUCIO_CAMPAIGN
+    RUCIO_CAMPAIGN = rucio_campaign
+
+def set_rucio_rules( config_rule ):
+    """Set the according config file to define the rules for transfer"""
+    global RUCIO_RULE
+    RUCIO_RULE = config_rule

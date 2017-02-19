@@ -1,6 +1,83 @@
   History
 =======
 
+5.0.4 (2017-02-17)
+-------------------
+* Implement command line arguments for:
+  * Run tag (e.g. "_sciencerun0")
+  * Cluster partition (e.g. "xenon1t", "kicp")
+  * Number of CPUs per job
+    
+5.0.3 (2017-02-16)
+-------------------
+* Fix bug in run range in massive cax
+
+5.0.3 (2017-02-16)
+-------------------
+* Switch to rsync for processed data
+* Fix drift velocity function bug (#79)
+
+5.0.2 (2017-02-16)
+-------------------
+* Allow for massive cax to have stop range
+
+5.0.1 (2017-02-16)
+-------------------
+* Make proximity trees
+
+5.0.0 (2017-02-14)
+-------------------
+* First Ruciax merge
+* Revert to checksumming "verifying" only
+* Fix: only modify RunsDB if actually deleting data
+* Add check of pax version when deleting processed data
+* Switch back to xenon1t partition
+
+4.11.6 (2017-02-13)
+-------------------
+
+* Switch to kicp partition
+* Copy only processed files, not raw, and fix version check
+* Disable iterative mode to always work on old runs
+
+4.11.5 (2017-02-10)
+-------------------
+
+* Gains for acquisition monitor
+
+4.11.4 (2017-02-08)
+-------------------
+
+* Tweaks for getting the slow control interface to be used for gains.
+
+4.11.3 (2017-02-08)
+-------------------
+
+* Gains can depend on time (#77)
+* Drift velicity (#75)
+* Tweaks for _sciencerun0 data
+
+4.11.2 (2016-12-27)
+-------------------
+* Decrease purge threshold to 5 days (from 25)
+* Allow purge of Rn220, disallow AmBe
+* Do not purge until processed
+* Switch processed dir back to /project (from /project2)
+* Request 9 cores per job (instead of 4)
+* Specify 8 cores for pax (instead of 4), 1 extra for I/O worker
+
+4.11.1 (2016-12-22)
+-------------------
+* Switch to /project2 space on Midway
+
+4.11.0 (2016-12-21)
+------------------
+* Switch to rsync for data transfers (instead of scp)
+  
+4.10.6 (2016-12-20)
+------------------
+* Compute gains at Midway to speed it up (Closes #50)
+
 4.10.5 (2016-12-06)
 ------------------
 * Added tape backup upload (TSM) to master branch

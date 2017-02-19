@@ -93,6 +93,59 @@ For checksumming, cax must be run on the storage server whose IP must be whiteli
 
 Processing is currently implemented for only Midway and Stockholm.
 
+Using ruciax
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ruciax is a rucio integration into cax. It allows to upload raw data sets and processed data to a specified rucio storage endpoint (RSE). The upload from e.g. xe1t-datamanager to NIKHEF_USERDISK is defined as "first upload" in the following text and the according RSE is identified as "entrance RSE".
+Once the data are uploaded to the entrance RSE the rucio file catalogue (rucio-server) takes over the distribution of the data sets from one RSE (e.g. NIHKEF_USERDISK) to another (e.g. UC_OSG_USERDISK).
+ruciax runs two configurations: "Uploads" and "Rules". These is controlled by:
+
+* cax_ruciax_xe1tdatamanager_verifyruns.json <-> Rules
+* cax_ruciax_xe1tdatamanager.json <-> Uploads
+
+Both are configured with "simple" rules by::
+
+   "name": "rucio-catalogue",
+   "hostname": "",
+   "username": "",
+   "method": "rucio",
+   "dir_raw": "/data/xenon/raw",
+   "upload_options": null,
+   "download_options": null,
+   "rucio_upload_rse": "NIKHEF_USERDISK", <<-- Entrance RSE
+   "rucio_account": "production",         <<-- Don't change that unless you want to change your rucio upload account.
+   "rucio_transfer": ["UC_OSG_USERDISK"]  <<-- RSE's for rucio transfers
+
+Here are some examples:
+
+Run a single upload (e.g. of run XXXX) to the rucio catalogue::
+
+   [~] ruciax --once --config cax_ruciax_xe1tdatamanager.json --run XXXX --log-file ruciax_log_file.txt
+
+Run a single rule (e.g. of run XXXX) to verify/update all rucio storage endpoint information in our runDB::
+
+   [~] ruciax --once --config cax_ruciax_xe1tdatamanager_verifyruns.json --run XXXX --log-file ruciax_log_file_verify.txt
+
+Run 'massive-ruciax' for upload continuously::
+
+   [~] massive-ruciax --config cax_ruciax_xe1tdatamanager.json
+
+Run 'massive-ruciax' for rules continuously::
+
+   [~] massive-ruciax --config cax_ruciax_xe1tdatamanager_verifyruns.json
+
+Run 'massive-ruciax' for upload once (similar for rules)::
+
+   [~] massive-ruciax --once --config cax_ruciax_xe1tdatamanager.json
+
+Run 'massive-ruciax' for upload continuously for a range of tpc runs::
+
+   [~] massive-ruciax --config cax_ruciax_xe1tdatamanager_verifyruns.json --from-run 4455 --to-run 4465
+
+Please note: You need both configurations running for upload and proper registration in the runDB. Use screen or tmux!
+
+###Define complex rules
+A more complex structure for rucio based transfer rules is not yet implemented.
+
 Customizing cax for tape backup
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -117,7 +170,7 @@ Please use in ANY CASE the --log-file input with the given structure to store th
   * UPLOADDATE: e.g. 161115
   * UPLOADTIME: e.g. 161400
 
-The UPLOADTIME must not be so accurate. If it is within 30 minutes it is ok for book keeping. 
+The UPLOADTIME must not be so accurate. If it is within 30 minutes it is ok for book keeping.
 
 The usual way of running the tsm-cax is by using massive-tsm. Type::
 
@@ -130,7 +183,7 @@ Possible to add:
 
 The download is done by typing::
 
-  cax --once --config /home/xe1ttransfer/cax_tsm/cax/cax_tsm_download.json --name DATE_TIME 
+  cax --once --config /home/xe1ttransfer/cax_tsm/cax/cax_tsm_download.json --name DATE_TIME
 
 or::
 

@@ -21,8 +21,8 @@ from cax.task import Task
 
 def init_hax(in_location, pax_version, out_location):
     hax.init(experiment='XENON1T',
-         main_data_paths=[in_location+'pax_'+pax_version],
-         minitree_paths = [out_location])
+             main_data_paths=[in_location+'pax_'+pax_version],
+             minitree_paths = [out_location])
 
 def verify():
     """Verify the file
@@ -52,7 +52,8 @@ def _process_hax(name, in_location, host, pax_version,
         print ('creating hax minitrees', name, in_location)
         init_hax(in_location, pax_version, out_location)   # may initialize once only
         hax.minitrees.load(name, ['Basics', 'Fundamentals',
-                                  'DoubleScatter', 'LargestPeakProperties', 'TotalProperties'])
+                                  'DoubleScatter', 'LargestPeakProperties',
+                                  'TotalProperties', 'Proximity'])
 
     except Exception as exception:
         raise
@@ -120,7 +121,7 @@ class ProcessBatchQueueHax(Task):
                 have_raw = datum
 
             # Check if processed data already exists in DB
-            if datum['type'] == 'processed':
+            if datum['type'] == 'processed' and datum['status'] == 'transferred':
                 if version == datum['pax_version']:
                     have_processed = True
                     

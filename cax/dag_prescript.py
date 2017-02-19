@@ -73,9 +73,9 @@ def pre_script(run_number, pax_version, update_database=True):
                                                  "type" : "processed",
                                                  "pax_version" : pax_version
                                                  }
-                                 },
-                       "$elemMatch" : {"host" : 'login',
-                                       "type" : "raw"}
+                                 }
+                      # "$elemMatch" : {"host" : 'login',
+                      #                 "type" : "raw"}
                        },
              'reader.ini.write_mode' : 2,
              'trigger.events_built' : {"$gt" : 0},
@@ -97,6 +97,13 @@ def pre_script(run_number, pax_version, update_database=True):
     if doc is None:
         print("Run %s is not suitable for OSG processing. Check run doc" % run_number)
         sys.exit(1)
+
+
+    if len(doc["processor"]["DEFAULT"]["gains"]) == 254:
+        print("Adding gains for acquisition monitor")
+        doc["processor"]["DEFAULT"]["gains"] += [2.5e6 / 31.25] + [1e5] * 5
+
+    print("gain count: ",len(doc["processor"]["DEFAULT"]["gains"]))
 
     name = doc["name"]
     

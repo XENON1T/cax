@@ -3,7 +3,7 @@
 from setuptools import setup, find_packages
 
 PROJECT = 'cax'
-VERSION = '4.10.4'
+VERSION = '5.0.5'
 
 with open('README.rst') as readme_file:
     readme = readme_file.read()
@@ -13,7 +13,7 @@ with open('HISTORY.rst') as history_file:
 
 requirements = [
     'checksumdir', 'scp', 'pagerduty-api', 'pymongo', 'paramiko',
-    'numpy', 'sympy', 'pytz'
+    'numpy', 'sympy', 'pytz', 
 ]
 
 test_requirements = [
@@ -60,6 +60,13 @@ setup(
             'massive-tsm = cax.main:massive_tsmclient',
             'cax-tsm-remove = cax.main:remove_from_tsm',
             'cax-tsm-watch = cax.main:cax_tape_log_file',
+            'ruciax = cax.main:ruciax',
+            'ruciax-rm = cax.main:remove_from_rucio',
+            'massive-ruciax = cax.main:massiveruciax',
+            'ruciax-check = cax.main:ruciax_status',
+            'ruciax-purge = cax.main:ruciax_purge',
+            'ruciax-download = cax.main:ruciax_download',
+            'ruciax-locator = cax.main:ruciax_locator',
         ],
     },
 )

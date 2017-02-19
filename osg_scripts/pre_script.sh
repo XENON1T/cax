@@ -1,11 +1,12 @@
 #!/bin/bash
 
-# 1: raw directory
+# 1: run name
 # 2: pax version
 # 3: run number
 # 4: logdir 
 
-run="${1##*/}"
+#run="${1##*/}"
+run=$1
 pre_log=$4/$2/$run/PRE_LOG
 echo "------ Start of prescript ------" >> $pre_log
 date >> $pre_log

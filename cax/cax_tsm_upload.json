@@ -35,13 +35,18 @@
   },
   {
     "name": "tegner-login-1",
-    "method": "scp",
+    "method": "tsm",
     "hostname": "tegner-login-1.pdc.kth.se",
-    "dir_raw": "/cfs/klemming/projects/xenon/xenon1t/raw",
-    "dir_processed": "/cfs/klemming/projects/xenon/xenon1t/processed",
-    "upload_options": null,
+    "dir_raw": "/cfs/klemming/projects/xenon/xenon1t/raw/",
+    "dir_tsm": "/cfs/klemming/projects/xenon/xenon1t/tsm/",
+    "dir_processed": "/cfs/klemming/projects/xenon/xenon1t/processed/",
     "username": "bobau",
-    "download_options": ["xe1t-datamanager", "midway-login1"]
+    "download_options": null,
+    "pax_processing_versions": null,
+    "upload_options": ["tsm-server"],
+    "download_options": null,
+    "data_type": ["raw"],
+    "task_list": ["CopyPull","CopyPush"]
   },
   {
     "name": "xe1t-datamanager",
@@ -52,6 +57,7 @@
     "dir_tsm": "/data/xenon/tsm/",
     "upload_options": ["tsm-server"],
     "download_options": null,
+    "data_type": ["raw"],
     "task_list": ["CopyPull","CopyPush"]
   },
   {
@@ -62,7 +68,19 @@
     "dir_raw": null,
     "upload_options": null,
     "download_options": null
-  },  
+  },
+  {
+    "name": "rucio-catalogue",
+    "hostname": "",
+    "username": "",
+    "method": "rucio",
+    "dir_raw": "/data/xenon/raw",
+    "upload_options": null,
+    "download_options": null,
+    "rucio_upload_rse": "NIKHEF_USERDISK",
+    "rucio_account": "production",
+    "rucio_transfer": ["UC_OSG_USERDISK"]
+  },
   {
     "name": "lfc",
     "method": "lcg-cp",
