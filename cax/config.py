@@ -201,7 +201,7 @@ def processing_script(args={}):
                         partition='sandyb' if midway else 'main',
 #                        partition='xenon1t' if midway else 'main',
 #                        partition='kicp' if midway else 'main',
-                        base='/project/lgrandi/xenon1t' if midway else '/cfs/klemming/projects/xenon/xenon1t',
+                        base='/project2/lgrandi/xenon1t' if midway else '/cfs/klemming/projects/xenon/xenon1t',
                         account='pi-lgrandi' if midway else 'xenon',
 
                         anaconda='/project/lgrandi/anaconda3/bin' if midway else '/cfs/klemming/nobackup/b/bobau/ToolBox/TestEnv/Anaconda3/bin',
@@ -225,7 +225,7 @@ def processing_script(args={}):
 #SBATCH --job-name={use}_{number}_{pax_version}
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task={ncpus}
-#SBATCH --mem-per-cpu=2000
+#SBATCH --mem-per-cpu=2240
 
 #SBATCH --output={base}/{use}/{number}_{pax_version}/{number}_{pax_version}_%J.log
 #SBATCH --error={base}/{use}/{number}_{pax_version}/{number}_{pax_version}_%J.log
