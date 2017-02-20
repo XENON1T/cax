@@ -6,7 +6,7 @@
 * Specify partition when counting jobs
 * Remove wall time limit
 * Disable buffer purging
-* Switch everything to /project2
+* Switch everything to /project2 
 
 5.0.5 (2017-02-17)
 -------------------
