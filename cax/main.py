@@ -107,7 +107,7 @@ def main():
         checksum.AddChecksum(),  # Add checksum for data here so can know if corruption (useful for knowing when many good copies!)
 
         filesystem.SetPermission(),  # Set any permissions (primarily for Tegner) for new data to make sure analysts can access
-        clear.BufferPurger(),  # Clear old data at some locations as specified in cax.json
+        # clear.BufferPurger(),  # Clear old data at some locations as specified in cax.json
         process.ProcessBatchQueue(),  # Process the data with pax
         process_hax.ProcessBatchQueueHax()  # Process the data with hax
     ]
