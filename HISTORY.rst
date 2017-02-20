@@ -1,6 +1,17 @@
   History
 =======
 
+5.0.6 (2017-02-20)
+-------------------
+* Specify partition when counting jobs
+* Remove wall time limit
+* Disable buffer purging
+* Switch everything to /project2
+
+5.0.5 (2017-02-17)
+-------------------
+* hax only if processed is "transferred"
+  	      
 5.0.4 (2017-02-17)
 -------------------
 * Implement command line arguments for:
