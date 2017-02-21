@@ -1,6 +1,10 @@
   History
 =======
 
+5.0.8 (2017-02-21)
+-------------------
+* Propagate custom ncpu into pax process task
+  
 5.0.7 (2017-02-20)
 -------------------
 * Revert back to deleting error'ed processed data
