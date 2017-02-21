@@ -80,12 +80,6 @@ def load():
 
     return json.loads(open(filename, 'r').read())
 
-def purge_type(hostname=get_hostname()):
-    """ 
-    You can select between "processed" data or "raw"
-    """
-    return get_config(hostname).get('purge_type',
-                                           None)
 def purge_version(hostname=get_hostname()):
     """
     You can select which pax version you want purge
