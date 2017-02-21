@@ -112,13 +112,8 @@ class BufferPurger(checksum.CompareChecksums):
         # Do not purge processed data
         # Warning: if you want to enable this here, need to add pax version checking in check()
         if data_doc['type'] == 'processed':
-            print("Pax Version: %s " % (data_doc['pax_version']))
-            if(config.purge_type()=='processed' and data_doc['pax_version']==config.purge_version() and data_doc['host'] == 'midway-login1'):
-                print("delete %s pax version: %s"%(config.purge_type(),config.purge_version()))
-            else:
-                print("Do not purge processed data")
-                self.log.debug("Do not purge processed data")
-                return
+            self.log.debug("Do not purge processed data")
+            return
 
         if data_doc['host'] == 'midway-login1':
             if self.run_doc['source']['type'] == "Kr83m" or self.run_doc['source']['type'] == "AmBe" or self.run_doc['source']['type'] == "Rn220" or self.has_tag('_sciencerun0'):
@@ -185,4 +180,80 @@ class BufferPurger(checksum.CompareChecksums):
 
         return have_processed
 
+class PurgeProcessed(checksum.CompareChecksums):
+    """Purge Processed root files
 
+    """
+
+    # Do not overload this routine from checksum inheritance.
+    each_run = Task.each_run
+
+    def each_location(self, data_doc):
+        """Check every location with data whether it should be purged.
+        """
+        # Skip places where we can't locally access data
+        if 'host' not in data_doc or data_doc['host'] != config.get_hostname():
+            return
+      
+        # See if purge settings specified, otherwise don't purge
+        if config.purge_version() == None:
+            
+            self.log.debug("No purge version settings")
+            return
+
+        # Do not purge processed data
+
+        if data_doc['type'] == 'raw':
+           print("don't touch the raw data")
+           self.log.debug("Do not purge raw data")
+           return
+
+
+        if (data_doc['pax_version'] != config.purge_version()) :
+            self.log.debug("Don't purge this version: %s    pax.__version__: %s" % (data_doc['pax_version'], pax.__version__) )
+            return
+        # Warning: if you want to enable this here, need to add pax version checking in check() 
+
+
+        self.log.debug("Checking purge logic")
+
+        # Only purge transfered data
+        if data_doc["status"] != "transferred":
+            self.log.debug("Not transfered")
+            return
+
+
+        # Require at least three copies of the data since we are deleting third.
+        num_copies = self.check(data_doc['type'], warn=False)
+        if num_copies < 3:
+            self.log.debug("Not enough copies (%d)" % num_copies)
+            return
+
+        # The dt we require
+        if (data_doc['pax_version'] == config.purge_version() and data_doc['host'] == 'midway-login1' ):
+            self.log.info("Purging %s" % data_doc['location'])
+            self.purge(data_doc)
+        else:
+            return
+
+
+    def local_data_finder(self, thishost, version):
+        have_processed = False
+
+        # Iterate over data locations to know status
+        for datum in self.run_doc['data']:
+
+            # Is host known?
+            if 'host' not in datum:
+                continue
+
+            # If the location doesn't refer to here, skip
+            if datum['host'] != thishost:
+                continue
+
+            # Check if processed data already exists in DB
+            if datum['type'] == 'processed' and datum['status'] == 'transferred':
+                if datum['pax_version'] == version:
+                    have_processed = True
+
+        return have_processed

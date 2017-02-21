@@ -92,7 +92,7 @@ def purge_version(hostname=get_hostname()):
     in this way "vX.x.x" where X is the main pax version
     and x.x are the different relase. i.e. pax_v1.2.3
     """
-    return get_config(hostname).get('pax_version',
+    return get_config(hostname).get('pax_version_purge',
                                             None)
 def purge_settings(hostname=get_hostname()):
     return get_config(hostname).get('purge',
