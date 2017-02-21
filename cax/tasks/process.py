@@ -183,7 +183,8 @@ class ProcessBatchQueue(Task):
             # with too many CPU)
             ncpus = 1
         else:
-            ncpus = 4  # based on Figure 2 here https://xecluster.lngs.infn.it/dokuwiki/doku.php?id=xenon:xenon1t:shockley:performance#automatic_processing
+            ncpus = config.NCPU - 1 # 4 based on Figure 2 here https://xecluster.lngs.infn.it/dokuwiki/doku.php?id=xenon:xenon1t:shockley:performance#automatic_processing
+                                    # -1 for pax I/O worker
 
         # Process all specified versions
         for version in versions:

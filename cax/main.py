@@ -38,6 +38,8 @@ def main():
                         help="Select a single run using the run name")
     parser.add_argument('--host', type=str,
                         help="Host to pretend to be")
+    parser.add_argument('--ncpu', type=int,
+                        help="Number of CPU per job")
 
     args = parser.parse_args()
 
@@ -56,6 +58,11 @@ def main():
 
     run_once = args.once
     database_log = not args.disable_database_update
+
+    ncpu = 1
+    if args.ncpu:
+        ncpu = args.ncpu
+    config.NCPU = ncpu
 
     # Set information to update the run database 
     config.set_database_log(database_log)
@@ -196,6 +203,7 @@ def massive():
     ncpu = 1
     if args.ncpu:
         ncpu = args.ncpu
+    config.NCPU = ncpu
 
     partition = 'sandyb'
     qos = ''
@@ -271,11 +279,11 @@ def massive():
             
             if doc['detector'] == 'tpc':
                 job_name = str(doc['number'])
-                job = dict(command='cax --once --run {number} '+config_arg,
+                job = dict(command='cax --once --run {number} '+config_arg+' --ncpu '+str(ncpu),
                            number=int(job_name), ncpus=ncpu)
             elif doc['detector'] == 'muon_veto':
                 job_name = doc['name']
-                job = dict(command='cax --once --name {number} '+config_arg,
+                job = dict(command='cax --once --name {number} '+config_arg+' --ncpu '+str(ncpu),
                            number=job_name, ncpus=ncpu)
 
             job['partition'] = partition

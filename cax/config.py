@@ -15,6 +15,7 @@ DATABASE_LOG = True
 HOST = os.environ.get("HOSTNAME") if os.environ.get("HOSTNAME") else socket.gethostname().split('.')[0]
 DATA_USER_PDC = 'bobau'
 DATA_GROUP_PDC = 'xenon-users'
+NCPU = 1
 
 RUCIO_RSE = ''
 RUCIO_SCOPE = ''
