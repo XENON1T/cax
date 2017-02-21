@@ -204,7 +204,6 @@ class PurgeProcessed(checksum.CompareChecksums):
         # Do not purge processed data
 
         if data_doc['type'] == 'raw':
-           print("don't touch the raw data")
            self.log.debug("Do not purge raw data")
            return
 
