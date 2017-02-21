@@ -1,6 +1,10 @@
   History
 =======
 
+5.0.7 (2017-02-20)
+-------------------
+* Revert back to deleting error'ed processed data
+  
 5.0.6 (2017-02-20)
 -------------------
 * Specify partition when counting jobs
