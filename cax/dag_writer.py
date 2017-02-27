@@ -18,7 +18,8 @@ class dag_writer():
         self.pax_version = pax_version
         self.logdir = logdir
         self.reprocessing = reprocessing
-        self.default_uri = "gsiftp://gridftp.grid.uchicago.edu:2811/cephfs/srm"
+        self.ci_uri = "gsiftp://gridftp.grid.uchicago.edu:2811/cephfs/srm"
+        self.midway_uri = "gsiftp://sdm06.rcc.uchicago.edu:2811"
         self.host = "login"
         self.submitfile = os.path.join(logdir, "process.submit")
         self.n_retries = n_retries
@@ -190,15 +191,13 @@ sleep 2
 
         print("\n%d Run(s) written to %s" % (run_counter, outer_dag))
 
-    def write_inner_dag(self, run_number, inner_dag, outputdir, submitfile, jsonfile, doc, on_rucio, n_retries = 10, inputfilefilter = "XENON1T-", uri = "DEFAULT", muonveto = False):
+    def write_inner_dag(self, run_number, inner_dag, outputdir, submitfile, jsonfile, doc, on_rucio, n_retries = 10, inputfilefilter = "XENON1T-", uri = uri, muonveto = False):
         """
         Writes inner dag file that contains jobs for each zip file in a run
         """
 
         # if raw data on stash, get zips directly from raw directory
         if not on_rucio:
-            if uri == "DEFAULT":
-                uri = self.default_uri
             rawdir = self.get_raw_dir(doc)
 
             i = 0
@@ -239,8 +238,6 @@ sleep 2
 
         # if using rucio transfer, get from making a rucio call
         elif on_rucio:
-            if uri == "DEFAULT":
-                uri = self.default_uri
             i = 0
             with open(inner_dag, "w") as inner_dag:
                 run_name = doc["name"]
