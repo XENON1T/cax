@@ -1,6 +1,15 @@
   History
 =======
 
+5.0.11 (2017-02-28)
+-------------------
+* Add mem-per-cpu and walltime options for massive-cax
+  * Default 2000 MB and 48 hours, respectively
+* Allow no specified partition if using reservation
+  * Defaults to sandyb on Midway
+* Link ROOT libraries into CWD to avoid rebuilding for each job
+* Add "Extended" minitree production
+
 5.0.8 (2017-02-21)
 -------------------
 * Propagate custom ncpu into pax process task
