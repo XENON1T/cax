@@ -38,7 +38,7 @@ def main():
                         help="Select a single run using the run name")
     parser.add_argument('--host', type=str,
                         help="Host to pretend to be")
-    parser.add_argument('--ncpu', type=int,
+    parser.add_argument('--ncpu', type=int, default=1,
                         help="Number of CPU per job")
 
     args = parser.parse_args()
@@ -59,9 +59,7 @@ def main():
     run_once = args.once
     database_log = not args.disable_database_update
 
-    ncpu = 1
-    if args.ncpu:
-        ncpu = args.ncpu
+    ncpu = args.ncpu
     config.NCPU = ncpu
 
     # Set information to update the run database 
@@ -173,10 +171,16 @@ def massive():
                         help="Select the last run")
     parser.add_argument('--tag', type=str,
                         help="Select the tag")
-    parser.add_argument('--ncpu', type=int,
+    parser.add_argument('--ncpu', type=int, default=1,
                         help="Number of CPU per job")
+    parser.add_argument('--mem_per_cpu', type=int, default=2000,
+                        help="Amount of MB of memory per cpu per job")
+    parser.add_argument('--walltime', type=str, default="48:00:00",
+                        help="Total walltime of job")
     parser.add_argument('--partition', type=str,
                         help="Select the cluster partition")
+    parser.add_argument('--reservation', type=str,
+                        help="Select the reservation")
 
     args = parser.parse_args()
 
@@ -200,13 +204,15 @@ def massive():
         tag = args.tag
         #logging.info("Running only on tag: ", str(tag))
 
-    ncpu = 1
-    if args.ncpu:
-        ncpu = args.ncpu
+    ncpu = args.ncpu
     config.NCPU = ncpu
 
-    partition = 'sandyb'
-    qos = ''
+    mem_per_cpu = args.mem_per_cpu
+
+    walltime = args.walltime
+
+    partition = None
+    qos = None
     if args.partition:
         partition = args.partition
 
@@ -218,6 +224,11 @@ def massive():
 
         #else:  # logging not working...
         #    logging.error("Unkown partition", partition)
+
+    reservation = None
+    if args.reservation:
+        reservation = args.reservation
+
 
     # Setup logging
     cax_version = 'cax_v%s - ' % __version__
@@ -286,9 +297,19 @@ def massive():
                 job = dict(command='cax --once --name {number} '+config_arg+' --ncpu '+str(ncpu),
                            number=job_name, ncpus=ncpu)
 
-            job['partition'] = partition
-            if qos is not '':
-                job['extra'] = '#SBATCH --qos='+qos
+            job['mem_per_cpu'] = mem_per_cpu
+
+            job['time'] = walltime
+
+            if partition is not None:
+                job['partition'] = '\n#SBATCH --partition='+partition
+
+            job['extra'] = ''
+            if qos is not None:
+                job['extra'] += '\n#SBATCH --qos='+qos
+
+            if reservation is not None:
+                job['extra'] += '\n#SBATCH --reservation='+reservation
 
             script = config.processing_script(job)
 
@@ -345,7 +366,7 @@ def remove():
     parser.add_argument('--disable_database_update', action='store_true',
                         help="Disable the update function the run data base")
     parser.add_argument('--run', type=int, required= True,
-                        help="Disable the update function the run data base")
+                        help="Run number to process")
 
     args = parser.parse_args()
 
