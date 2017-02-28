@@ -106,7 +106,12 @@ sleep 2
 
                     on_rucio = False
                     on_stash = False
+                    on_midway = False
                     #skip run if not present on stash (temporary)
+
+                    if any( [entry['type'] == 'raw' and entry['status']=='transferred' and
+                             entry['host'] == 'midway-login1' for entry in doc['data'] ]):
+                        on_midway = True
 
                     rawdir = self.get_raw_dir(doc)
                     if rawdir is not None:
@@ -124,10 +129,17 @@ sleep 2
                         else:
                             on_rucio = True
 
-                    #TEMPORARY!!!!
-                    if not on_rucio:
-                        print("Skipping run %d. Slow gfal connection" % run)
-                        continue
+
+                    if on_stash:
+                        rawdata_loc = "login"
+                    else:
+                        if on_midway:
+                            rawdata_loc = "midway-login1"
+                        elif on_rucio:
+                            rawdata_loc = "rucio-catalogue"
+                        else:
+                            print("Error: no rawdata loc defined for run %d. Skipping" % run)
+                            continue
 
                     # skip if no gains in run doc
                     if "gains" not in doc["processor"]["DEFAULT"]:
@@ -170,7 +182,7 @@ sleep 2
                     if not os.path.exists(os.path.join(self.logdir, self.pax_version, run_name, "joblogs")):
                         os.makedirs(os.path.join(self.logdir, self.pax_version, run_name, "joblogs"))
                     
-                    self.write_inner_dag(run, inner_dagfile, outputdir, self.submitfile, json_file, doc, on_rucio, n_retries=self.n_retries)
+                    self.write_inner_dag(run, inner_dagfile, outputdir, self.submitfile, json_file, doc, rawdata_loc, n_retries=self.n_retries)
 
                     # write inner dag info to outer dag
                     outer_dag_file.write(self.outer_dag_template.format(inner_dagname = inner_dagname,
@@ -191,13 +203,13 @@ sleep 2
 
         print("\n%d Run(s) written to %s" % (run_counter, outer_dag))
 
-    def write_inner_dag(self, run_number, inner_dag, outputdir, submitfile, jsonfile, doc, on_rucio, n_retries = 10, inputfilefilter = "XENON1T-", uri = uri, muonveto = False):
+    def write_inner_dag(self, run_number, inner_dag, outputdir, submitfile, jsonfile, doc, rawdata_loc, n_retries = 10, inputfilefilter = "XENON1T-", muonveto = False):
         """
         Writes inner dag file that contains jobs for each zip file in a run
         """
 
         # if raw data on stash, get zips directly from raw directory
-        if not on_rucio:
+        if rawdata_loc == "login":
             rawdir = self.get_raw_dir(doc)
 
             i = 0
@@ -221,14 +233,14 @@ sleep 2
                         zip_name = filepath.split("/")[-1]
                         outfile = zip_name + ".root"
                         infile_local = os.path.abspath(os.path.join(dir_name, infile))
-                        infile = uri + infile_local
+                        infile = self.ci_uri + infile_local
                         if not os.path.exists(os.path.join(outputdir, run_name)):
                             os.makedirs(os.path.join(outputdir, run_name))
                             os.chmod(os.path.join(outputdir, run_name), 0o777)
 
                         outfile = os.path.abspath(os.path.join(outputdir,
                                                                run_name, outfile))
-                        outfile_full = uri + outfile
+                        outfile_full = self.ci_uri + outfile
                         inner_dag.write(self.inner_dag_template.format(number=run_number, zip_i=i, submit_file = submitfile,
                                                                        infile=infile, outfile_full=outfile_full, run_name=run_name,
                                                                        pax_version = self.pax_version, zip_name=zip_name,
@@ -237,7 +249,7 @@ sleep 2
             self.n_zips = zip_counter
 
         # if using rucio transfer, get from making a rucio call
-        elif on_rucio:
+        elif rawdata_loc == "rucio-catalogue":
             i = 0
             with open(inner_dag, "w") as inner_dag:
                 run_name = doc["name"]
@@ -269,7 +281,7 @@ sleep 2
 
                     outfile = os.path.abspath(os.path.join(outputdir,
                                                            run_name, outfile))
-                    outfile_full = uri + outfile
+                    outfile_full = self.ci_uri + outfile
                     inner_dag.write(self.inner_dag_template.format(number=run_number, zip_i=i, submit_file=submitfile,
                                                                    infile=infile, outfile_full=outfile_full,
                                                                    run_name=run_name,
@@ -278,7 +290,46 @@ sleep 2
                                                                    on_rucio=on_rucio))
                     i += 1
 
+        elif rawdata_loc == 'midway-login1':
+            i = 0
+            with open(inner_dag, "w") as inner_dag:
+                run_name = doc["name"]
+                midway_location = None
+                for datum in doc["data"]:
+                    if datum["host"] == "midway-login1":
+                        midway_location = datum["location"]
 
+                if midway_location is None:
+                    print("Run not on midway. Check RunsDB")
+                    return
+
+                if (self.runlist is not None and run_number not in self.runlist):
+                    print("Run not in runlist")
+                    return
+
+                time.sleep(2)
+                zip_list = self.midway_getzips(midway_location)
+                self.n_zips = len(zip_list)
+                for zip in zip_list:
+                    zip_name, file_extenstion = os.path.splitext(zip)
+                    if file_extenstion != ".zip":
+                        continue
+                    outfile = zip_name + ".root"
+                    infile = self.midway_uri + midway_location + "/" + zip
+                    if not os.path.exists(os.path.join(outputdir, run_name)):
+                        os.makedirs(os.path.join(outputdir, run_name))
+                        os.chmod(os.path.join(outputdir, run_name), 0o777)
+
+                    outfile = os.path.abspath(os.path.join(outputdir,
+                                                           run_name, outfile))
+                    outfile_full = self.ci_uri + outfile
+                    inner_dag.write(self.inner_dag_template.format(number=run_number, zip_i=i, submit_file=submitfile,
+                                                                   infile=infile, outfile_full=outfile_full,
+                                                                   run_name=run_name,
+                                                                   pax_version=self.pax_version, zip_name=zip_name,
+                                                                   json_file=jsonfile, n_retries=n_retries,
+                                                                   on_rucio=on_rucio))
+                    i += 1
 
 
     # for retrieving path to raw data. takes a run doc
@@ -341,3 +392,10 @@ queue 1
         zip_files = sorted([f for f in files if f.startswith('XENON1T')])
         return zip_files
 
+
+    def midway_getzips(self, midway_path):
+        uri = self.midway_uri
+        out = subprocess.Popen(["gfal-ls","--cert", "/home/ershockley/user_cert", uri + path], stdout=subprocess.PIPE).stdout.read()
+        out = str(out.decode("utf-8")).split("\n")
+        zips = [l for l in out if l.startswith('XENON')]
+        return zips
