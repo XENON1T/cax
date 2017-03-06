@@ -1,6 +1,12 @@
   History
 =======
 
+5.0.12 (2017-03-05)
+-------------------
+* More verbose debug info
+* Add tsm-server and login as master checksums
+* Do not use "--append" for processed files (to recopy failed local processing)
+
 5.0.11 (2017-02-28) 
 -------------------
 * Add mem-per-cpu and walltime options for massive-cax
