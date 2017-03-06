@@ -68,8 +68,10 @@ class Task():
 
     def each_run(self):
         for data_doc in self.run_doc['data']:
-            self.log.debug('%s on %s' % (self.__class__.__name__,
-                                         self.run_doc['number']))
+            self.log.debug('%s on %s %s' % (self.__class__.__name__,
+                                            self.run_doc['number'],
+                                            data_doc['host']))
+
             self.each_location(data_doc)
 
     def each_location(self, data_doc):
