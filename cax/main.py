@@ -1149,7 +1149,7 @@ def ruciax_download():
     parser.add_argument('--location', type=str, required=False,
                         dest='location',
                         help="Select a single run by rucio location") 
-    parser.add_argument('--type', type=str, required=False,
+    parser.add_argument('--type', type=str, required=True,
                         dest='data_type',
                         help="Select what kind of data you want to download [raw/processed]")    
     parser.add_argument('--rse', type=str, required=False,
@@ -1168,6 +1168,9 @@ def ruciax_download():
                         help="Data are overwritten at the host when this opition is activated.")
     parser.add_argument('--disable_database_update', action='store_true',
                         help="Disable the update function the run data base")
+    parser.add_argument('--list', action='store', type=str,
+                        dest='list_file',
+                        help="Add a list of run numbers or run names by external file")
     args = parser.parse_args()
 
     database_log = not args.disable_database_update
@@ -1206,13 +1209,44 @@ def ruciax_download():
                          args.config_file)
             config.set_json(args.config_file)
     
-    number_name = None
-    if args.name is not None:
-      number_name = args.name
-    else:
-      number_name = args.run
+    #Check if args.name and args.run are defined by input:
+    if args.name == None and args.run == None and args.list_file == None:
+      logging.info("No run number, run name or a list is defined")
+      exit()
     
-    rucio_mover.RucioDownload(args.data_rse, args.data_dir, args.data_type, args.restore, args.location, args.overwrite).go(number_name)
+    if args.list_file != None and args.name == None and args.run == None:
+      #Download files according to a list of runs (names, runs) from
+      #an external file
+      
+      #check if file exits before go on:
+      if os.path.exists( args.list_file) == False:
+        logging.info("The requested file %s does not exists -> exit", args.list_file)
+        exit()
+      
+      list_file_abs = os.path.abspath(args.list_file)
+      
+      #extract the run/name information:
+      obj = open( list_file_abs, 'r')
+      lines = obj.read().replace(",", "\n").split("\n")
+      lines = list(filter(None, lines))
+      
+      #Cycle over the run numbers or names:
+      for i_line in lines:
+        i_line = i_line.replace(" ", "") #remove spaces
+        #Run the download command
+        rucio_mover.RucioDownload(args.data_rse, args.data_dir, args.data_type, args.restore, args.location, args.overwrite).go(number_name)
+    
+    elif args.list_file == None and ( args.name == None or args.run == None ):
+      #Download a single run name or number:
+      #Read if run number or run name is given
+      number_name = None
+      if args.name is not None:
+        number_name = args.name
+      else:
+        number_name = args.run
+    
+      rucio_mover.RucioDownload(args.data_rse, args.data_dir, args.data_type, args.restore, args.location, args.overwrite).go(number_name)
+      
 
 def ruciax_locator():
     #Ask the database for the actual status of the file or folder:
