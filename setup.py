@@ -31,7 +31,9 @@ setup(
     packages=find_packages(),
     include_package_data=True,
     install_requires=requirements,
-    data_files=[('cax', ['cax/cax.json'])],
+    data_files=[ ('cax', ['cax/cax.json']),
+                 ('cax/host_config', ['cax/host_config/tegner_bash_p3.config', 'cax/host_config/tegner_bash_p2.config', 'cax/host_config/midway_bash_p3.config', 'cax/host_config/midway_bash_p2.config', 'cax/host_config/xe1tdatamanager_bash_p3.config', 'cax/host_config/xe1tdatamanager_bash_p2.config'])
+                ],
     license="ISCL",
     zip_safe=False,
     keywords='cax',

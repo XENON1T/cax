@@ -733,12 +733,17 @@ def massiveruciax():
 ruciax --once {job}
 """.format(job=job)
 
-            pre_bash_command =  RucioBashConfig.get_config( config.get_hostname() ).format(
+            #pre_bash_command =  RucioBashConfig.get_config( config.get_hostname() ).format(
+                                    #account=config.get_config("rucio-catalogue")['rucio_account'] 
+                                    #)
+            pre_bash_command = RucioBashConfig.load_host_config( config.get_hostname(), "py3" ).format(
                                     account=config.get_config("rucio-catalogue")['rucio_account'] 
-                                    )
+                                    ) 
+            
             command = pre_bash_command + command
                         
             logging.info(command)
+            
             
             #Submit the command
             sc = qsub.create_script(command)

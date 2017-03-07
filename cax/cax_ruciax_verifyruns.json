@@ -23,7 +23,9 @@
     "grid_cert": "/project/lgrandi/deployHQ/cax/user_cert",
     "pax_processing_versions": null,
     "task_list": ["RucioRule"],
-    "data_type": ["raw"]
+    "data_type": ["raw"],
+    "rucio_config_p2": "midway_bash_p2.config",
+    "rucio_config_p3": "midway_bash_p3.config"
   },
   {
     "name": "login",
@@ -36,7 +38,9 @@
     "download_options": null,
     "pax_processing_versions": null,
     "task_list": ["RucioRule"],
-    "data_type": ["raw"]
+    "data_type": ["raw"],
+    "rucio_config_p2": "stash_bash_p2.config",
+    "rucio_config_p3": "stash_bash_p3.config"
   },
   {
     "name": "tegner-login-1",
@@ -49,7 +53,9 @@
     "download_options": null,
     "pax_processing_versions": null,
     "task_list": ["RucioRule"],
-    "data_type": ["raw"]
+    "data_type": ["raw"],
+    "rucio_config_p2": "tegner_bash_p2.config",
+    "rucio_config_p3": "tegner_bash_p3.config"
   },
   {
     "name": "xe1t-datamanager",
@@ -61,7 +67,9 @@
     "download_options": null,
     "pax_processing_versions": null,
     "task_list": ["RucioRule"],
-    "data_type": ["raw"]    
+    "data_type": ["raw"],
+    "rucio_config_p2": "xe1tdatamanager_bash_p2.config",
+    "rucio_config_p3": "xe1tdatamanager_bash_p3.config"
   },
   {
     "name": "rucio-catalogue",
