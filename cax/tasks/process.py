@@ -89,7 +89,7 @@ def _process(name, in_location, host, pax_version, pax_hash,
 
     # Try to process data.
     try:
-        print('processing', name, in_location, pax_config)
+        print('processing', name, in_location, pax_config, ncpus)
         pax_kwargs = dict(config_names=pax_config,
                           config_dict={'pax': {'input_name' : in_location,
                                                'output_name': output_fullname,
@@ -183,7 +183,8 @@ class ProcessBatchQueue(Task):
             # with too many CPU)
             ncpus = 1
         else:
-            ncpus = 4  # based on Figure 2 here https://xecluster.lngs.infn.it/dokuwiki/doku.php?id=xenon:xenon1t:shockley:performance#automatic_processing
+            ncpus = config.NCPU - 1 # 4 based on Figure 2 here https://xecluster.lngs.infn.it/dokuwiki/doku.php?id=xenon:xenon1t:shockley:performance#automatic_processing
+                                    # -1 for pax I/O worker
 
         # Process all specified versions
         for version in versions:

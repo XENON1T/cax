@@ -85,16 +85,15 @@ def delete_script(fileobj):
     fileobj.close()
 
 
-def get_number_in_queue(host=config.get_hostname()):
-    return len(get_queue(host))
+def get_number_in_queue(host=config.get_hostname(), partition=''):
+    return len(get_queue(host, partition))
 
 
-def get_queue(host=config.get_hostname()):
+def get_queue(host=config.get_hostname(), partition=''):
     """Get list of jobs in queue"""
 
-
     if host == "midway-login1":
-        args = {'partition': 'xenon1t',
+        args = {'partition': 'sandyb',
                 'user' : 'tunnell'}
     elif host == 'tegner-login-1':
         args = {'partition': 'main',
@@ -102,8 +101,13 @@ def get_queue(host=config.get_hostname()):
     else:
         raise ValueError()
 
-#    command = 'squeue --partition={partition} --user={user} -o "%.30j"'.format(**args)
-    command = 'squeue --user={user} -o "%.30j"'.format(**args)
+    if partition == '':
+        command = 'squeue --user={user} -o "%.30j"'.format(**args)
+
+    else:
+        args['partition'] = partition
+        command = 'squeue --partition={partition} --user={user} -o "%.30j"'.format(**args)
+
     try:
         queue = subprocess.check_output(command,
                                         shell=True,

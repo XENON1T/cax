@@ -1,6 +1,47 @@
   History
 =======
 
+5.0.12 (2017-03-05)
+-------------------
+* More verbose debug info
+* Add tsm-server and login as master checksums
+* Do not use "--append" for processed files (to recopy failed local processing)
+
+5.0.11 (2017-02-28) 
+-------------------
+* Add mem-per-cpu and walltime options for massive-cax
+  * Default 2000 MB and 48 hours, respectively
+* Allow no specified partition if using reservation
+  * Defaults to sandyb on Midway
+* Link ROOT libraries into CWD to avoid rebuilding for each job
+* Add "Extended" minitree production
+
+5.0.8 (2017-02-21)
+-------------------
+* Propagate custom ncpu into pax process task
+  
+5.0.7 (2017-02-20)
+-------------------
+* Revert back to deleting error'ed processed data
+  
+5.0.6 (2017-02-20)
+-------------------
+* Specify partition when counting jobs
+* Remove wall time limit
+* Disable buffer purging
+* Switch everything to /project2
+
+5.0.5 (2017-02-17)
+-------------------
+* hax only if processed is "transferred"
+  	      
+5.0.4 (2017-02-17)
+-------------------
+* Implement command line arguments for:
+  * Run tag (e.g. "_sciencerun0")
+  * Cluster partition (e.g. "xenon1t", "kicp")
+  * Number of CPUs per job
+    
 5.0.3 (2017-02-16)
 -------------------
 * Fix bug in run range in massive cax

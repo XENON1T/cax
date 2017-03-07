@@ -15,6 +15,7 @@ DATABASE_LOG = True
 HOST = os.environ.get("HOSTNAME") if os.environ.get("HOSTNAME") else socket.gethostname().split('.')[0]
 DATA_USER_PDC = 'bobau'
 DATA_GROUP_PDC = 'xenon-users'
+NCPU = 1
 
 RUCIO_RSE = ''
 RUCIO_SCOPE = ''
@@ -192,22 +193,23 @@ def processing_script(args={}):
         raise ValueError
 
     midway = (host == 'midway-login1')
+
     default_args = dict(host=host,
                         use='cax',
                         number=333,
                         ncpus=1 if midway else 1,
+                        mem_per_cpu=2000,
                         pax_version=(('v%s' % pax.__version__) if midway else 'head'),
-#                        partition='sandyb' if midway else 'main',
-                        partition='xenon1t' if midway else 'main',
+                        partition='' if midway else '#SBATCH --partition=main',
+#                        partition='xenon1t' if midway else 'main',
 #                        partition='kicp' if midway else 'main',
-                        base='/project/lgrandi/xenon1t' if midway else '/cfs/klemming/projects/xenon/xenon1t',
+                        base='/project2/lgrandi/xenon1t' if midway else '/cfs/klemming/projects/xenon/xenon1t',
                         account='pi-lgrandi' if midway else 'xenon',
-
+                        time='48:00:00',
                         anaconda='/project/lgrandi/anaconda3/bin' if midway else '/cfs/klemming/nobackup/b/bobau/ToolBox/TestEnv/Anaconda3/bin',
-#                        extra='#SBATCH --mem-per-cpu=2000' if midway else '#SBATCH -t 72:00:00',
-                        extra='#SBATCH --mem-per-cpu=2000\n#SBATCH --qos=xenon1t' if midway else '#SBATCH -t 72:00:00',
-#                        extra='#SBATCH --mem-per-cpu=2000\n#SBATCH --qos=xenon1t-kicp' if midway else '#SBATCH -t 72:00:00',
-#                        extra='#SBATCH --mem-per-cpu=2000' if midway else '#SBATCH -t 72:00:00',
+                        extra='',
+#                        extra='#SBATCH --qos=xenon1t' if midway else '#SBATCH -t 72:00:00',
+#                        extra='#SBATCH --qos=xenon1t-kicp' if midway else '#SBATCH -t 72:00:00',
                         stats='sacct -j $SLURM_JOB_ID --format="JobID,NodeList,Elapsed,AllocCPUS,CPUTime,MaxRSS"' if midway else ''
                         )
 
@@ -225,12 +227,13 @@ def processing_script(args={}):
 #SBATCH --job-name={use}_{number}_{pax_version}
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task={ncpus}
-#SBATCH --time=0:60:00
+#SBATCH --mem-per-cpu={mem_per_cpu}
+#SBATCH --time={time}
 
 #SBATCH --output={base}/{use}/{number}_{pax_version}/{number}_{pax_version}_%J.log
 #SBATCH --error={base}/{use}/{number}_{pax_version}/{number}_{pax_version}_%J.log
 #SBATCH --account={account}
-#SBATCH --partition={partition}
+{partition}
 
 {extra}
 
@@ -239,11 +242,14 @@ export JOB_WORKING_DIR={base}/{use}/{number}_{pax_version}
 mkdir -p ${{JOB_WORKING_DIR}}
 cd ${{JOB_WORKING_DIR}}
 
-rm -f pax_event_class*
+ln -sf {base}/{use}/pax_* .
+
 source activate pax_{pax_version}
 
 HOSTNAME={host}
 {command}
+
+rm -f pax_event_class*
 
 {stats}
 """.format(**args)

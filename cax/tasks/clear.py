@@ -54,9 +54,9 @@ class RetryStalledTransfer(checksum.CompareChecksums):
                                           self.run_doc['number'],
                                           self.run_doc['name']))
 
-        # Do not delete stalled or failed transfers to recover with rsync 
+        # Do not delete stalled or failed raw data transfers to recover with rsync 
         # (Warning: do not use scp, which may create nested directories)
-        delete_data = False  # (data_doc['type'] == 'processed' and 'v%s' % pax.__version__ == data_doc['pax_version'])
+        delete_data = (data_doc['type'] == 'processed' and 'v%s' % pax.__version__ == data_doc['pax_version'])
 
         if difference > datetime.timedelta(hours=24):
             self.give_error("Transfer lasting more than 24 hours, retry.")
@@ -89,7 +89,9 @@ class RetryBadChecksumTransfer(checksum.CompareChecksums):
             return
 
         if data_doc['checksum'] != comparison:
-            self.give_error("Bad checksum %d" % self.run_doc['number'])
+            self.give_error("Bad checksum %d, %s, %s, %s" % (self.run_doc['number'], data_doc['host'], \
+                            data_doc['type'], data_doc['pax_version']))
+
             if self.check(data_doc['type'], warn=False) > 1:
                 self.purge(data_doc)
 

@@ -26,7 +26,7 @@ import subprocess
 
 class CopyBase(Task):
 
-    def copy(self, datum_original, datum_destination, method, option_type):
+    def copy(self, datum_original, datum_destination, method, option_type, data_type):
 
         if option_type == 'upload':
             config_destination = config.get_config(datum_destination['host'])
@@ -53,7 +53,7 @@ class CopyBase(Task):
             self.copySCP(datum_original, datum_destination, server, username, option_type)
 
         elif method == 'rsync':
-            self.copyRSYNC(datum_original, datum_destination, server, username, option_type)
+            self.copyRSYNC(datum_original, datum_destination, server, username, option_type, data_type)
 
         elif method == 'gfal-copy':
             self.copyGFAL(datum_original, datum_destination, server, option_type, nstreams, grid_cert)
@@ -200,11 +200,14 @@ class CopyBase(Task):
         else:
             self.log.info(gfal_out_ascii) # To print timing
             
-    def copyRSYNC(self, datum_original, datum_destination, server, username, option_type):
+    def copyRSYNC(self, datum_original, datum_destination, server, username, option_type, data_type):
         """Copy data via rsync function
         """
 
-        command = "time rsync -r --stats --append "
+        command = "time rsync -r --stats "
+
+        if data_type is 'raw':
+            command += "--append "
 
         status = -1
 
@@ -333,7 +336,7 @@ class CopyBase(Task):
 
             # Download logic for everything exepct tape
             if option_type == 'download' and datum_there and datum_here is None and method != "tsm":
-                self.copy_handshake(datum_there, config.get_hostname(), method, option_type)
+                self.copy_handshake(datum_there, config.get_hostname(), method, option_type, data_type)
                 break
 
             # Upload tsm:
@@ -657,7 +660,7 @@ class CopyBase(Task):
 
         return 0
 
-    def copy_handshake(self, datum, destination, method, option_type):
+    def copy_handshake(self, datum, destination, method, option_type, data_type):
         """ Perform all the handshaking required with the run DB.
         :param datum: The dictionary data location describing data to be
                       transferred
@@ -742,7 +745,7 @@ class CopyBase(Task):
             self.copy(datum, 
                       datum_new, 
                       method, 
-                      option_type)
+                      option_type, data_type)
             # Checksumming to follow on local site
             if method == 'scp' or method == 'rsync':
                 status = 'verifying'

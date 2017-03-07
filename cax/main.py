@@ -38,6 +38,8 @@ def main():
                         help="Select a single run using the run name")
     parser.add_argument('--host', type=str,
                         help="Host to pretend to be")
+    parser.add_argument('--ncpu', type=int, default=1,
+                        help="Number of CPU per job")
 
     args = parser.parse_args()
 
@@ -56,6 +58,9 @@ def main():
 
     run_once = args.once
     database_log = not args.disable_database_update
+
+    ncpu = args.ncpu
+    config.NCPU = ncpu
 
     # Set information to update the run database 
     config.set_database_log(database_log)
@@ -107,7 +112,7 @@ def main():
         checksum.AddChecksum(),  # Add checksum for data here so can know if corruption (useful for knowing when many good copies!)
 
         filesystem.SetPermission(),  # Set any permissions (primarily for Tegner) for new data to make sure analysts can access
-        clear.BufferPurger(),  # Clear old data at some locations as specified in cax.json
+        # clear.BufferPurger(),  # Clear old data at some locations as specified in cax.json
         process.ProcessBatchQueue(),  # Process the data with pax
         process_hax.ProcessBatchQueueHax()  # Process the data with hax
     ]
@@ -164,6 +169,19 @@ def massive():
                         help="Select a starting run")
     parser.add_argument('--stop', type=int,
                         help="Select the last run")
+    parser.add_argument('--tag', type=str,
+                        help="Select the tag")
+    parser.add_argument('--ncpu', type=int, default=1,
+                        help="Number of CPU per job")
+    parser.add_argument('--mem_per_cpu', type=int, default=2000,
+                        help="Amount of MB of memory per cpu per job")
+    parser.add_argument('--walltime', type=str, default="48:00:00",
+                        help="Total walltime of job")
+    parser.add_argument('--partition', type=str,
+                        help="Select the cluster partition")
+    parser.add_argument('--reservation', type=str,
+                        help="Select the reservation")
+
     args = parser.parse_args()
 
     if args.version:
@@ -180,6 +198,37 @@ def massive():
             logging.info("Using custom config file: %s",
                          args.config_file)
             config_arg = '--config ' + os.path.abspath(args.config_file)
+
+    tag = ''
+    if args.tag:
+        tag = args.tag
+        #logging.info("Running only on tag: ", str(tag))
+
+    ncpu = args.ncpu
+    config.NCPU = ncpu
+
+    mem_per_cpu = args.mem_per_cpu
+
+    walltime = args.walltime
+
+    partition = None
+    qos = None
+    if args.partition:
+        partition = args.partition
+
+        if partition == 'xenon1t':
+            qos = 'xenon1t'
+
+        elif partition == 'kicp':
+            qos = 'xenon1t-kicp'
+
+        #else:  # logging not working...
+        #    logging.error("Unkown partition", partition)
+
+    reservation = None
+    if args.reservation:
+        reservation = args.reservation
+
 
     # Setup logging
     cax_version = 'cax_v%s - ' % __version__
@@ -223,14 +272,12 @@ def massive():
 
         if args.start:
             query['number'] = {'$gte' : args.start}
+	
         if args.stop:
-            if 'number' not in query:
-                query['number'] = {}
-            query['number']['$lte'] = args.stop
+            query['number'] = {'$lte' : args.stop}
 
-
-
-        query['tags.name'] = '_sciencerun0_candidate'
+        if tag is not '':
+            query['tags.name'] = str(tag)
 
         docs = list(collection.find(query,
                                     sort=sort_key,
@@ -243,12 +290,26 @@ def massive():
             
             if doc['detector'] == 'tpc':
                 job_name = str(doc['number'])
-                job = dict(command='cax --once --run {number} '+config_arg,
-                           number=int(job_name))
+                job = dict(command='cax --once --run {number} '+config_arg+' --ncpu '+str(ncpu),
+                           number=int(job_name), ncpus=ncpu)
             elif doc['detector'] == 'muon_veto':
                 job_name = doc['name']
-                job = dict(command='cax --once --name {number} '+config_arg,
-                           number=job_name)
+                job = dict(command='cax --once --name {number} '+config_arg+' --ncpu '+str(ncpu),
+                           number=job_name, ncpus=ncpu)
+
+            job['mem_per_cpu'] = mem_per_cpu
+
+            job['time'] = walltime
+
+            if partition is not None:
+                job['partition'] = '\n#SBATCH --partition='+partition
+
+            job['extra'] = ''
+            if qos is not None:
+                job['extra'] += '\n#SBATCH --qos='+qos
+
+            if reservation is not None:
+                job['extra'] += '\n#SBATCH --reservation='+reservation
 
             script = config.processing_script(job)
 
@@ -256,8 +317,8 @@ def massive():
                 logging.debug('Skip: cax_%s_v%s job exists' % (job_name, pax.__version__))
                 continue
 
-            while qsub.get_number_in_queue() > (500 if config.get_hostname() == 'midway-login1' else 30):
-                logging.info("Speed break 60s because %d in queue" % qsub.get_number_in_queue())
+            while qsub.get_number_in_queue(partition=partition) > (500 if config.get_hostname() == 'midway-login1' else 30):
+                logging.info("Speed break 60s because %d in queue" % qsub.get_number_in_queue(partition=partition))
                 time.sleep(60)
 
 
@@ -305,7 +366,7 @@ def remove():
     parser.add_argument('--disable_database_update', action='store_true',
                         help="Disable the update function the run data base")
     parser.add_argument('--run', type=int, required= True,
-                        help="Disable the update function the run data base")
+                        help="Run number to process")
 
     args = parser.parse_args()
 

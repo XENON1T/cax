@@ -43,7 +43,7 @@ class AddChecksum(Task):
     def each_location(self, data_doc):
         # Only data waiting to be verified
         if data_doc['status'] != 'verifying':  # and data_doc['status'] != 'transferred':
-            self.log.debug('Location does not qualify')
+            self.log.debug('Location '+data_doc['host']+' does not need to add new checksum')
             return
         
         if data_doc['status'] == 'transferred' and \
@@ -107,7 +107,8 @@ class CompareChecksums(Task):
 
         # These types of data and location provide master checksum
         master_checksums = (('raw', 'xe1t-datamanager', None),
-                            ('raw', 'tegner-login-1', None),
+                            ('raw', 'tsm-server', None),
+                            ('processed', 'login', pax_version),
                             ('processed', 'midway-login1', pax_version))
 
         for data_doc in self.run_doc['data']:
@@ -123,7 +124,8 @@ class CompareChecksums(Task):
                     # If matched a master checksum location, return checksum
                     return data_doc['checksum']
 
-        self.log.debug("Missing checksum within %d" % self.run_doc['number'])
+        self.log.debug("Missing master checksum for %s within %d (pax v%s)" % \
+                       (type, self.run_doc['number'], pax_version))
         return None
 
     def check(self, type='raw',
@@ -149,7 +151,8 @@ class CompareChecksums(Task):
 
                 if data_doc['host'] == config.get_hostname():
                     error = "Local checksum error " \
-                            "run %d" % self.run_doc['number']
+                            "run %d, %s %s" % (self.run_doc['number'], data_doc['type'], \
+                                            data_doc['pax_version'])
                     if warn:
                         self.give_error(error)
             else:
