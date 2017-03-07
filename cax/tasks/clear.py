@@ -181,23 +181,24 @@ class BufferPurger(checksum.CompareChecksums):
         return have_processed
 
 class PurgeProcessed(checksum.CompareChecksums):
-    """Purge Processed root files
-
+    """
+    Purge Processed root files
     """
 
     # Do not overload this routine from checksum inheritance.
     each_run = Task.each_run
 
     def each_location(self, data_doc):
-        """Check every location with data whether it should be purged.
+        """
+        Check every location with data whether it should be purged.
         """
         # Skip places where we can't locally access data
         if 'host' not in data_doc or data_doc['host'] != config.get_hostname():
             return
       
         # See if purge settings specified, otherwise don't purge
-        if config.purge_version() == None:
-            
+        if not config.purge_version():
+            print("Please set a pax version: vx.x.x ") 
             self.log.debug("No purge version settings")
             return
 
@@ -209,7 +210,7 @@ class PurgeProcessed(checksum.CompareChecksums):
 
 
         if (data_doc['pax_version'] != config.purge_version()) :
-            self.log.debug("Don't purge this version: %s    pax.__version__: %s" % (data_doc['pax_version'], pax.__version__) )
+            self.log.debug("Don't purge this version: %s " % (data_doc['pax_version']) )
             return
         # Warning: if you want to enable this here, need to add pax version checking in check() 
 
@@ -218,14 +219,7 @@ class PurgeProcessed(checksum.CompareChecksums):
 
         # Only purge transfered data
         if data_doc["status"] != "transferred":
-            self.log.debug("Not transfered")
-            return
-
-
-        # Require at least three copies of the data since we are deleting third.
-        num_copies = self.check(data_doc['type'], warn=False)
-        if num_copies < 3:
-            self.log.debug("Not enough copies (%d)" % num_copies)
+            self.log.debug("No processed")
             return
 
         # The dt we require
@@ -235,24 +229,3 @@ class PurgeProcessed(checksum.CompareChecksums):
         else:
             return
 
-
-    def local_data_finder(self, thishost, version):
-        have_processed = False
-
-        # Iterate over data locations to know status
-        for datum in self.run_doc['data']:
-
-            # Is host known?
-            if 'host' not in datum:
-                continue
-
-            # If the location doesn't refer to here, skip
-            if datum['host'] != thishost:
-                continue
-
-            # Check if processed data already exists in DB
-            if datum['type'] == 'processed' and datum['status'] == 'transferred':
-                if datum['pax_version'] == version:
-                    have_processed = True
-
-        return have_processed
