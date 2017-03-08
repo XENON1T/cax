@@ -674,16 +674,20 @@ class RucioBase(Task):
       #data base entry according the run
       tags_all = self.run_doc
       meta_tags = []
-      #print( tags_all )
       #Gather basic meta data:
       meta_tag_shifter      = tags_all["user"]
       meta_tag_name         = tags_all["name"]              #just an option, not used in meta data set (see w)
       meta_tag_source_type  = tags_all["source"]["type"]
       meta_tag_runnumber    = tags_all["number"]
       meta_tag_sub_detector = tags_all["detector"]
-      meta_tag_trigger_events_built = tags_all["trigger"]["events_built"]
       tag_created_at        = tags_all["start"]
       meta_tag_created_at   = tag_created_at.date().strftime("%Y%m%d")[2:]+"_"+tag_created_at.time().strftime("%H%M")
+      #Careful check on the number of build events:
+      if "events_built" in tags_all['trigger']:
+        meta_tag_trigger_events_built = tags_all["trigger"]["events_built"]
+      else:
+       meta_tag_trigger_events_built = 0   
+      
       
       #define the muon veto short term 'mv' (hardcoded)
       if meta_tag_sub_detector == "muon_veto":

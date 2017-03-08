@@ -331,7 +331,7 @@ class CopyBase(Task):
 
             #Upload logic for everything exepct tape
             if option_type == 'upload' and method != "tsm" and datum_here and (datum_there is None or                                                           datum_there['status'] == 'RSEreupload'):
-                self.copy_handshake(datum_here, remote_host, method, option_type)
+                self.copy_handshake(datum_here, remote_host, method, option_type, data_type)
                 break
 
             # Download logic for everything exepct tape
