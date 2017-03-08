@@ -200,10 +200,10 @@ class PurgeProcessed(checksum.CompareChecksums):
         # Skip places where we can't locally access data
         if 'host' not in data_doc or data_doc['host'] != config.get_hostname():
             return
-            print
+
         # See if purge settings specified, otherwise don't purge
         if not config.purge_version() or (config.purge_version() == None) :
-            self.log.info("Please set a pax version: vx.x.x") 
+            self.log.warning("Please set a pax version: vx.x.x") 
             self.log.debug("No purge version has been set")
             return
 
@@ -217,7 +217,7 @@ class PurgeProcessed(checksum.CompareChecksums):
             self.log.debug("Don't purge this version: %s" % (data_doc['pax_version']) )
             return
 
-        # The dt we require
+        # The purge data 
         self.log.info("Purging %s" % data_doc['location'])
         self.purge(data_doc)
         
