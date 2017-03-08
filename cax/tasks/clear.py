@@ -201,7 +201,7 @@ class PurgeProcessed(checksum.CompareChecksums):
 
         # See if purge settings specified, otherwise don't purge
         if not config.purge_version() or (config.purge_version() == None) :
-            print("Please set a pax version: vx.x.x ") 
+            self.log.info("Please set a pax version: vx.x.x") 
             self.log.debug("No purge version has been set")
             return
 
@@ -213,7 +213,7 @@ class PurgeProcessed(checksum.CompareChecksums):
 
 
         if (data_doc['pax_version'] != config.purge_version()) :
-            self.log.debug("Don't purge this version: %s " % (data_doc['pax_version']) )
+            self.log.debug("Don't purge this version: %s" % (data_doc['pax_version']) )
             return
         # Warning: if you want to enable this here, need to add pax version checking in check() 
 
