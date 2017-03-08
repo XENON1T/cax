@@ -195,10 +195,12 @@ class PurgeProcessed(checksum.CompareChecksums):
         """
         Check every location with data whether it should be purged.
         """
+        self.log.debug("Checking purge logic")
+
         # Skip places where we can't locally access data
         if 'host' not in data_doc or data_doc['host'] != config.get_hostname():
             return
-
+            print
         # See if purge settings specified, otherwise don't purge
         if not config.purge_version() or (config.purge_version() == None) :
             self.log.info("Please set a pax version: vx.x.x") 
@@ -206,29 +208,18 @@ class PurgeProcessed(checksum.CompareChecksums):
             return
 
         # Do not purge processed data
-
         if data_doc['type'] == 'raw':
            self.log.debug("Do not purge raw data")
            return
 
-
+        # Check pax version of processed run
         if (data_doc['pax_version'] != config.purge_version()) :
             self.log.debug("Don't purge this version: %s" % (data_doc['pax_version']) )
             return
-        # Warning: if you want to enable this here, need to add pax version checking in check() 
-
-
-        self.log.debug("Checking purge logic")
-
-        # Only purge transfered data
-        if data_doc["status"] != "transferred":
-            self.log.debug("No processed")
-            return
 
         # The dt we require
-        if (data_doc['pax_version'] == config.purge_version() and data_doc['host'] == 'midway-login1' ):
-            self.log.info("Purging %s" % data_doc['location'])
-            self.purge(data_doc)
-        else:
-            return
+        self.log.info("Purging %s" % data_doc['location'])
+        self.purge(data_doc)
+        
+        return
 
