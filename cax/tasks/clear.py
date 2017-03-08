@@ -183,3 +183,52 @@ class BufferPurger(checksum.CompareChecksums):
         return have_processed
 
 
+class PurgeProcessed(checksum.CompareChecksums):
+    """
+    Purge Processed root files
+    """
+
+    # Do not overload this routine from checksum inheritance.
+    each_run = Task.each_run
+
+    def each_location(self, data_doc):
+        """
+        Check every location with data whether it should be purged.
+        """
+        # Skip places where we can't locally access data
+        if 'host' not in data_doc or data_doc['host'] != config.get_hostname():
+            return
+
+        # See if purge settings specified, otherwise don't purge
+        if not config.purge_version() or (config.purge_version() == None) :
+            print("Please set a pax version: vx.x.x ") 
+            self.log.debug("No purge version has been set")
+            return
+
+        # Do not purge processed data
+
+        if data_doc['type'] == 'raw':
+           self.log.debug("Do not purge raw data")
+           return
+
+
+        if (data_doc['pax_version'] != config.purge_version()) :
+            self.log.debug("Don't purge this version: %s " % (data_doc['pax_version']) )
+            return
+        # Warning: if you want to enable this here, need to add pax version checking in check() 
+
+
+        self.log.debug("Checking purge logic")
+
+        # Only purge transfered data
+        if data_doc["status"] != "transferred":
+            self.log.debug("No processed")
+            return
+
+        # The dt we require
+        if (data_doc['pax_version'] == config.purge_version() and data_doc['host'] == 'midway-login1' ):
+            self.log.info("Purging %s" % data_doc['location'])
+            self.purge(data_doc)
+        else:
+            return
+
