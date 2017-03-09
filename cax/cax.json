@@ -26,101 +26,17 @@
   },
   {
     "name": "login",
-<<<<<<< HEAD
-    "method": "gfal-copy",
     "hostname": "gsiftp://gridftp.grid.uchicago.edu:2811/cephfs/srm",
     "dir_raw": "/xenon/xenon1t/raw",
     "dir_processed": "/xenon/xenon1t_processed",
     "upload_options": ["midway-login1"],
-=======
     "method": "rsync",
     "hostname": "login.ci-connect.uchicago.edu",
     "dir_raw": "/xenon/xenon1t_test",
-    "dir_processed": null,
-    "upload_options": [],
->>>>>>> origin
     "username": "pdeperio",
     "download_options": [],
     "task_list": ["ProcessBatchQueue"],
     "nstreams": 2,
     "grid_cert": "/stash2/project/@xenon1t/deployHQ/cax/user_cert"
-  },
-  {
-    "name": "tegner-login-1",
-    "method": "scp",
-    "hostname": "tegner-login-1.pdc.kth.se",
-    "dir_raw": "/cfs/klemming/projects/xenon/xenon1t/raw",
-    "dir_processed": "/cfs/klemming/projects/xenon/xenon1t/processed",
-    "upload_options": null,
-    "username": "bobau",
-    "download_options": ["xe1t-datamanager", "midway-login1"]
-  },
-  {
-    "name": "xe1t-datamanager",
-    "hostname": "xe1t-datamanager.lngs.infn.it",
-    "username": "xe1ttransfer",
-    "method": "rsync",
-    "dir_raw": "/data/xenon/raw/",
-    "dir_tsm": "/data/xenon/tsm/",
-    "upload_options": null,
-    "download_options": null,
-    "dir_processed": null
-  },
-  {
-    "name": "tsm-server",
-    "hostname": null,
-    "username": null,
-    "method": "tsm",
-    "dir_raw": null,
-    "upload_options": null,
-    "download_options": null
-  },
-  {
-    "name": "lfc",
-    "method": "gfal-copy",
-    "hostname": "lfn:",
-    "dir_raw": "/grid/xenon.biggrid.nl/xenon1t/raw",
-    "dir_processed": null,
-    "username": null
-  },
-  {
-    "name": "osg-connect-srm",
-    "method": "gfal-copy",
-    "hostname": "srm://ceph-se.osgconnect.net:8443/srm/v2/server?SFN=",
-    "dir_raw": "/cephfs/srm/xenon/xenon1t",
-    "dir_processed": null,
-    "username": null
-  },
-  {
-    "name": "midway-srm",
-    "method": "gfal-copy",
-    "hostname": "srm://srm1.rcc.uchicago.edu:8443/srm/v2/server?SFN=",
-    "dir_raw": "/project/lgrandi/xenon1t/raw",
-    "dir_processed": null,
-    "username": null
-  },
-  {
-    "name": "cnaf-srm",
-    "method": "gfal-copy",
-    "hostname": "srm://storm-fe-archive.cr.cnaf.infn.it:8444/srm/managerv2?SFN=",
-    "dir_raw": "/xenon/xenon1t",
-    "dir_processed": null,
-    "username": null
-  },
-  {
-    "name": "nikhef-srm",
-    "method": "gfal-copy",
-    "hostname": "srm://tbn18.nikhef.nl:8446/srm/managerv2?SFN=",
-    "dir_raw": "/dpm/nikhef.nl/home/xenon.biggrid.nl/xenon1t/raw",
-    "dir_processed": null,
-    "username": null
-  },
-  {
-    "name": "wipp-srm",
-    "method": "gfal-copy",
-    "hostname": "srm://wipp-se.weizmann.ac.il",
-    "dir_raw": "/xenon/xenon1t",
-    "dir_processed": null,
-    "username": null
   }
 ]

@@ -15,6 +15,7 @@ source activate evan-testing
 export PYTHONPATH=/home/ershockley/cax/lib/python3.4/site-packages/:$PYTHONPATH
 cd /home/ershockley
 python /home/ershockley/cax/setup.py install --prefix /home/ershockley/cax/
+source /home/ershockley/setup_rucio.sh
 python /home/ershockley/cax/cax/dag_prescript.py $3 $2 >> $pre_log 2>&1
 ex=$?
 echo "exiting with status $ex" >> $pre_log

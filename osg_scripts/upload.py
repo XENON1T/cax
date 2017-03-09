@@ -104,9 +104,9 @@ def _upload(name, n_zips, pax_version, update_database=True):
             entry["pax_version"] == pax_version):
             datum = entry
 
-    if datum["status"] == 'transferred':
-        print("Already processed and hadd performed. Exiting.")
-        sys.exit(0)
+    #if datum["status"] == 'transferred':
+    #    print("Already processed and hadd performed. Exiting.")
+    #    sys.exit(0)
 
     # if we don't have expected number of root files back, tell DB there was an error
     if n_processed != n_zips:

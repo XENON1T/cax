@@ -26,17 +26,25 @@ cd /home/ershockley/cax/
 export PYTHONPATH=/home/ershockley/cax/lib/python3.4/site-packages/:$PYTHONPATH
 python setup.py install --prefix ${PWD}
 
-if [[ ! -e /xenon/xenon1t_processed/pax_$2/$1.root ]]; then
-    python /home/ershockley/cax/osg_scripts/upload.py $1 $5 $2 >> $post_log 2>&1
+# save exit status of pipe
+set -o pipefail
 
-    if [[ $? -ne 0 ]]; then
-	exit 1
-    fi  
-fi
+#if [[ ! -e /xenon/xenon1t_processed/pax_$2/$1.root ]]; then
+python /home/ershockley/cax/osg_scripts/upload.py $1 $5 $2 >> $post_log 2>&1
+
+if [[ $? -ne 0 ]]; then
+    exit 1
+fi  
+#fi
 # transfer to midway
 echo "Beginning cax transfer to midway" >> $post_log
-echo "Paused for now because gfal issues"
-#/home/ershockley/cax/bin/cax --once --run $3 --config /home/ershockley/cax/cax/cax_transfer.json >> $post_log 2>&1
+/home/ershockley/cax/bin/cax --once --run $3 --config /home/ershockley/cax/cax/cax_transfer.json >> $post_log 2>&1
+
+# submit massive-cax job to verify transfer
+
+echo "Submitting massive cax job on midway for run $3" >> $post_log
+
+ssh tunnell@midway-login1.rcc.uchicago.edu "/home/tunnell/verify_stash_transfers.sh $3" >> $post_log 2>&1
 
 ex=$?
 

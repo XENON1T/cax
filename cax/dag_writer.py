@@ -124,9 +124,10 @@ sleep 2
                         # if not on stash, check rucio catalogue
                         if not any([entry["host"] == 'rucio-catalogue' and entry["type"] == 'raw'
                                 and entry["status"] == 'transferred' for entry in doc["data"]]):
-                            print("Skipping Run %d. Raw data not on stash or rucio-catalogue" % run)
-                            continue
+                            print(" Run %d data not on stash or rucio-catalogue" % run)
+                            #continue
                         else:
+                            #if any( ["UC_OSG_USERDISK" in entry['rse'] for entry in doc['data'] if 'rse' in entry] ):
                             on_rucio = True
 
 
@@ -164,8 +165,8 @@ sleep 2
                     print("Adding run %d to dag" % run)
                     run_counter += 1
 
-                    with open("/home/ershockley/already_dagged_640.txt", "a") as book:
-                        book.write("%i\n" % run)
+                    #with open("/home/ershockley/already_dagged_642.txt", "a") as book:
+                    #    book.write("%i\n" % run)
                         
 
                     run_name = doc["name"]
@@ -173,7 +174,7 @@ sleep 2
                     # write inner dag and json file for this run
                     inner_dagname = "xe1t_" + str(run)
                     inner_dagdir = outer_dag.replace(outer_dag.split("/")[-1], "inner_dags")
-                    inner_dagfile = inner_dagdir + "/" + str(run) + ".dag"
+                    inner_dagfile = inner_dagdir + "/" + str(run) + "_%s.dag" % self.pax_version
                     if not os.path.exists(inner_dagdir):
                         os.makedirs(inner_dagdir)
                         os.chmod(inner_dagdir, 0o777)
@@ -198,8 +199,8 @@ sleep 2
 
                 final_file.write("exit $ex")
             os.chmod(final_script, stat.S_IXUSR | stat.S_IRUSR )
-            outer_dag_file.write("FINAL final_node %s NOOP \n" % self.submitfile)
-            outer_dag_file.write("SCRIPT POST final_node %s \n" % final_script)
+            #outer_dag_file.write("FINAL final_node %s NOOP \n" % self.submitfile)
+            #outer_dag_file.write("SCRIPT POST final_node %s \n" % final_script)
 
         print("\n%d Run(s) written to %s" % (run_counter, outer_dag))
 
@@ -209,6 +210,11 @@ sleep 2
         """
 
         # if raw data on stash, get zips directly from raw directory
+        if rawdata_loc == "rucio-catalogue":
+            on_rucio = True
+        else:
+            on_rucio = False
+
         if rawdata_loc == "login":
             rawdir = self.get_raw_dir(doc)
 
@@ -266,7 +272,7 @@ sleep 2
                     print("Run not in runlist")
                     return
 
-                time.sleep(2)
+                time.sleep(0.75)
                 zip_list = self.rucio_getzips(rucio_scope)
                 self.n_zips = len(zip_list)
                 for zip in zip_list:
@@ -296,7 +302,7 @@ sleep 2
                 run_name = doc["name"]
                 midway_location = None
                 for datum in doc["data"]:
-                    if datum["host"] == "midway-login1":
+                    if datum["host"] == "midway-login1" and datum['type'] == 'raw':
                         midway_location = datum["location"]
 
                 if midway_location is None:
@@ -307,7 +313,7 @@ sleep 2
                     print("Run not in runlist")
                     return
 
-                time.sleep(2)
+                time.sleep(1)
                 zip_list = self.midway_getzips(midway_location)
                 self.n_zips = len(zip_list)
                 for zip in zip_list:
@@ -353,17 +359,17 @@ Error = {logdir}/$(pax_version)/$(name)/$(zip_name)_$(cluster).log
 Output  = {logdir}/$(pax_version)/$(name)/$(zip_name)_$(cluster).log
 Log     = {logdir}/$(pax_version)/$(name)/joblogs/$(zip_name)_$(cluster).joblog
 
-Requirements = ((OpSysAndVer == "CentOS6" || OpSysAndVer == "RedHat6" || OpSysAndVer == "SL6") && (GLIDEIN_ResourceName =!= "NPX")) && (GLIDEIN_ResourceName =!= "BU_ATLAS_Tier2") && TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName1 && TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName2 && TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName3 && TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName4
+Requirements = (HAS_CVMFS_xenon_opensciencegrid_org) && (((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName1) || (RCC_Factory == "ciconnect")) && ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName2) || (RCC_Factory == "ciconnect")) && ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName3)  || (RCC_Factory == "ciconnect")) && ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName4) || (RCC_Factory == "ciconnect"))) && (OSGVO_OS_STRING == "RHEL 6" || RCC_Factory == "ciconnect")
 request_cpus = $(ncpus)
 request_memory = 2GB
-request_disk = 10GB
+request_disk = 3GB
 transfer_input_files = /home/ershockley/user_cert, $(json_file)
 transfer_output_files = ""
 +WANT_RCC_ciconnect = True
 when_to_transfer_output = ON_EXIT
 # on_exit_hold = (ExitBySignal == True) || (ExitCode != 0)
 transfer_executable = True
-periodic_remove =  ((JobStatus == 2) && ((CurrentTime - EnteredCurrentStatus) > (60*60*6)))
+periodic_remove =  ((JobStatus == 2) && ((CurrentTime - EnteredCurrentStatus) > (60*60*10)))
 #periodic_release = (JobStatus == 5) && (HoldReason == 3) && (NumJobStarts < 5) && ( (CurrentTime - EnteredCurrentStatus) > $RANDOM_INTEGER(60, 1800, 30) )
 #periodic_remove = (NumJobStarts > 4)
 arguments = $(name) $(input_file) $(host) $(pax_version) $(pax_hash) $(out_location) $(ncpus) $(disable_updates) $(json_file) $(on_rucio)
@@ -395,7 +401,7 @@ queue 1
 
     def midway_getzips(self, midway_path):
         uri = self.midway_uri
-        out = subprocess.Popen(["gfal-ls","--cert", "/home/ershockley/user_cert", uri + path], stdout=subprocess.PIPE).stdout.read()
+        out = subprocess.Popen(["gfal-ls","--cert", "/home/ershockley/user_cert", uri + midway_path], stdout=subprocess.PIPE).stdout.read()
         out = str(out.decode("utf-8")).split("\n")
         zips = [l for l in out if l.startswith('XENON')]
         return zips

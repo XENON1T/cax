@@ -204,7 +204,7 @@ class CopyBase(Task):
         """Copy data via rsync function
         """
 
-        command = "time rsync -r --stats --append "
+        command = "time rsync -r --stats "
 
         status = -1
 
@@ -379,8 +379,10 @@ class CopyBase(Task):
                 if option_type == 'upload' and not transferred:
                     continue
 
-                if datum['type'] == 'processed' and not version == datum['pax_version']:
-                    continue 
+                
+                if datum['type'] == 'processed':
+                    if not version == datum['pax_version']:
+                        continue 
                 
                 datum_here = datum.copy()
             elif datum['host'] == remote_host:

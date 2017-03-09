@@ -13,7 +13,8 @@ def get_runs_with_gains():
     collection = db['runs_new']
     
     query = {"detector" : "tpc", 
-             "tags" : {"$elemMatch" : {"name" : "_sciencerun0_candidate"}}}
+             "tags.name" : "_sciencerun0_candidate",
+             "source.type" : "Rn220"}
              #"$and" : [{"number" : {"$gt" : 3934}}, {"number" : {"$lt": 6379}}]}
     
     cursor = collection.find(query, {"number" : True,
