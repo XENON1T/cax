@@ -1909,8 +1909,7 @@ class RucioLocator(Task):
           
           if len(rse_storage) != 1:
             continue
-          #print(self.rse, rse_storage)
-          #print("y: ", set(self.rse).issubset(rse_storage))
+
           if set(self.rse).issubset(rse_storage) == True:
             logging.info("<%s> : Location: %s | Run name: %s | Run number: %s | RSE: %s", status, location, self.run_doc['name'], self.run_doc['number'], ', '.join(rse_storage))  
       
@@ -1935,8 +1934,7 @@ class RucioLocator(Task):
           
           if len(rse_storage) == 1:
             continue
-          #print(self.rse, rse_storage)
-          #print("y: ", set(self.rse).issubset(rse_storage))
+
           if set(self.rse).issubset(rse_storage) == True:
             logging.info("<%s> : Location: %s | Run name: %s | Run number: %s | RSE: %s", status, location, self.run_doc['name'], self.run_doc['number'], ', '.join(rse_storage))
       
@@ -2156,7 +2154,7 @@ class RucioConfig():
      
 class RucioDownload(Task):
     """The rucio downloader"""
-    def __init__(self, data_rse, data_dir=None, data_type='raw', data_restore=False, location=None, data_overwrite=False):
+    def __init__(self, data_rse=None, data_dir=None, data_type='raw', data_restore=False, location=None, data_overwrite=False):
         self.data_rse  = data_rse
         self.data_dir  = data_dir
         self.data_host = data_dir
@@ -2165,6 +2163,50 @@ class RucioDownload(Task):
         self.data_overwrite = data_overwrite
         # Perform base class initialization
         Task.__init__(self)
+        
+        #Initiate a dummy variable to get information back
+        self.return_rucio = {}
+      
+        #External or internal database entry (if requested):
+        self.database_entry_extern = False
+      
+    def get_rucio_info(self):
+        """Member function to read out a pre-defined dictionary"""
+        return self.return_rucio
+
+    def ExternalDatabaseEntry(self):
+        """Switch to external data base configuration"""
+        # true: The data base entry is set manually
+        # false: The data base entry is set by RucioDownload class
+        self.database_entry_extern = True
+
+    def SetDatabaseEntry(self, run_doc):
+        """Overwrite the requested run number entry from outside"""
+        self.run_doc = run_doc
+    
+    def SetDownloadConfig(self, rucio_catalogue_config, destination_config):
+        """Load download information from json file as side load"""
+        self.jsonload_data_rse  = destination_config['rucio_download_rse']
+        self.jsonload_data_dir  = destination_config['name']
+        self.jsonload_data_host = destination_config['name']
+        self.jsonload_data_type = destination_config['data_type']
+        self.jsonload_data_restore = True
+        self.jsonload_data_overwrite = False
+
+    def DoDownload(self, datum_original, datum_destination, option_type):
+        """Start the download"""
+
+        #configure the download for raw and processed:
+        for i_type in self.jsonload_data_type:
+            self.data_type = i_type
+            self.data_rse  = self.jsonload_data_rse
+            self.data_dir  = self.jsonload_data_dir
+            self.data_host = self.jsonload_data_host
+            self.data_restore = True
+            self.data_overwrite = False
+            
+            #Do the download:
+            self.each_run()
 
     def each_run(self):
         """Download from rucio catalogue"""
@@ -2224,7 +2266,14 @@ class RucioDownload(Task):
             if os.path.exists(self.data_dir) and self.data_overwrite == False:
               logging.info("The path %s exists already on host %s", self.data_dir, self.data_host)
               logging.info("Exit rucio-download to avoid data loss/overwrite")
-              exit()
+              self.return_rucio = {'type'         : self.data_type,
+                                   'host'         : self.data_host,
+                                   'status'       : 'overwrite_request',
+                                   'location'     : self.data_dir,
+                                   'checksum'     : None,
+                                   'creation_time': datetime.datetime.utcnow(),
+                                  }
+              return 0
             if os.path.exists(self.data_dir) and self.data_overwrite == True:
               logging.info("The path %s exists already on host %s", self.data_dir, self.data_host)
               logging.info("Data of the rucio-download are overwritten!")
@@ -2277,8 +2326,8 @@ class RucioDownload(Task):
             logging.info("Download %s:%s [sucessful]", scope, name)
             logging.info("Checksum test [successful]")
             #Create new entry to the run data base for the target host:
-            if self.data_restore == True and self.data_host == config.get_hostname() and self.data_host not in list_hosts:
-              #Create an entry for the data base:
+            if self.data_restore == True and self.data_host == config.get_hostname() and self.data_host not in list_hosts and self.database_entry_extern == False:
+              #Create an entry for the data base (internal/by RucioDownload class):
               datum_new = {'type'         : data_doc['type'],
                            'host'         : self.data_host,
                            'status'       : 'verifying',
@@ -2297,6 +2346,18 @@ class RucioDownload(Task):
                   self.log.error("Race condition!  Could not copy because another "
                              "process seemed to already start.")
                   return 
+            
+            elif self.data_restore == True and self.data_host == config.get_hostname() and self.database_entry_extern == True:
+              #Summarize the download information for the destination host
+              #Make it available "via get_rucio_info" (external)
+              self.return_rucio = {'type'         : self.data_type,
+                                   'host'         : self.data_host,
+                                   'status'       : 'verifying',
+                                   'location'     : self.data_dir,
+                                   'checksum'     : None,
+                                   'creation_time': datetime.datetime.utcnow(),
+                                  }
+              return 0
             
           else:
             logging.info("Download %s:%s [failed]", scope, name)

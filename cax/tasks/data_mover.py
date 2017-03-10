@@ -19,7 +19,7 @@ from cax.task import Task
 from cax import qsub
 
 from cax.tasks.tsm_mover import TSMclient
-from cax.tasks.rucio_mover import RucioBase, RucioRule
+from cax.tasks.rucio_mover import RucioBase, RucioRule, RucioDownload
 
 
 import subprocess
@@ -61,8 +61,11 @@ class CopyBase(Task):
         elif method == 'lcg-cp':
             self.copyLCGCP(datum_original, datum_destination, server, option_type, nstreams)
 
-        elif method == 'rucio':
+        elif method == 'rucio' and option_type == 'upload':
             self.rucio.copyRucio(datum_original, datum_destination, option_type)
+
+        elif method == 'rucio' and option_type == 'download':
+            self.ruciodw.DoDownload(datum_original, datum_destination, option_type)           
 
         else:
             print (method+" not implemented")
@@ -319,6 +322,7 @@ class CopyBase(Task):
             datum_here, datum_there = self.local_data_finder(data_type,
                                                              option_type,
                                                              remote_host)
+
 
             #Delete the old data base entry if rucio transfers are requested
             #and an old upload failed by a bad connection error.
@@ -715,9 +719,9 @@ class CopyBase(Task):
             for variable in ('pax_version', 'pax_hash', 'creation_place'):
                 datum_new[variable] = datum.get(variable)
 
-        if method == "rucio":
+        if method == "rucio" and option_type == "upload":
             #Init the rucio module when method==rucio is requested
-            self.log.info("Init rucio_mover module for Rucio transfers")
+            self.log.info("Init rucio_mover module for Rucio transfers (upload)")
             self.rucio = RucioBase(self.run_doc)
             self.rucio.set_host( config.get_hostname() )
             self.rucio.set_remote_host( destination )
@@ -728,6 +732,25 @@ class CopyBase(Task):
             #Add two further database entries for rucio related uploads
             datum_new['rse'] = []
             datum_new['location'] = "n/a"
+
+        if method == "rucio" and option_type == "download":
+            rucio_catalogue_config = config.get_config("rucio-catalogue")
+            
+            self.log.info("Init rucio_mover module for Rucio transfers (download)")
+            #self.rucio = RucioBase(self.run_doc)
+            #self.rucio.set_host( config.get_hostname() )
+            #self.rucio.set_remote_host( destination )
+            ##Sanity check for rucio client
+            #if self.rucio.sanity_checks() == False:
+              #logging.info("!!! <<The sanity checks fail>>  !!!")
+              #return 0
+            #Load and config the download module of rucio/ruciax
+            self.ruciodw = RucioDownload()
+            self.ruciodw.SetDatabaseEntry(self.run_doc)
+            self.ruciodw.ExternalDatabaseEntry()
+            self.ruciodw.SetDownloadConfig( rucio_catalogue_config, destination_config)
+            datum_new['location'] = "n/a"
+            
 
         if config.DATABASE_LOG == True:
             result = self.collection.update_one({'_id': self.run_doc['_id'],
@@ -768,12 +791,12 @@ class CopyBase(Task):
         self.log.debug(method+" done, telling run database")
 
         if config.DATABASE_LOG:
-          if method == "rucio":
-            logging.info("following entries are added to the runDB:")
-            logging.info("Status: %s", self.rucio.get_rucio_info()['status'] )
-            logging.info("Location: %s", self.rucio.get_rucio_info()['location'] )
-            logging.info("Checksum: %s", self.rucio.get_rucio_info()['checksum'] )
-            logging.info("RSE: %s", self.rucio.get_rucio_info()['rse'] )
+          if method == "rucio" and option_type == "upload":
+            logging.info("Following entries are added to the runDB:")
+            logging.info("  * Status: %s", self.rucio.get_rucio_info()['status'] )
+            logging.info("  * Location: %s", self.rucio.get_rucio_info()['location'] )
+            logging.info("  * Checksum: %s", self.rucio.get_rucio_info()['checksum'] )
+            logging.info("  * RSE: %s", self.rucio.get_rucio_info()['rse'] )
             
             self.collection.update({'_id' : self.run_doc['_id'],
                                     'data': {
@@ -786,6 +809,21 @@ class CopyBase(Task):
                                           }
                                 })
           
+          elif method == "rucio" and option_type == "download":
+            logging.info("Following entries are added to the runDB:")
+            logging.info("  * Status: %s", self.ruciodw.get_rucio_info()['status'] )
+            logging.info("  * Location: %s", self.ruciodw.get_rucio_info()['location'] )
+            
+            self.collection.update({'_id' : self.run_doc['_id'],
+                                    'data': {
+                                    '$elemMatch': datum_new}},
+                                 {'$set': {
+                                      'data.$.status': self.ruciodw.get_rucio_info()['status'],
+                                      'data.$.location': self.ruciodw.get_rucio_info()['location']
+                                          }
+                                })  
+
+              
           else:
           #Fill the data if method is not rucio
             if config.DATABASE_LOG:  
@@ -798,10 +836,10 @@ class CopyBase(Task):
                                    })
         
 
-        if method == "rucio":
+        if method == "rucio" and option_type == "upload":
           #Rucio 'side load' to set the transfer rules directly after the file upload
           if self.rucio.get_rucio_info()['status'] == "transferred":
-            self.log.info("Initiate the RucioRule for a first set of transfer rules")
+            logging.info("Initiate the RucioRule for a first set of transfer rules")
             #Add: Outcome of the rucio transfers to the new database entry
             #     without read the runDB again.
             datum_new['status'] = self.rucio.get_rucio_info()['status'] 
@@ -814,7 +852,7 @@ class CopyBase(Task):
             self.rucio_rule.set_db_entry_manually( self.run_doc )
             #Perform the initial rule setting:
             self.rucio_rule.set_possible_rules(data_type=datum['type'], dbinfo = datum_new)
-            self.log.info("Status: transferred -> Transfer rules are set for %s", self.rucio.get_rucio_info()['rse'])
+            logging.info("Status: transferred -> Transfer rules are set for %s", self.rucio.get_rucio_info()['rse'])
             
             # Commented out due to upload section (rucio_mover) option 3!
             # No need to delete single file rules manually after upload
@@ -830,11 +868,14 @@ class CopyBase(Task):
               #self.log.info("Time out for %s", i_location)
               #self.rucio_rule.update_rule( i_location, self.rucio.get_rucio_info()['rse'][0], "10" )
           else:
-            self.log.info("Something went wrong during the upload (error). No rules are set")
+            logging.info("Something went wrong during the upload (error). No rules are set")
 
-        self.log.debug(method+" done, telling run database")
+        elif method == "rucio" and option_type == "download":
+          logging.info("<-- Finished download %s to location %s with status %s -->", datum['location'], self.ruciodw.get_rucio_info()['location'], self.ruciodw.get_rucio_info()['status'])
 
-        self.log.info("End of "+option_type+"\n")
+        logging.debug(method+" done, telling run database")
+
+        logging.info("End of "+option_type+"\n")
 
 class CopyPush(CopyBase):
     """Copy data to there
