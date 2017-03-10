@@ -584,6 +584,8 @@ def massiveruciax():
                         help="Choose: run number start")
     parser.add_argument('--to-run', dest='to_run', type=int, 
                         help="Choose: run number end")
+    parser.add_argument('--last-days', dest='last_days', type=int, 
+                        help="Choose: Focus up/downloads only on the last days")
     parser.add_argument('--log-file', dest='logfile', type=str, default='massive_rucio.log',
                         help="Specify a certain logfile")
     parser.add_argument('--rucio-rule', type=str,
@@ -600,8 +602,9 @@ def massiveruciax():
     end_run = -1
     run_window = False
     run_window_lastruns = False
+    run_lastdays = False
     
-    if args.from_run == None and args.to_run == None:
+    if args.from_run == None and args.to_run == None and args.last_days == None:
       pass
     elif (args.from_run != None and args.to_run == None) or (args.from_run == None and args.to_run != None):
       logging.info("Select (tpc) runs between %s and %s", args.from_run, args.to_run)
@@ -620,6 +623,8 @@ def massiveruciax():
       run_window_lastruns = True
       beg_run = args.from_run
       end_run = args.to_run
+    elif args.from_run == None and args.to_run == None and args.last_days != None:
+      run_lastdays = True  
     
     #configure cax.json
     config_arg = ''
@@ -658,32 +663,56 @@ def massiveruciax():
       
     # Establish mongo connection
     collection = config.mongo_collection()
-    sort_key = (('number', -1),
+    sort_key = (('start', -1),
+                ('number', -1),
                 ('detector', -1),
                 ('_id', -1))
 
     #Construct the pre-basic bash script(s) from rucio_mover.RucioConfig()
     RucioBashConfig = rucio_mover.RucioConfig()
     
+    
+    dt = datetime.timedelta(days=1)
+    t0 = datetime.datetime.utcnow() - args.last_days * dt
+    
     while True: # yeah yeah
         #query = {'detector':'tpc'}
         query = {}
         
-        docs = list(collection.find(query))
+        
+        if args.run:
+            query['number'] = args.run
+
+        if run_window == True:
+            query['number'] = { '$lt': end_run+1, '$gt': beg_run-1 }
+        
+        if run_window_lastruns == True:
+            query['number'] = { '$gt': beg_run-1 }
+        
+        if run_lastdays == True:
+          t1 = datetime.datetime.utcnow()
+          if t1 - t0 < dt:
+            logging.info("Run ruciax up/downloads only on latest %s days", args.last_days)
+            #See if there is something to do
+            query['start'] = {'$gt' : t0}
+           
+        docs = list(collection.find(query,
+                                    sort=sort_key))
         
         for doc in docs:
+            
             
             #Select a single run for rucio upload (massive-ruciax -> ruciax)
             if args.run:
               if args.run != doc['number']:
                 continue
             
-            #Rucio upload only of certain run numbers in a sequence
-            if int(doc['number']) < beg_run or int(doc['number']) > end_run and run_window == True:
-              continue
+            ##Rucio upload only of certain run numbers in a sequence
+            #if int(doc['number']) < beg_run or int(doc['number']) > end_run and run_window == True:
+              #continue
             
-            if int(doc['number']) < beg_run and run_window_lastruns == True:
-              continue
+            #if int(doc['number']) < beg_run and run_window_lastruns == True:
+              #continue
           
             #Double check if a 'data' field is defind in doc
             if 'data' not in doc:
