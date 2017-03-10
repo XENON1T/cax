@@ -737,13 +737,7 @@ class CopyBase(Task):
             rucio_catalogue_config = config.get_config("rucio-catalogue")
             
             self.log.info("Init rucio_mover module for Rucio transfers (download)")
-            #self.rucio = RucioBase(self.run_doc)
-            #self.rucio.set_host( config.get_hostname() )
-            #self.rucio.set_remote_host( destination )
-            ##Sanity check for rucio client
-            #if self.rucio.sanity_checks() == False:
-              #logging.info("!!! <<The sanity checks fail>>  !!!")
-              #return 0
+            
             #Load and config the download module of rucio/ruciax
             self.ruciodw = RucioDownload()
             self.ruciodw.SetDatabaseEntry(self.run_doc)
