@@ -478,7 +478,7 @@ def ruciax():
     args = parser.parse_args()
    
     #This one is mandatory: hardcoded science run number!
-    config.set_rucio_campaign("000")
+    config.set_rucio_campaign("001")
 
     log_level = getattr(logging, args.log.upper())
     if not isinstance(log_level, int):
@@ -636,15 +636,18 @@ def massiveruciax():
                          args.config_file)
             config.set_json(args.config_file)
             config_arg = '--config ' + os.path.abspath(args.config_file)
-      
-    # Setup logging
-    log_path = {"xe1t-datamanager": "/home/xe1ttransfer/rucio_log",
-               "midway-login1": "/home/bauermeister/rucio_log",
-               "tegner-login-1": "/afs/pdc.kth.se/home/b/bobau/rucio_log",
-               "login": "/home/bauermeister/rucio_log"}
+    #print(os.environ["HOME"])
     
+    # Setup logging
+    log_path = {"xe1t-datamanager": os.path.join(os.environ["HOME"],"rucio_log"),
+               "midway-login1": os.path.join(os.environ["HOME"],"rucio_log"),
+               "tegner-login-1": os.path.join(os.environ["HOME"],"rucio_log"),
+               "login": os.path.join(os.environ["HOME"],"rucio_log")}
+    
+    #Check if log path exists and create it if not
     if not os.path.exists(log_path[config.get_hostname()]):
         os.makedirs(log_path[config.get_hostname()])
+    #Configure the massive-ruciax logging    
     cax_version = 'massive_ruciax_v%s - ' % __version__
     logging.basicConfig(filename="{logp}/{logf}".format(logp=log_path[config.get_hostname()], logf=args.logfile),
                         level=logging.INFO,
@@ -654,8 +657,8 @@ def massiveruciax():
     config.mongo_password()
     
     #Define additional file to define the rules:
-    abs_config_rule = os.path.abspath( args.config_rule )
     if args.config_rule:
+      abs_config_rule = os.path.abspath( args.config_rule )
       logging.info("Rucio Rule File: %s", abs_config_rule)
       rucio_rule = "--rucio-rule {rulefile}".format( rulefile=abs_config_rule )
     else:
@@ -673,7 +676,6 @@ def massiveruciax():
     
     
     dt = datetime.timedelta(days=1)
-    t0 = datetime.datetime.utcnow() - args.last_days * dt
     
     while True: # yeah yeah
         #query = {'detector':'tpc'}
@@ -691,6 +693,7 @@ def massiveruciax():
         
         if run_lastdays == True:
           t1 = datetime.datetime.utcnow()
+          t0 = datetime.datetime.utcnow() - int(args.last_days) * dt
           if t1 - t0 < dt:
             logging.info("Run ruciax up/downloads only on latest %s days", args.last_days)
             #See if there is something to do
@@ -706,13 +709,6 @@ def massiveruciax():
             if args.run:
               if args.run != doc['number']:
                 continue
-            
-            ##Rucio upload only of certain run numbers in a sequence
-            #if int(doc['number']) < beg_run or int(doc['number']) > end_run and run_window == True:
-              #continue
-            
-            #if int(doc['number']) < beg_run and run_window_lastruns == True:
-              #continue
           
             #Double check if a 'data' field is defind in doc
             if 'data' not in doc:
@@ -762,9 +758,6 @@ def massiveruciax():
 ruciax --once {job}
 """.format(job=job)
 
-            #pre_bash_command =  RucioBashConfig.get_config( config.get_hostname() ).format(
-                                    #account=config.get_config("rucio-catalogue")['rucio_account'] 
-                                    #)
             pre_bash_command = RucioBashConfig.load_host_config( config.get_hostname(), "py3" ).format(
                                     account=config.get_config("rucio-catalogue")['rucio_account'] 
                                     ) 

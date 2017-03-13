@@ -323,7 +323,13 @@ class CopyBase(Task):
                                                              option_type,
                                                              remote_host)
 
+            #if method == "rucio" and datum_there != None and config.DATABASE_LOG == True:
+              #print( datum_here)
+              #self.collection.update({'_id': self.run_doc['_id']},
+                                     #{'$pull': {'data': datum_here}})
 
+            #exit()
+            
             #Delete the old data base entry if rucio transfers are requested
             #and an old upload failed by a bad connection error.
             if method == "rucio" and datum_there != None and datum_there['status'] == 'RSEreupload' and config.DATABASE_LOG == True:
@@ -743,7 +749,7 @@ class CopyBase(Task):
             self.ruciodw.SetDatabaseEntry(self.run_doc)
             self.ruciodw.ExternalDatabaseEntry()
             self.ruciodw.SetDownloadConfig( rucio_catalogue_config, destination_config)
-            datum_new['location'] = "n/a"
+            datum_new['location'] = "NA"
             
 
         if config.DATABASE_LOG == True:

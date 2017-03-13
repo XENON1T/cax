@@ -440,7 +440,6 @@ class RucioBase(Task):
       if rule_summary['status'].find("OK") >= 0 and i_rule_id != "n/a":
         #return array of files and file properties
         files, file_info = self.list_files( location.split(":")[0] , location.split(":")[1] )
-        
         #get all file loations for a single rse:
         if len(files) == 1:
           pathlists = self.get_file_locations_keep( location.split(":")[0] , files )
@@ -465,6 +464,29 @@ class RucioBase(Task):
         else:
           i_expired = "Expired"
           
+        if int(lifetime) > 0:
+          #Nice but somehow bad way to introduce lifetime to update an existing rule
+          logging.info("Let us change also the lifetime:")          
+          logging.info("Update the rule for %s with setting to %s sec", rse_remote, lifetime)
+        
+          trrule = self.RucioCommandLine( self.host,
+                                          "update-rule",
+                                          filelist = None,
+                                          metakey  = None).format(rucio_account=config.get_config( self.remote_host )["rucio_account"],
+                                                                  location=location,
+                                                                  rse_remote=rse_remote,
+                                                                  dataset_lifetime=lifetime,
+                                                                  rule_id=i_rule_id)  
+
+          #logging.info( trrule )
+        
+          msg_std, msg_err = self.doRucio( trrule )
+          for i in msg_std:
+            if i.find("Updated Rule") >= 0:
+              logging.info("Update rule sucessful from valid to %s seconds unitl termination.", lifetime) 
+          
+          
+          
       elif rule_summary['status'].find("REPLICATING") >= 0 and i_rule_id != "n/a":
         logging.info("Status of transfer %s to RSE %s: REPLICATING", location, rse_remote)
         i_path = "n/a"
@@ -475,7 +497,7 @@ class RucioBase(Task):
         i_path = "n/a"
         i_rule_status = "STUCK"
       
-      #elif i_rule_id != "n/a" and lifetime != "-1" and int(lifetime) > 0:
+      #elif rule_summary['status'].find("OK") >= 0 and i_rule_id != "n/a" and lifetime != "-1" and int(lifetime) > 0:
         #logging.info("Update the rule for %s with setting to %s sec", rse_remote, lifetime)
         
         
@@ -486,7 +508,7 @@ class RucioBase(Task):
                                                                 #location=location,
                                                                 #rse_remote=rse_remote,
                                                                 #dataset_lifetime=lifetime,
-                                                                #rule_id=i_rule_ad)  
+                                                                #rule_id=i_rule_id)  
 
         #logging.info( trrule )
         
@@ -2204,7 +2226,6 @@ class RucioDownload(Task):
             self.data_host = self.jsonload_data_host
             self.data_restore = True
             self.data_overwrite = False
-            
             #Do the download:
             self.each_run()
 
@@ -2687,10 +2708,19 @@ class RucioRule(Task):
            
         new_rses = []
         new_rses_path = []
-        for i_rse in transfer_list:
+        
+        for i_rse in all_rse:    
           logging.info("Gather rule information for RSE %s", i_rse)
           logging.info("Execute set/update rules for RSE %s", i_rse)
-          rule_result = self.rucio.set_rule( rucio_location, i_rse, transfer_lifetime[i_rse] )
+          
+          if i_rse in transfer_list:
+            for in_rse in transfer_list:
+              logging.info("Create or update a rule for RSE %s with a lifetime of %s", in_rse, transfer_lifetime[in_rse])
+              rule_result = self.rucio.set_rule( rucio_location, i_rse, transfer_lifetime[i_rse] )
+          else:
+            logging.info("Just check RSE location %s (modus: %s)", i_rse, "-2")
+            rule_result = self.rucio.set_rule( rucio_location, i_rse, "-2" )  
+          
           logging.info(" * Status rule/transfer: %s", rule_result['rule_status'])
           logging.info(" * RSE: %s", rule_result['rule_rse'])
           logging.info(" * RuleID: %s", rule_result['rule_id'])
@@ -2701,8 +2731,6 @@ class RucioRule(Task):
           if rule_result['rule_status'] == "OK":
             new_rses.append( i_rse )
             new_rses_path.append(rule_result['rule_path'])
-          
-          
           
         if method == "rucio" and there['rse'] != new_rses:
           #Notify the runDB if there has been a change in the number of registered RSE
