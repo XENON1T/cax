@@ -203,8 +203,7 @@ class PurgeProcessed(checksum.CompareChecksums):
 
         # See if purge settings specified, otherwise don't purge
         if not config.purge_version() or (config.purge_version() == None) :
-            self.log.debug("Please set a pax version: vx.x.x")
-            self.log.debug("No purge version has been set")
+            self.log.debug("No processed version specified for purge, skipping")
             return
 
         # Do not purge processed data
