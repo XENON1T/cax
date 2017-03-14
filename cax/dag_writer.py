@@ -104,11 +104,11 @@ sleep 2
                               (run, self.pax_version))
                         continue
 
+                    # check if raw data is in chicago (stash, rucio, or midway)
                     on_rucio = False
                     on_stash = False
                     on_midway = False
-                    #skip run if not present on stash (temporary)
-
+                    
                     if any( [entry['type'] == 'raw' and entry['status']=='transferred' and
                              entry['host'] == 'midway-login1' for entry in doc['data'] ]):
                         on_midway = True
@@ -127,17 +127,21 @@ sleep 2
                             print(" Run %d data not on stash or rucio-catalogue" % run)
                             #continue
                         else:
-                            #if any( ["UC_OSG_USERDISK" in entry['rse'] for entry in doc['data'] if 'rse' in entry] ):
-                            on_rucio = True
-
+                            if any( ["UC_OSG_USERDISK" in entry['rse'] for entry in doc['data'] if 'rse' in entry] ):
+                                on_rucio = True
+                            else:
+                                print("Run %d not in Chicago. Skipping" % run)
+                                continue
+                            #on_rucio = True
+                            
 
                     if on_stash:
                         rawdata_loc = "login"
                     else:
-                        if on_midway:
-                            rawdata_loc = "midway-login1"
-                        elif on_rucio:
+                        if on_rucio:
                             rawdata_loc = "rucio-catalogue"
+                        elif on_midway:
+                            rawdata_loc = "midway-login1"
                         else:
                             print("Error: no rawdata loc defined for run %d. Skipping" % run)
                             continue
