@@ -183,3 +183,42 @@ class BufferPurger(checksum.CompareChecksums):
         return have_processed
 
 
+class PurgeProcessed(checksum.CompareChecksums):
+    """
+    Purge Processed root files
+    """
+
+    # Do not overload this routine from checksum inheritance.
+    each_run = Task.each_run
+
+    def each_location(self, data_doc):
+        """
+        Check every location with data whether it should be purged.
+        """
+        self.log.debug("Checking purge logic")
+
+        # Skip places where we can't locally access data
+        if 'host' not in data_doc or data_doc['host'] != config.get_hostname():
+            return
+
+        # See if purge settings specified, otherwise don't purge
+        if not config.purge_version() or (config.purge_version() == None) :
+            self.log.debug("No processed version specified for purge, skipping")
+            return
+
+        # Do not purge processed data
+        if data_doc['type'] == 'raw':
+           self.log.debug("Do not purge raw data")
+           return
+
+        # Check pax version of processed run
+        if (data_doc['pax_version'] != config.purge_version()) :
+            self.log.debug("Don't purge this version: %s" % (data_doc['pax_version']) )
+            return
+
+        # The purge data
+        self.log.info("Purging %s" % data_doc['location'])
+        self.purge(data_doc)
+        
+        return
+
