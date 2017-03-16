@@ -5,9 +5,9 @@ data between sites.  At present, it just does scp.
 """
 
 import datetime
+import time
 import logging
 import os
-import time
 import hashlib
 import json
 import random
@@ -1047,8 +1047,8 @@ class RucioBase(Task):
       data_type = datum_original['type']
       rrse   = config.get_config( datum_destination['host'] )["rucio_upload_rse"]
       raccount = config.get_config( datum_destination['host'] )["rucio_account"]
-
-            
+      
+      
       #if data_type == "raw":
       logging.info("Start raw data upload to rucio catalogue")
         
@@ -1080,8 +1080,15 @@ class RucioBase(Task):
           
       #0) Create the containter, dataset and tarfile name for the upload
       #-----------------------------------------------------------------
-      date = transfer_tags[0]["created_at"][0:6]
-      time = transfer_tags[0]["created_at"][7:12]
+      date_ = transfer_tags[0]["created_at"][0:6]
+      time_ = transfer_tags[0]["created_at"][7:12]
+      
+      #Create a unix time stamp from raw data file:
+      dt = datetime.datetime(int(str("20" + date_[0:2])), int(date_[2:4]), int(date_[4:6]), int(time_[0:2]), int(time_[2:4]))
+      timestamp_rawdata = time.mktime(dt.timetuple())
+      
+      #Update the science_run informatin from the timestamp
+      science_run = config.get_science_run( timestamp_rawdata )      
       
       #Sort: data (processed or raw) vs. mc
       if data_type == "raw" or data_type == "processed":
@@ -1101,8 +1108,8 @@ class RucioBase(Task):
       #Container:
       container_name = "{exp_phase}_{sr}_{data}_{time}_{subdetector}".format(exp_phase=exp_phase,
                                                                              sr=science_run, 
-                                                                             data=date,
-                                                                             time=time,
+                                                                             data=date_,
+                                                                             time=time_,
                                                                              subdetector=meta_tags[0]["provenance"] )
 
       over_container_name = "{exp_phase}_{sr}_{type}".format(exp_phase=exp_phase,
@@ -1117,8 +1124,8 @@ class RucioBase(Task):
       #data upload scope: (eg. xe1t_SR000_160824_0125_tpc)
       rscope_upload = "{exp_phase}_{sr}_{date}_{time}_{subdetector}".format(exp_phase=exp_phase,
                                                                             sr=science_run, 
-                                                                            date=date,
-                                                                            time=time,
+                                                                            date=date_,
+                                                                            time=time_,
                                                                             subdetector=meta_tags[0]["provenance"] )
       
       #Dataset names:

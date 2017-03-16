@@ -1,6 +1,8 @@
 """Configuration routines
 """
 
+import datetime
+import time
 import json
 import logging
 import os
@@ -342,3 +344,19 @@ def set_rucio_rules( config_rule ):
     """Set the according config file to define the rules for transfer"""
     global RUCIO_RULE
     RUCIO_RULE = config_rule
+
+def get_science_run( timestamp ):
+    
+    #Evaluate science run periods:
+    #1) Change from sc0 to sc1:
+    dt = datetime.datetime(2017, 2, 2, 17, 40)
+    time_sr0_to_sr1 = time.mktime(dt.timetuple())
+    
+    science_run = RUCIO_CAMPAIGN
+    #Evaluate the according science run number:
+    if timestamp <= time_sr0_to_sr1:
+      science_run = "SR000"
+    elif timestamp > time_sr0_to_sr1:
+      science_run = "SR001"
+    
+    return science_run
