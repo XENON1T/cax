@@ -53,7 +53,8 @@ def _process_hax(name, in_location, host, pax_version,
         init_hax(in_location, pax_version, out_location)   # may initialize once only
         hax.minitrees.load(name, ['Basics', 'Fundamentals',
                                   'DoubleScatter', 'LargestPeakProperties',
-                                  'TotalProperties',  'Extended', 'Proximity'])
+                                  'TotalProperties',  'Extended', 'Proximity', 
+                                  'TailCut'])
 
     except Exception as exception:
         raise
