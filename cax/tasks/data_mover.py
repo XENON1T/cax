@@ -17,6 +17,7 @@ import pax
 from cax import config
 from cax.task import Task
 from cax import qsub
+from cax.tasks.clear import BufferPurger
 
 from cax.tasks.tsm_mover import TSMclient
 from cax.tasks.rucio_mover import RucioBase, RucioRule
@@ -299,6 +300,13 @@ class CopyBase(Task):
 
         # If no options, can't do anything
         if options is None:
+            return None, None
+
+        # If should be purged, don't pull
+        PurgeObj = BufferPurger()
+        PurgeObj.run_doc = self.run_doc
+        if option_type == 'download' and PurgeObj.check_purge_requirements():
+            self.log.info("Skip download that would be purged")
             return None, None
 
         start = time.time()

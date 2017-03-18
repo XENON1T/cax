@@ -146,8 +146,12 @@ class CompareChecksums(Task):
                             'checksum' not in data_doc:
                 continue
 
-            # Grab main checksum.
-            if data_doc['checksum'] != self.get_main_checksum(**data_doc):
+            # Rucio stores its own checksum, assume "transferred" is 1 good copy
+            if data_doc['host'] == 'rucio-catalogue':
+                n += 1
+
+            # Grab main checksum and compare
+            elif data_doc['checksum'] != self.get_main_checksum(**data_doc):
 
                 if data_doc['host'] == config.get_hostname():
                     error = "Local checksum error " \
@@ -155,6 +159,8 @@ class CompareChecksums(Task):
                                             data_doc['pax_version'])
                     if warn:
                         self.give_error(error)
+
+            # Comparison did not fail so add 1 good copy
             else:
                 n += 1
 

@@ -111,27 +111,16 @@ class BufferPurger(checksum.CompareChecksums):
         if 'host' not in data_doc or data_doc['host'] != config.get_hostname():
             return
 
-        # Do not purge processed data
-        # Warning: if you want to enable this here, need to add pax version checking in check()
+        # Do not purge processed data (use PurgeProcessed below)
         if data_doc['type'] == 'processed':
             self.log.debug("Do not purge processed data")
             return
 
-        if data_doc['host'] == 'midway-login1':
-            if self.run_doc['source']['type'] == "Kr83m" or self.run_doc['source']['type'] == "AmBe" or self.run_doc['source']['type'] == "Rn220" or self.has_tag('_sciencerun0'):
-                self.log.debug("Do not purge %s data" % self.run_doc['source']['type'])
-                return
-        
         self.log.debug("Checking purge logic")
 
         # Only purge transfered data
         if data_doc["status"] != "transferred":
             self.log.debug("Not transfered")
-            return
-
-        # See if purge settings specified, otherwise don't purge
-        if config.purge_settings() == None:
-            self.log.debug("No purge settings")
             return
 
         # Require at least three copies of the data since we are deleting third.
@@ -140,10 +129,30 @@ class BufferPurger(checksum.CompareChecksums):
             self.log.debug("Not enough copies (%d)" % num_copies)
             return
 
+        if self.check_purge_requirements():
+            self.log.info("Purging %s" % data_doc['location'])
+            self.purge(data_doc)
+        else:
+            self.log.debug("Not enough time elapsed")
+
+    def check_purge_requirements(self):
+
+        # See if purge settings specified, otherwise don't purge
+        if config.purge_settings() == None:
+            self.log.debug("No purge settings")
+            return False
+
+        # Hardcoded sources and tags to preserve on Midway (no longer needed from 18/03/2017)
+        #if config.get_hostname() == 'midway-login1':
+        #    if self.run_doc['source']['type'] == "Kr83m" or self.run_doc['source']['type'] == "AmBe" or self.run_doc['source']['type'] == "Rn220" or self.has_tag('_sciencerun0'):
+        #        self.log.debug("Do not purge %s data" % self.run_doc['source']['type'])
+        #        return False
+
         # Do not purge from Midway until processed
-        if data_doc['host'] == 'midway-login1' and not self.local_data_finder(config.get_hostname(), 'v%s' % pax.__version__):
-            self.log.debug("Not yet processed")
-            return
+        # (no longer needed from 18/03/2017)
+        #if config.get_hostname() == 'midway-login1' and not self.local_data_finder(config.get_hostname(), 'v%s' % pax.__version__):
+        #    self.log.debug("Not yet processed")
+        #    return
 
         # The dt we require
         dt = datetime.timedelta(days=config.purge_settings())
@@ -151,15 +160,11 @@ class BufferPurger(checksum.CompareChecksums):
         t0 = self.run_doc['start']
         t1 = datetime.datetime.utcnow()
 
-        self.log.info(t1-t0 > dt)
+        purge_time_pass = t1-t0 > dt
 
-        if t1 - t0 > dt:
-            self.log.info("Purging %s" % data_doc['location'])
-            self.purge(data_doc)
-        else:
-            self.log.debug("Not enough time elapsed")
+        self.log.info('Purge time: now = %s, run = %s, dt = %s, pass = %d' % (str(t1), str(t0), str(dt), purge_time_pass))
 
-
+        return purge_time_pass
 
     def local_data_finder(self, thishost, version):
         have_processed = False
