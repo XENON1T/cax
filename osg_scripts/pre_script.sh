@@ -11,7 +11,7 @@ pre_log=$4/$2/$run/PRE_LOG
 echo "------ Start of prescript ------" >> $pre_log
 date >> $pre_log
 #echo "$pre_log" >> ~/pre_log_log
-source activate evan-testing
+source activate pax_$2_OSG
 export PYTHONPATH=/home/ershockley/cax/lib/python3.4/site-packages/:$PYTHONPATH
 cd /home/ershockley
 python /home/ershockley/cax/setup.py install --prefix /home/ershockley/cax/

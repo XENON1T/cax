@@ -18,7 +18,7 @@ echo
 echo $HOSTNAME
 echo
 echo $LD_LIBRARY_PATH
-export LD_LIBRARY_PATH=/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/envs/evan-testing/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/envs/pax_$4_OSG/lib:$LD_LIBRARY_PATH
 echo $LD_LIBRARY_PATH
 # df -h
 echo 
@@ -85,9 +85,10 @@ cd ${work_dir}
 # setup rucio commands
 
 echo ${10}
+
 if [[ ${10} == 'True' ]]; then
 
-    sleep $[ ( $RANDOM % 1200 )  + 1 ]s
+    sleep $[ ( $RANDOM % 300 )  + 1 ]s
     echo "Performing rucio download"
     unset X509_USER_KEY
     unset X509_USER_CERT
@@ -97,25 +98,30 @@ if [[ ${10} == 'True' ]]; then
     export X509_USER_PROXY=${start_dir}/user_cert
 
     env | grep X509
+
     rucio -T 18000 download $2 --no-subdir --dir ${rawdata_path} --rse UC_OSG_USERDISK
     #rucio --certificate ${start_dir}/user_cert download $2 --no-subdir --dir ${rawdata_path}
 fi
 
-if [[ ${10} == 'False' ]]; then
+if [[ ${10} == 'False' ]]; then 
     sleep $[ ( $RANDOM % 600 )  + 1 ]s
     echo "Performing gfal copy"
-    time gfal-copy -v -f -p -t 18000 -T 18000 -K md5 --cert ${start_dir}/user_cert $2 file://${rawdata_path}
+
+    (time gfal-copy -v -f -p -t 3600 -T 3600 -K md5 --cert ${start_dir}/user_cert $2 file://${rawdata_path}) || (sleep 30s && time gfal-copy -v -f -p -t 3600 -T 3600 -K md5 --cert ${start_dir}/user_cert $2 file://${rawdata_path})
+
 fi
 
 export PATH=/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/bin:$PATH
-cd /cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/envs/evan-testing/
+cd /cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/envs/pax_$4_OSG/
+#cd /cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/envs/evan-testing/
 if [[ $? -ne 0 ]];
 then 
     exit 255
 fi 
-source activate evan-testing
+source activate pax_$4_OSG
 echo $PYTHONPATH
-export LD_LIBRARY_PATH=/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/envs/evan-testing/lib:$LD_LIBRARY_PATH
+#export LD_LIBRARY_PATH=/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/envs/evan-testing/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/envs/pax_$4_OSG/lib:$LD_LIBRARY_PATH
 export API_USER='ci-connect'
 export API_KEY=5ac3ed84c1ed8210c84f4d70f194161a64758e29
 

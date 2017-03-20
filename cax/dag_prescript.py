@@ -99,7 +99,8 @@ def pre_script(run_number, pax_version, update_database=True):
              'trigger.events_built' : {"$gt" : 0},
              'processor.DEFAULT.gains' : {'$exists' : True},
              'processor.DEFAULT.electron_lifetime_liquid' : {'$exists' : True},
-             'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess'}}},
+             'processor.DEFAULT.drift_velocity_liquid' : {'$exists' : True},
+             'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess'}}}
              }
     
     query = {'query' : json.dumps(query)}

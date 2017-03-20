@@ -1,7 +1,7 @@
 import pymongo
 import os
 import sys
-
+from pax import __version__
 
 def make_runlist():
     uri = 'mongodb://eb:%s@xenon1t-daq.lngs.infn.it:27017,copslx50.fysik.su.se:27017,zenigata.uchicago.edu:27017/run'
@@ -14,9 +14,11 @@ def make_runlist():
     
     query = {"detector" : "tpc",
              "tags.name" : "_sciencerun0",
-             #"$or" : [{"tags.name" : "_sciencerun0"},{"tags.name" : "_sciencerun0_candidate"}],
-             "source.type" : "AmBe"}
+             #"$or" : [{"tags.name" : "_sciencerun0"},{"tags.name" : "_sciencerun0_candidate"}]}
+             "source.type" : "none"}
              #"source.type" : {"$ne" : "LED"}}
+
+    version = 'v' + __version__
 
     cursor = collection.find(query, {"number" : True,
                                      "data" : True,
@@ -34,6 +36,8 @@ def make_runlist():
     not_rucio = []
     error = []
 
+    
+    
     for run in cursor:
         on_stash = False
         on_midway = False
@@ -51,15 +55,15 @@ def make_runlist():
 
         for d in run['data']:
             if d['type'] == 'processed' and 'pax_version' in d:
-                if d['pax_version'] == 'v6.4.2' and d['status'] == 'transferred':
+                if d['pax_version'] == version and d['status'] == 'transferred':
                     processed  = True
                     #continue
 
-                elif d['pax_version'] == 'v6.4.2' and d['status'] == 'transferring' and d['host'] == 'login':
+                elif d['pax_version'] == version and d['status'] == 'transferring' and d['host'] == 'login':
                     processing.append(run['number'])
                     #continue
                 
-                elif d['pax_version'] == 'v6.4.2' and d['status'] == 'error' and d['host'] == 'login':
+                elif d['pax_version'] == version and d['status'] == 'error' and d['host'] == 'login':
                     error.append(run['number'])
 
             if d['host'] == 'rucio-catalogue' and d['type']=='raw' and d['status'] == 'transferred':
@@ -93,13 +97,13 @@ def make_runlist():
     print("BAD: %d" % len(bad))
 
     print("NOT IN RUCIO OR CHICAGO: %d" % len(not_rucio))
-#    print(not_rucio)
+    print(not_rucio)
 
     print("TO STAGE: %d" % len(stage_list))
     print(stage_list)
 
     print("ON STASH OR MIDWAY: %d" % len(stashlist))
-#    print(stashlist)
+    print(stashlist)
 
     print("PROCESSING: %d" % len(processing))
     print(processing)
@@ -110,9 +114,11 @@ def make_runlist():
     print("ERROR: %d" % len(error))
     print(error)
 
-    stashlist = [r for r in stashlist if r not in error and r not in processing]
+   # stashlist = [r for r in stashlist if r not in error and r not in processing]
+    
+    #print(stashlist[:100])
     return stashlist
 
 if __name__ == '__main__':
     make_runlist()
-    
+
