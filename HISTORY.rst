@@ -1,6 +1,14 @@
   History
 =======
 
+5.1.0 (2017-03-20)
+-------------------
+* Rucio updates
+* Processed file purger (#85)
+* hax TailCut minitree (#89)
+* Purge updates for Midway (#88, #91)
+  
+
 5.0.12 (2017-03-05)
 -------------------
 * More verbose debug info
