@@ -206,8 +206,8 @@ class ProcessBatchQueue(Task):
                                self.run_doc['name'])
                 continue
 
-            self.log.info("Processing %s with pax_%s (%s), output to %s",
-                          self.run_doc['name'], version, pax_hash,
+            self.log.info("Processing %s with pax_%s (%s) and %d cores, output to %s",
+                          self.run_doc['name'], version, pax_hash, ncpus,
                           out_location)
 
 
