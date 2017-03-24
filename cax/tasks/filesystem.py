@@ -24,7 +24,7 @@ class SetPermission(Task):
                           "midway-login1": "/project/lgrandi/xenon1t/processed/"}
         
         self.chown_user = {"tegner-login-1": "bobau",
-                           "midway-login1": "tunnell"}
+                           "midway-login1": "mklinton"}
 
         self.chown_group = {"tegner-login-1": "xenon-users",
                             "midway-login1": "xenon1t-admins"}

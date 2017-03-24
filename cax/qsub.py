@@ -94,7 +94,7 @@ def get_queue(host=config.get_hostname(), partition=''):
 
     if host == "midway-login1":
         args = {'partition': 'sandyb',
-                'user' : 'tunnell'}
+                'user' : 'mklinton'}
     elif host == 'tegner-login-1':
         args = {'partition': 'main',
                 'user' : 'bobau'}

@@ -18,7 +18,7 @@
     "dir_processed": "/project/lgrandi/xenon1t/processed",
     "dir_minitrees": "/project/lgrandi/xenon1t/minitrees",
     "upload_options": ["rucio-catalogue"],
-    "username": "tunnell",
+    "username": "mklinton",
     "download_options": null,
     "grid_cert": "/project/lgrandi/deployHQ/cax/user_cert",
     "pax_processing_versions": null,

@@ -19,7 +19,7 @@
     "dir_minitrees": "/project2/lgrandi/xenon1t/minitrees",
     "data_type": ["raw", "processed"],
     "upload_options": [],
-    "username": "tunnell",
+    "username": "mklinton",
     "download_options": ["login", "xe1t-datamanager"],
     "purge" : 5,
     "grid_cert": "/project/lgrandi/deployHQ/cax/user_cert"
