@@ -280,7 +280,7 @@ class CopyBase(Task):
         client.close()
 
     def each_run(self):
-
+        #Add Default [ToDo]
         for data_type in config.get_config( config.get_hostname() )['data_type']:
             self.log.debug("%s" % data_type)
             self.do_possible_transfers(option_type=self.option_type,
@@ -738,6 +738,7 @@ class CopyBase(Task):
             #Add two further database entries for rucio related uploads
             datum_new['rse'] = []
             datum_new['location'] = "n/a"
+            datum_new['rule_info'] = "no_rule"
 
         if method == "rucio" and option_type == "download":
             rucio_catalogue_config = config.get_config("rucio-catalogue")
@@ -749,7 +750,7 @@ class CopyBase(Task):
             self.ruciodw.SetDatabaseEntry(self.run_doc)
             self.ruciodw.ExternalDatabaseEntry()
             self.ruciodw.SetDownloadConfig( rucio_catalogue_config, destination_config)
-            datum_new['location'] = "NA"
+            datum_new['location'] = "NA"    #specify a not available path for the download destination
             
 
         if config.DATABASE_LOG == True:
@@ -797,6 +798,7 @@ class CopyBase(Task):
             logging.info("  * Location: %s", self.rucio.get_rucio_info()['location'] )
             logging.info("  * Checksum: %s", self.rucio.get_rucio_info()['checksum'] )
             logging.info("  * RSE: %s", self.rucio.get_rucio_info()['rse'] )
+            logging.info("  * Preliminary rule information: %s", self.rucio.get_rucio_info()['rule_info'] )
             
             self.collection.update({'_id' : self.run_doc['_id'],
                                     'data': {
@@ -805,7 +807,8 @@ class CopyBase(Task):
                                       'data.$.status': self.rucio.get_rucio_info()['status'],
                                       'data.$.location': self.rucio.get_rucio_info()['location'],
                                       'data.$.checksum': self.rucio.get_rucio_info()['checksum'],
-                                      'data.$.rse': self.rucio.get_rucio_info()['rse']
+                                      'data.$.rse': self.rucio.get_rucio_info()['rse'],
+                                      'data.$.rule_info': self.rucio.get_rucio_info()['rule_info']
                                           }
                                 })
           
@@ -842,10 +845,11 @@ class CopyBase(Task):
             logging.info("Initiate the RucioRule for a first set of transfer rules")
             #Add: Outcome of the rucio transfers to the new database entry
             #     without read the runDB again.
-            datum_new['status'] = self.rucio.get_rucio_info()['status'] 
-            datum_new['location'] = self.rucio.get_rucio_info()['location']
-            datum_new['checksum'] = self.rucio.get_rucio_info()['checksum']
-            datum_new['rse'] = self.rucio.get_rucio_info()['rse']
+            datum_new['status']    = self.rucio.get_rucio_info()['status'] 
+            datum_new['location']  = self.rucio.get_rucio_info()['location']
+            datum_new['checksum']  = self.rucio.get_rucio_info()['checksum']
+            datum_new['rse']       = self.rucio.get_rucio_info()['rse']
+            datum_new['rule_info'] = self.rucio.get_rucio_info()['rule_info']
             
             #Init the RucioRule module and set its runDB entry manually
             self.rucio_rule = RucioRule()

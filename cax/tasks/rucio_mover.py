@@ -459,16 +459,14 @@ class RucioBase(Task):
         i_path = super_string
         logging.info("Status of transfer %s to RSE %s: OK", location, rse_remote)
         i_rule_status = "OK"
-        if i_expired == "valid":
-          i_expired = "valid"
-        else:
-          i_expired = "Expired"
           
         if int(lifetime) > 0:
           #Nice but somehow bad way to introduce lifetime to update an existing rule
           logging.info("Let us change also the lifetime:")          
           logging.info("Update the rule for %s with setting to %s sec", rse_remote, lifetime)
-        
+          
+          #Info: Will execute the update-rule manually here instead of self.update_rule(...) memberfunction
+          #      Safe time by avoid an additional rucio catalogue access.
           trrule = self.RucioCommandLine( self.host,
                                           "update-rule",
                                           filelist = None,
@@ -483,9 +481,12 @@ class RucioBase(Task):
           msg_std, msg_err = self.doRucio( trrule )
           for i in msg_std:
             if i.find("Updated Rule") >= 0:
-              logging.info("Update rule sucessful from valid to %s seconds unitl termination.", lifetime) 
+              logging.info("Update rule sucessful from valid to %s seconds unitl termination.", lifetime)
           
-          
+          #Rule summary of the updated rule after update:
+          rule_summary = self.list_rules( location, rse_remote)
+          i_expired = rule_summary['expires']
+          logging.info("The rule will expire at %s", i_expired)
           
       elif rule_summary['status'].find("REPLICATING") >= 0 and i_rule_id != "n/a":
         logging.info("Status of transfer %s to RSE %s: REPLICATING", location, rse_remote)
@@ -497,31 +498,6 @@ class RucioBase(Task):
         i_path = "n/a"
         i_rule_status = "STUCK"
       
-      #elif rule_summary['status'].find("OK") >= 0 and i_rule_id != "n/a" and lifetime != "-1" and int(lifetime) > 0:
-        #logging.info("Update the rule for %s with setting to %s sec", rse_remote, lifetime)
-        
-        
-        #trrule = self.RucioCommandLine( self.host,
-                                        #"update-rule",
-                                        #filelist = None,
-                                        #metakey  = None).format(rucio_account=config.get_config( self.remote_host )["rucio_account"],
-                                                                #location=location,
-                                                                #rse_remote=rse_remote,
-                                                                #dataset_lifetime=lifetime,
-                                                                #rule_id=i_rule_id)  
-
-        #logging.info( trrule )
-        
-        #msg_std, msg_err = self.doRucio( trrule )
-        #for i in msg_std:
-          #if i.find("Updated Rule") >= 0:
-            #logging.info("Update rule sucessful from valid to %s seconds unitl termination.", lifetime) 
-    
-      
-      #elif i_rule_id != "n/a" and len(i_rule_id) == 32 and lifetime != "-1":
-        #logging.info("Evaluate the rule ID again for %s", rse_remote)
-        #print("ADAAAAAAAAAAAAAAAAAAAAAA")
-        
 
       elif i_rule_id == "n/a" and lifetime == "-2":
         logging.info("Verfication Modus for RSE %s", rse_remote)
@@ -594,9 +570,20 @@ class RucioBase(Task):
             break
           elif i.find("ERROR [A duplicate rule for this account, did, rse_expression, copies already exists.") >= 0:
             logging.info("Rule already exists for location=%s and RSE=%s", location, rse_remote)
-            rule_summary = self.list_rules( location, rse_remote)
-            print( rule_summary )
-
+            #rule_summary = self.list_rules( location, rse_remote)
+            #  DO NOTHING IF A DUPLICATION IS DETECTED
+            #i_rule_id = rule_summary_new['rule_id']
+            #i_rse     = rse_remote
+            #i_path    = "n/a"
+            #i_rule_status = "Failed"
+            #i_expired = "n/a"
+            #i_rule_account = config.get_config( self.remote_host )["rucio_account"]
+            break
+          else:
+            logging.info("A new rule is created for %s (%s)", rule_summary_new['rse'], rule_summary_new['rule_id'])
+            i_expired      = rule_summary_new['expires']
+            i_rule_id      = rule_summary_new['rule_id']
+            i_rule_account = rule_summary_new['account']
 
       #Gather information about transfer rules from above:
       rucio_rule_summary = {}
@@ -1064,6 +1051,7 @@ class RucioBase(Task):
       #Store the information about which files are uploaded to the rucio catalogue
       self.return_rucio['file_list'] = files
       self.return_rucio['rse'] = rrse
+      self.return_rucio['rule_info'] = "no_rule"
       
       #Sanity check for the number of uploaded files: If zero files gathered -> error and abort!
       if len( files ) == 0:
@@ -1536,7 +1524,8 @@ class RucioBase(Task):
         :param data_type: 'raw' or 'processed'
          :type str
         :return:
-        """        
+        """
+        #Fix upload [ToDo]
         #if data_type == "raw":
         if data_type == "processed":    
           self.copyRucio( option_type, data_type )
@@ -2715,6 +2704,7 @@ class RucioRule(Task):
            
         new_rses = []
         new_rses_path = []
+        rule_validation = []
         
         for i_rse in all_rse:    
           logging.info("Gather rule information for RSE %s", i_rse)
@@ -2734,14 +2724,20 @@ class RucioRule(Task):
           logging.info(" * Path: %s", rule_result['rule_path'])
           logging.info(" * Rule expires: %s", rule_result['rule_expired'] )
           logging.info(" * Rule account: %s", rule_result['rule_account'] )
-                
+                    
           if rule_result['rule_status'] == "OK":
+            #Append the rse
             new_rses.append( i_rse )
             new_rses_path.append(rule_result['rule_path'])
-          
-        if method == "rucio" and there['rse'] != new_rses:
+            #Append the rule validation information
+            rule_valid_to = "{rse}:{date}".format(rse=i_rse, date=rule_result['rule_expired'])
+            rule_validation.append( rule_valid_to )
+        
+        #if method == "rucio" and there['rse'] != new_rses:
+        if method == "rucio":    
+        #if method == "rucio" and ( there['rse'] != new_rses or there['rule_info'] != rule_validation ):
           #Notify the runDB if there has been a change in the number of registered RSE
-          if config.DATABASE_LOG:           
+          if config.DATABASE_LOG:
             #Delete old entry
             print("Old entry: ", there)
             self.collection.update({'_id': self.run_doc['_id']},
@@ -2749,7 +2745,7 @@ class RucioRule(Task):
                   
           #Add the modified one:
           there['rse'] = new_rses
-                
+          there['rule_info'] = rule_validation    
           if config.DATABASE_LOG:  
             print("New entry: ", there)
             self.collection.update({'_id': self.run_doc['_id'],},
@@ -2757,9 +2753,10 @@ class RucioRule(Task):
                 
           logging.info("Updated database entry:") 
         
-        elif method == "rucio" and there['rse'] == new_rses:
+        #elif method == "rucio" and (there['rse'] == new_rses or there['rule_info'] == rule_validation):
+        #elif method == "rucio" and there['rse'] == new_rses:
           #Do not notify the runDB in case there is no change at the RSE information
-          logging.info("No database update necessary for type %s", data_type)
+          #logging.info("No database update necessary for type %s", data_type)
       
       elif there == None:
         logging.info("There is no runDB information for rucio-catalogue available: SKIP")
