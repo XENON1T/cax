@@ -18,16 +18,11 @@ hadd_mod -d -f ../$run.root XENON*root
 
 #echo $macro
 #root -b -q "$macro"
-
-if [[ $? -eq 0 ]]; then 
-    #rm $run.root
-    #mv tmp.root $procdir.root
-    cd ..
-    rm -rf $procdir
+if [[ ! $? -eq 0 ]]; then
+    exit 1
 fi
 
+cd ..
+rm -rf $procdir
+
 source deactivate
-source activate evan-testing
-export PYTHONPATH=/home/ershockley/cax/lib/python3.4/site-packages/:$PYTHONPATH
-cd ~/cax
-python ~/cax/setup.py install --prefix /home/ershockley/cax

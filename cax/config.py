@@ -146,6 +146,8 @@ def get_dataset_list():
         logging.debug("dataset_list not specified, operating on entire DB")
         return []
 
+    logging.debug("dataset list:")
+    logging.debug(options) 
     return options
 
 

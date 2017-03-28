@@ -21,7 +21,6 @@ class dag_writer():
         self.ci_uri = "gsiftp://gridftp.grid.uchicago.edu:2811/cephfs/srm"
         self.midway_uri = "gsiftp://sdm06.rcc.uchicago.edu:2811"
         self.host = "login"
-        self.submitfile = os.path.join(logdir, "process.submit")
         self.n_retries = n_retries
         
         self.outer_dag_template = """SPLICE {inner_dagname} {inner_dagfile}
@@ -44,8 +43,9 @@ if [[ ! $? -eq 0 || ! $ex -eq 0 ]]; then
 fi
 sleep 2
 """
-
-        self.write_submit_script(self.submitfile, self.logdir)
+        if reprocessing:
+            self.submitfile = os.path.join(logdir, "process.submit")
+            self.write_submit_script(self.submitfile, self.logdir)
 
     def get_run_doc(self, run_number):
         query = {"detector" : "tpc",
@@ -98,7 +98,8 @@ sleep 2
                     # skip if already processed with this pax version
                     if any( [ entry["type"] == 'processed' and
                               entry['pax_version'] == self.pax_version and
-                              entry['status'] == 'transferred'
+                              entry['status'] == 'transferred' and
+                              entry['host'] == 'login'
                               for entry in doc["data"] if 'pax_version' in entry.keys() ]):
                         print("Skipping Run %d. Already processed with pax %s" %
                               (run, self.pax_version))
@@ -184,9 +185,15 @@ sleep 2
                         os.chmod(inner_dagdir, 0o777)
                     outputdir = config.get_processing_dir('login',self.pax_version)
                     json_file = self.write_json_file(doc)
-                    if not os.path.exists(os.path.join(self.logdir, self.pax_version, run_name, "joblogs")):
-                        os.makedirs(os.path.join(self.logdir, self.pax_version, run_name, "joblogs"))
-                    
+                    if not os.path.exists(os.path.join(self.logdir, "pax_%s" % self.pax_version, run_name, "joblogs")):
+                        os.makedirs(os.path.join(self.logdir, "pax_%s" % self.pax_version, run_name, "joblogs"))
+
+
+                    if not self.reprocessing:
+                        dagdir = outer_dag.rsplit('/',1)[0]
+                        self.submitfile = dagdir + "/process.submit"
+                        self.write_submit_script(self.submitfile, self.logdir)
+
                     self.write_inner_dag(run, inner_dagfile, outputdir, self.submitfile, json_file, doc, rawdata_loc, n_retries=self.n_retries)
 
                     # write inner dag info to outer dag
@@ -198,17 +205,21 @@ sleep 2
                                                                         logdir = self.logdir,
                                                                         n_zips = self.n_zips)
                                          )
+
                     final_file.write(self.final_script_template.format(run_name=run_name, pax_version=self.pax_version,
                                                                        number = run, logdir = self.logdir, n_zips = self.n_zips))
 
                 final_file.write("exit $ex")
             os.chmod(final_script, stat.S_IXUSR | stat.S_IRUSR )
-            #outer_dag_file.write("FINAL final_node %s NOOP \n" % self.submitfile)
-            #outer_dag_file.write("SCRIPT POST final_node %s \n" % final_script)
+            if not self.reprocessing:
+                outer_dag_file.write("FINAL final_node %s NOOP \n" % self.submitfile)
+                outer_dag_file.write("SCRIPT POST final_node %s \n" % final_script)
 
         print("\n%d Run(s) written to %s" % (run_counter, outer_dag))
 
-    def write_inner_dag(self, run_number, inner_dag, outputdir, submitfile, jsonfile, doc, rawdata_loc, n_retries = 10, inputfilefilter = "XENON1T-", muonveto = False):
+    def write_inner_dag(self, run_number, inner_dag, outputdir, submitfile, jsonfile, doc, rawdata_loc,
+                        n_retries = 10, inputfilefilter = "XENON1T-", muonveto = False):
+
         """
         Writes inner dag file that contains jobs for each zip file in a run
         """
@@ -359,9 +370,9 @@ sleep 2
         template = """#!/bin/bash
 executable = /home/ershockley/cax/osg_scripts/run_xenon.sh
 universe = vanilla
-Error = {logdir}/$(pax_version)/$(name)/$(zip_name)_$(cluster).log
-Output  = {logdir}/$(pax_version)/$(name)/$(zip_name)_$(cluster).log
-Log     = {logdir}/$(pax_version)/$(name)/joblogs/$(zip_name)_$(cluster).joblog
+Error = {logdir}/pax_$(pax_version)/$(name)/$(zip_name)_$(cluster).log
+Output  = {logdir}/pax_$(pax_version)/$(name)/$(zip_name)_$(cluster).log
+Log     = {logdir}/pax_$(pax_version)/$(name)/joblogs/$(zip_name)_$(cluster).joblog
 
 Requirements = (HAS_CVMFS_xenon_opensciencegrid_org) && (((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName1) || (RCC_Factory == "ciconnect")) && ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName2) || (RCC_Factory == "ciconnect")) && ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName3)  || (RCC_Factory == "ciconnect")) && ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName4) || (RCC_Factory == "ciconnect"))) && (OSGVO_OS_STRING == "RHEL 6" || RCC_Factory == "ciconnect")
 request_cpus = $(ncpus)

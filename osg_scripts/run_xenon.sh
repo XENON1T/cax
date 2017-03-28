@@ -19,6 +19,7 @@ echo $HOSTNAME
 echo
 echo $LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/envs/pax_$4_OSG/lib:$LD_LIBRARY_PATH
+export GFAL2_GRIDFTP_DEBUG=1
 echo $LD_LIBRARY_PATH
 # df -h
 echo 

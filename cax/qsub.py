@@ -99,9 +99,9 @@ def submit_dag_job(run_number, logdir, outer_dag, inner_dag, outputdir, submitsc
         DAG = dag_writer([run_number], paxversion, logdir)
         DAG.write_outer_dag(outer_dag)
 
-    submit_command = ('condor_submit_dag -maxpre 5 -maxpost 5 -maxjobs 10000 {script}'.format(script=outer_dag))
+    submit_command = ('condor_submit_dag -config /xenon/ershockley/reprocessing/dag_config {script}'.format(script=outer_dag))
 
-    logging.info('submit job:\n %s' % submit_command)
+    logging.info("submit job:\n %s" % submit_command)
 
     try:
         result = subprocess.check_output(submit_command,
@@ -154,8 +154,11 @@ def get_queue(host=config.get_hostname(), partition=''):
 
         command = 'squeue --user={user} -o "%.30j"'.format(**args)
 
+
+
+
     else:
-        command = 'condor_q ershockley -format "%d\n" ClusterID'
+        command = "condor_q ershockley | grep dagman | awk '{print $1}'"
 
     try:
         queue = subprocess.check_output(command,
@@ -168,8 +171,12 @@ def get_queue(host=config.get_hostname(), partition=''):
         logging.exception(e)
         return []
 
-
     queue_list = queue.rstrip().decode('ascii').split()
     if len(queue_list) > 1:
-        return queue_list[1:]
+        if host != 'login':
+            return queue_list[1:]
+        else:
+            return queue_list
     return []
+
+

@@ -13,9 +13,9 @@ def make_runlist():
     collection = db['runs_new']
     
     query = {"detector" : "tpc",
-             "tags.name" : "_sciencerun0",
+             "tags.name" : "_sciencerun0"}
              #"$or" : [{"tags.name" : "_sciencerun0"},{"tags.name" : "_sciencerun0_candidate"}]}
-             "source.type" : "none"}
+             #"source.type" : "none"}
              #"source.type" : {"$ne" : "LED"}}
 
     version = 'v' + __version__
@@ -97,7 +97,7 @@ def make_runlist():
     print("BAD: %d" % len(bad))
 
     print("NOT IN RUCIO OR CHICAGO: %d" % len(not_rucio))
-    print(not_rucio)
+    #print(not_rucio)
 
     print("TO STAGE: %d" % len(stage_list))
     print(stage_list)
@@ -106,13 +106,13 @@ def make_runlist():
     print(stashlist)
 
     print("PROCESSING: %d" % len(processing))
-    print(processing)
+    #print(processing)
 
     print("PROCESSED: %d" % len(processed_list))
     #print(processed_list)
 
     print("ERROR: %d" % len(error))
-    print(error)
+    #print(error)
 
    # stashlist = [r for r in stashlist if r not in error and r not in processing]
     

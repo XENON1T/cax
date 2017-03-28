@@ -192,27 +192,42 @@ class ProcessBatchQueue(Task):
         self.thishost = config.get_hostname()
         self.pax_version = 'v%s' % pax.__version__
 
-        query = {"data" : {"$not" : {"$elemMatch" : {"host" : self.thishost,
-                                                     "type" : "processed",
-                                                     "pax_version" : self.pax_version
-                                                     }
-                                     },
-                           "$elemMatch" : {"host" : self.thishost,
-                                           "type" : "raw"}
+        query = {"data" : {"$not" : {"$elemMatch" : {"type" : "processed",
+                                                     "pax_version" : self.pax_version,
+                                                     "$or" : [{"status" : "transferred"},
+                                                              {"status" : "transferring"}
+                                                             ]
+                                                    }
+                                     }
                            },
+                 'number' : {"$gte" : 3000},
                  'reader.ini.write_mode' : 2,
                  'trigger.events_built' : {"$gt" : 0},
                  'processor.DEFAULT.gains' : {'$exists' : True},
                  'processor.DEFAULT.electron_lifetime_liquid' : {'$exists' : True},
-                 'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess'}}},
+                 'processor.DEFAULT.drift_velocity_liquid' : {'$exists' : True},
+                 'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess'}}}
                  }
+
+        # if using OSG processing then need raw data at UC_OSG_USERDISK
+        # this also depends on ruciax being current!!
+        if self.thishost == 'login':
+            query["data.rse"] = "UC_OSG_USERDISK"
+
+        # if not using OSG (midway most likely), need the raw data at that host
+        else:
+            query["data"]["$elemMatch"] = {"host" : self.thishost,
+                                           "type" : "raw"}
+
+        print(query)
+
         Task.__init__(self, query = query)
     
     def verify(self):
         """Verify processing worked"""
         return True  # yeah... TODO.
 
-    def submit(self, in_location, out_location, ncpus, disable_updates, json_file):
+    def submit(self, out_location, ncpus, disable_updates, json_file):
         '''Submission Script
         '''
 
@@ -240,40 +255,45 @@ class ProcessBatchQueue(Task):
         self.log.info(script)
 
         if self.thishost == 'login':
-            logdir = "/xenon/ershockley/cax/{pax_version}/{name}".format(name=name, pax_version=self.pax_version)
-            outer_dag_dir = logdir + "/dags"
+            logdir = "/xenon/ershockley/cax"
+            outer_dag_dir = "{logdir}/pax_{pax_version}/{name}/dags".format(logdir=logdir,
+                                                                            pax_version=self.pax_version,
+                                                                            name=name)
             inner_dag_dir = outer_dag_dir + "/inner_dags"
 
             if not os.path.exists(inner_dag_dir):
                 os.makedirs(inner_dag_dir)
 
-            joblog_dir = "/xenon/ershockley/cax/{pax_version}/{name}/joblogs".format(name=name, pax_version=self.pax_version)
+            joblog_dir = outer_dag_dir.replace('dags', 'joblogs')
 
             if not os.path.exists(joblog_dir):
-                os.mkdir(joblog_dir)
+                os.makedirs(joblog_dir)
             
-            outer_dag_file = outer_dag_dir + "/{name}_outer.dag".format(name=name)
-            inner_dag_file = inner_dag_dir + "/{name}_inner.dag".format(name=name)
+            outer_dag_file = outer_dag_dir + "/{number}_outer.dag".format(number=number)
+            inner_dag_file = inner_dag_dir + "/{number}_inner.dag".format(number=number)
 
-            qsub.submit_dag_job(number, logdir, outer_dag_file, inner_dag_file, out_location, script, self.pax_version, json_file)
+            qsub.submit_dag_job(number, logdir, outer_dag_file, inner_dag_file, out_location,
+                                script, self.pax_version, json_file)
 
         else:
             qsub.submit_job(self.thishost, script, name + "_" + self.pax_version)
                         
     def each_run(self):
 
-        # check if too many jobs on grid 
-        if len(qsub.get_queue()) > 1000:
-            self.log.info("Too many jobs in queue, wait 2 minutes and try again")
-            time.sleep(120)
-            return
+        # check if too many dags running
+        if self.thishost == 'login':
+            self.log.debug("%d dags currently running" % len(qsub.get_queue()))
+            if len(qsub.get_queue()) > 84:
+                self.log.info("Too many dags in queue, waiting 10 minutes")
+                time.sleep(60*10)
+                return
 
         disable_updates = not config.DATABASE_LOG
 
         have_processed, have_raw = self.local_data_finder()
 
-        if have_processed or not have_raw:
-            self.log.debug("Skipping %s already processed or no raw",
+        if have_processed:
+            self.log.debug("Skipping %s already processed",
                            self.run_doc['name'])
             return
 
@@ -289,8 +309,8 @@ class ProcessBatchQueue(Task):
 
         out_location = config.get_processing_dir(self.thishost, self.pax_version)
         if not os.path.exists(out_location):
-            os.makedirs(out_location)
-
+            os.makedirs(out_location
+)
         queue_list = qsub.get_queue(self.thishost)
         
         # Warning: No check for pax version here
@@ -303,6 +323,7 @@ class ProcessBatchQueue(Task):
                       self.run_doc['name'], self.pax_version, out_location)
 
         if self.thishost != 'login':
+            # this will break things, need to change have_raw['location']
             _process(self.run_doc['name'], have_raw['location'], self.thishost,
                      self.pax_version, out_location, ncpus)
 
@@ -321,10 +342,10 @@ class ProcessBatchQueue(Task):
             with open(json_file, "w") as f:
                 json.dump(self.run_doc, f, default=json_util.default)
 
-            self.submit(have_raw['location'], out_location, ncpus, disable_updates, json_file)
+            self.submit(out_location, ncpus, disable_updates, json_file)
 
-            if config.DATABASE_LOG == True:
-                self.API.add_location(self.run_doc['_id'], datum)
+            #if config.DATABASE_LOG == True:
+            #    self.API.add_location(self.run_doc['_id'], datum)
 
             time.sleep(5)
 

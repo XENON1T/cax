@@ -7,7 +7,7 @@
 
 #run="${1##*/}"
 run=$1
-pre_log=$4/$2/$run/PRE_LOG
+pre_log=$4/pax_$2/$run/PRE_LOG
 echo "------ Start of prescript ------" >> $pre_log
 date >> $pre_log
 #echo "$pre_log" >> ~/pre_log_log

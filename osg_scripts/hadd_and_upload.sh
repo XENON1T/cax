@@ -7,14 +7,14 @@
 # 5: number of zips
 
 run="${1##*/}"
-post_log=$4/$2/$run/POST_LOG
+post_log=$4/pax_$2/$run/POST_LOG
 echo "------ Start of post script ---------" >> $post_log
 date >> $post_log
 
 echo $@ >> $post_log
 
 if [[ -e /xenon/xenon1t_processed/pax_$2/$1.root ]]; then
-    echo "Processing done! Don't need to run prescript. Exit 0."
+    echo "Processing done! Don't need to run post script. Exit 0."
     exit 0
 fi
 
@@ -33,6 +33,7 @@ set -o pipefail
 python /home/ershockley/cax/osg_scripts/upload.py $1 $5 $2 >> $post_log 2>&1
 
 if [[ $? -ne 0 ]]; then
+    echo "hadd or DB stuff failed, exiting"
     exit 1
 fi  
 #fi
@@ -44,9 +45,19 @@ if [[ $? -ne 0 ]]; then
     exit 1
 fi
 
+# need to get the rucio did for this run
+did=$(/home/ershockley/cax/osg_scripts/get_rucio_did.py $3)
+
+if [[ $? -ne 0 ]]; then
+    echo "Error finding rucio did"
+    did=NONE
+fi
+
+
 # submit massive-cax job to verify transfer
 echo "Submitting massive cax job on midway for run $3" >> $post_log 
-ssh tunnell@midway-login1.rcc.uchicago.edu "/home/tunnell/verify_stash_transfers.sh $3 $2" >> $post_log 2>&1
+echo "ssh tunnell@midway-login1.rcc.uchicago.edu '/home/tunnell/verify_stash_transfers.sh $3 $2 $did'" >> $post_log 2>&1
+ssh tunnell@midway-login1.rcc.uchicago.edu "/home/tunnell/verify_stash_transfers.sh $3 $2 $did" >> $post_log 2>&1
 
 ex=$?
 
