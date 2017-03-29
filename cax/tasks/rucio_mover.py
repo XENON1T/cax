@@ -725,7 +725,7 @@ class RucioBase(Task):
 
     def create_script(self, script):
         """Create script as temp file to be run on cluster"""
-        fileobj = tempfile.NamedTemporaryFile(delete=False,
+        fileobj = tempfile.NamedTemporaryFile(delete=True,
                                             suffix='.sh',
                                             mode='wt',
                                             buffering=1)
@@ -1006,8 +1006,6 @@ class RucioBase(Task):
         return file_list_name, file_list
     
     def doRucio(self, upload_string ):
-      #scname = "rucio_call_{runnumber}".format(runnumber= self.run_doc['name'] )
-      #sc = "/tmp/{sc_name}.sh".format(sc_name=scname)
       sc = self.create_script( upload_string )    
       execute = subprocess.Popen( ['sh', sc.name] , 
                                   stdin=subprocess.PIPE,
@@ -1310,6 +1308,14 @@ class RucioBase(Task):
           self.return_rucio['rse']      = []
           self.return_rucio['status'] = "RSEreupload"
           return 
+        elif i.find("ERROR ['x-rucio-auth-token']") >= 0:
+          logging.info("ERROR: Your RUCIO_ACCOUNT environment variable not match with a registered identity to your account.")
+          self.return_rucio['checksum'] = "n/a"
+          self.return_rucio['location'] = "n/a"
+          self.return_rucio['rse']      = []
+          self.return_rucio['status'] = "RSEreupload"
+          return
+        
         #Not yet sure if necessary:
         #elif i.find("ERROR [The file already exists.") >=0:
           #self.return_rucio['checksum'] = "n/a"
@@ -1525,9 +1531,13 @@ class RucioBase(Task):
          :type str
         :return:
         """
-        #Fix upload [ToDo]
-        #if data_type == "raw":
-        if data_type == "processed":    
+        
+        if 'data_type' not in config.get_config( config.get_hostname() ):
+          logging.info("Error: Define a data_type in your configuration file")
+          logging.info("       (e.g. 'data_type': ['raw'])")
+          exit()
+        
+        for data_type in config.get_config( config.get_hostname() )['data_type']:
           self.copyRucio( option_type, data_type )
         
     
@@ -2605,6 +2615,12 @@ class RucioRule(Task):
     
     def each_run(self):
       """Tell what to do for raw and processed data"""
+      
+      #Check first if the json config files fulfil the minimum:
+      if 'data_type' not in config.get_config( config.get_hostname() ):
+         logging.info("Error: Define a data_type in your configuration file")
+         logging.info("       (e.g. 'data_type': ['raw'])")
+         exit()
       
       #load the transfer rules definitions for each data set:
       self.rule_definition()

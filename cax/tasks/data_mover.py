@@ -281,6 +281,12 @@ class CopyBase(Task):
 
     def each_run(self):
         #Add Default [ToDo]
+        
+        if 'data_type' not in config.get_config( config.get_hostname() ):
+           logging.info("Error: Define a data_type in your configuration file")
+           logging.info("       (e.g. 'data_type': ['raw'])")
+           exit()
+        
         for data_type in config.get_config( config.get_hostname() )['data_type']:
             self.log.debug("%s" % data_type)
             self.do_possible_transfers(option_type=self.option_type,
