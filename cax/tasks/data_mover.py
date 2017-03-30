@@ -280,7 +280,7 @@ class CopyBase(Task):
         client.close()
 
     def each_run(self):
-        #Add Default [ToDo]
+        """Run over the requested data types according to the json config file"""
         
         if 'data_type' not in config.get_config( config.get_hostname() ):
            logging.info("Error: Define a data_type in your configuration file")
@@ -328,13 +328,6 @@ class CopyBase(Task):
             datum_here, datum_there = self.local_data_finder(data_type,
                                                              option_type,
                                                              remote_host)
-
-            #if method == "rucio" and datum_there != None and config.DATABASE_LOG == True:
-              #print( datum_here)
-              #self.collection.update({'_id': self.run_doc['_id']},
-                                     #{'$pull': {'data': datum_here}})
-
-            #exit()
             
             #Delete the old data base entry if rucio transfers are requested
             #and an old upload failed by a bad connection error.
