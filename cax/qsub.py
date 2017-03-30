@@ -66,7 +66,7 @@ def submit_job(script, extra=''):
 
 def create_script(script):
     """Create script as temp file to be run on cluster"""
-    fileobj = tempfile.NamedTemporaryFile(delete=False,
+    fileobj = tempfile.NamedTemporaryFile(delete=True,
                                           suffix='.sh',
                                           mode='wt',
                                           buffering=1)

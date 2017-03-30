@@ -5,9 +5,9 @@ data between sites.  At present, it just does scp.
 """
 
 import datetime
+import time
 import logging
 import os
-import time
 import hashlib
 import json
 import random
@@ -440,7 +440,6 @@ class RucioBase(Task):
       if rule_summary['status'].find("OK") >= 0 and i_rule_id != "n/a":
         #return array of files and file properties
         files, file_info = self.list_files( location.split(":")[0] , location.split(":")[1] )
-        
         #get all file loations for a single rse:
         if len(files) == 1:
           pathlists = self.get_file_locations_keep( location.split(":")[0] , files )
@@ -460,10 +459,34 @@ class RucioBase(Task):
         i_path = super_string
         logging.info("Status of transfer %s to RSE %s: OK", location, rse_remote)
         i_rule_status = "OK"
-        if i_expired == "valid":
-          i_expired = "valid"
-        else:
-          i_expired = "Expired"
+          
+        if int(lifetime) > 0:
+          #Nice but somehow bad way to introduce lifetime to update an existing rule
+          logging.info("Let us change also the lifetime:")          
+          logging.info("Update the rule for %s with setting to %s sec", rse_remote, lifetime)
+          
+          #Info: Will execute the update-rule manually here instead of self.update_rule(...) memberfunction
+          #      Safe time by avoid an additional rucio catalogue access.
+          trrule = self.RucioCommandLine( self.host,
+                                          "update-rule",
+                                          filelist = None,
+                                          metakey  = None).format(rucio_account=config.get_config( self.remote_host )["rucio_account"],
+                                                                  location=location,
+                                                                  rse_remote=rse_remote,
+                                                                  dataset_lifetime=lifetime,
+                                                                  rule_id=i_rule_id)  
+
+          #logging.info( trrule )
+        
+          msg_std, msg_err = self.doRucio( trrule )
+          for i in msg_std:
+            if i.find("Updated Rule") >= 0:
+              logging.info("Update rule sucessful from valid to %s seconds unitl termination.", lifetime)
+          
+          #Rule summary of the updated rule after update:
+          rule_summary = self.list_rules( location, rse_remote)
+          i_expired = rule_summary['expires']
+          logging.info("The rule will expire at %s", i_expired)
           
       elif rule_summary['status'].find("REPLICATING") >= 0 and i_rule_id != "n/a":
         logging.info("Status of transfer %s to RSE %s: REPLICATING", location, rse_remote)
@@ -475,31 +498,6 @@ class RucioBase(Task):
         i_path = "n/a"
         i_rule_status = "STUCK"
       
-      #elif i_rule_id != "n/a" and lifetime != "-1" and int(lifetime) > 0:
-        #logging.info("Update the rule for %s with setting to %s sec", rse_remote, lifetime)
-        
-        
-        #trrule = self.RucioCommandLine( self.host,
-                                        #"update-rule",
-                                        #filelist = None,
-                                        #metakey  = None).format(rucio_account=config.get_config( self.remote_host )["rucio_account"],
-                                                                #location=location,
-                                                                #rse_remote=rse_remote,
-                                                                #dataset_lifetime=lifetime,
-                                                                #rule_id=i_rule_ad)  
-
-        #logging.info( trrule )
-        
-        #msg_std, msg_err = self.doRucio( trrule )
-        #for i in msg_std:
-          #if i.find("Updated Rule") >= 0:
-            #logging.info("Update rule sucessful from valid to %s seconds unitl termination.", lifetime) 
-    
-      
-      #elif i_rule_id != "n/a" and len(i_rule_id) == 32 and lifetime != "-1":
-        #logging.info("Evaluate the rule ID again for %s", rse_remote)
-        #print("ADAAAAAAAAAAAAAAAAAAAAAA")
-        
 
       elif i_rule_id == "n/a" and lifetime == "-2":
         logging.info("Verfication Modus for RSE %s", rse_remote)
@@ -572,9 +570,20 @@ class RucioBase(Task):
             break
           elif i.find("ERROR [A duplicate rule for this account, did, rse_expression, copies already exists.") >= 0:
             logging.info("Rule already exists for location=%s and RSE=%s", location, rse_remote)
-            rule_summary = self.list_rules( location, rse_remote)
-            print( rule_summary )
-
+            #rule_summary = self.list_rules( location, rse_remote)
+            #  DO NOTHING IF A DUPLICATION IS DETECTED
+            #i_rule_id = rule_summary_new['rule_id']
+            #i_rse     = rse_remote
+            #i_path    = "n/a"
+            #i_rule_status = "Failed"
+            #i_expired = "n/a"
+            #i_rule_account = config.get_config( self.remote_host )["rucio_account"]
+            break
+          else:
+            logging.info("A new rule is created for %s (%s)", rule_summary_new['rse'], rule_summary_new['rule_id'])
+            i_expired      = rule_summary_new['expires']
+            i_rule_id      = rule_summary_new['rule_id']
+            i_rule_account = rule_summary_new['account']
 
       #Gather information about transfer rules from above:
       rucio_rule_summary = {}
@@ -716,7 +725,7 @@ class RucioBase(Task):
 
     def create_script(self, script):
         """Create script as temp file to be run on cluster"""
-        fileobj = tempfile.NamedTemporaryFile(delete=False,
+        fileobj = tempfile.NamedTemporaryFile(delete=True,
                                             suffix='.sh',
                                             mode='wt',
                                             buffering=1)
@@ -997,8 +1006,6 @@ class RucioBase(Task):
         return file_list_name, file_list
     
     def doRucio(self, upload_string ):
-      #scname = "rucio_call_{runnumber}".format(runnumber= self.run_doc['name'] )
-      #sc = "/tmp/{sc_name}.sh".format(sc_name=scname)
       sc = self.create_script( upload_string )    
       execute = subprocess.Popen( ['sh', sc.name] , 
                                   stdin=subprocess.PIPE,
@@ -1025,8 +1032,8 @@ class RucioBase(Task):
       data_type = datum_original['type']
       rrse   = config.get_config( datum_destination['host'] )["rucio_upload_rse"]
       raccount = config.get_config( datum_destination['host'] )["rucio_account"]
-
-            
+      
+      
       #if data_type == "raw":
       logging.info("Start raw data upload to rucio catalogue")
         
@@ -1042,6 +1049,7 @@ class RucioBase(Task):
       #Store the information about which files are uploaded to the rucio catalogue
       self.return_rucio['file_list'] = files
       self.return_rucio['rse'] = rrse
+      self.return_rucio['rule_info'] = "no_rule"
       
       #Sanity check for the number of uploaded files: If zero files gathered -> error and abort!
       if len( files ) == 0:
@@ -1058,8 +1066,15 @@ class RucioBase(Task):
           
       #0) Create the containter, dataset and tarfile name for the upload
       #-----------------------------------------------------------------
-      date = transfer_tags[0]["created_at"][0:6]
-      time = transfer_tags[0]["created_at"][7:12]
+      date_ = transfer_tags[0]["created_at"][0:6]
+      time_ = transfer_tags[0]["created_at"][7:12]
+      
+      #Create a unix time stamp from raw data file:
+      dt = datetime.datetime(int(str("20" + date_[0:2])), int(date_[2:4]), int(date_[4:6]), int(time_[0:2]), int(time_[2:4]))
+      timestamp_rawdata = time.mktime(dt.timetuple())
+      
+      #Update the science_run informatin from the timestamp
+      science_run = config.get_science_run( timestamp_rawdata )      
       
       #Sort: data (processed or raw) vs. mc
       if data_type == "raw" or data_type == "processed":
@@ -1079,8 +1094,8 @@ class RucioBase(Task):
       #Container:
       container_name = "{exp_phase}_{sr}_{data}_{time}_{subdetector}".format(exp_phase=exp_phase,
                                                                              sr=science_run, 
-                                                                             data=date,
-                                                                             time=time,
+                                                                             data=date_,
+                                                                             time=time_,
                                                                              subdetector=meta_tags[0]["provenance"] )
 
       over_container_name = "{exp_phase}_{sr}_{type}".format(exp_phase=exp_phase,
@@ -1095,8 +1110,8 @@ class RucioBase(Task):
       #data upload scope: (eg. xe1t_SR000_160824_0125_tpc)
       rscope_upload = "{exp_phase}_{sr}_{date}_{time}_{subdetector}".format(exp_phase=exp_phase,
                                                                             sr=science_run, 
-                                                                            date=date,
-                                                                            time=time,
+                                                                            date=date_,
+                                                                            time=time_,
                                                                             subdetector=meta_tags[0]["provenance"] )
       
       #Dataset names:
@@ -1293,6 +1308,14 @@ class RucioBase(Task):
           self.return_rucio['rse']      = []
           self.return_rucio['status'] = "RSEreupload"
           return 
+        elif i.find("ERROR ['x-rucio-auth-token']") >= 0:
+          logging.info("ERROR: Your RUCIO_ACCOUNT environment variable not match with a registered identity to your account.")
+          self.return_rucio['checksum'] = "n/a"
+          self.return_rucio['location'] = "n/a"
+          self.return_rucio['rse']      = []
+          self.return_rucio['status'] = "RSEreupload"
+          return
+        
         #Not yet sure if necessary:
         #elif i.find("ERROR [The file already exists.") >=0:
           #self.return_rucio['checksum'] = "n/a"
@@ -1507,9 +1530,14 @@ class RucioBase(Task):
         :param data_type: 'raw' or 'processed'
          :type str
         :return:
-        """        
-        #if data_type == "raw":
-        if data_type == "processed":    
+        """
+        
+        if 'data_type' not in config.get_config( config.get_hostname() ):
+          logging.info("Error: Define a data_type in your configuration file")
+          logging.info("       (e.g. 'data_type': ['raw'])")
+          exit()
+        
+        for data_type in config.get_config( config.get_hostname() )['data_type']:
           self.copyRucio( option_type, data_type )
         
     
@@ -1909,8 +1937,7 @@ class RucioLocator(Task):
           
           if len(rse_storage) != 1:
             continue
-          #print(self.rse, rse_storage)
-          #print("y: ", set(self.rse).issubset(rse_storage))
+
           if set(self.rse).issubset(rse_storage) == True:
             logging.info("<%s> : Location: %s | Run name: %s | Run number: %s | RSE: %s", status, location, self.run_doc['name'], self.run_doc['number'], ', '.join(rse_storage))  
       
@@ -1935,8 +1962,7 @@ class RucioLocator(Task):
           
           if len(rse_storage) == 1:
             continue
-          #print(self.rse, rse_storage)
-          #print("y: ", set(self.rse).issubset(rse_storage))
+
           if set(self.rse).issubset(rse_storage) == True:
             logging.info("<%s> : Location: %s | Run name: %s | Run number: %s | RSE: %s", status, location, self.run_doc['name'], self.run_doc['number'], ', '.join(rse_storage))
       
@@ -2156,7 +2182,7 @@ class RucioConfig():
      
 class RucioDownload(Task):
     """The rucio downloader"""
-    def __init__(self, data_rse, data_dir=None, data_type='raw', data_restore=False, location=None, data_overwrite=False):
+    def __init__(self, data_rse=None, data_dir=None, data_type='raw', data_restore=False, location=None, data_overwrite=False):
         self.data_rse  = data_rse
         self.data_dir  = data_dir
         self.data_host = data_dir
@@ -2165,6 +2191,49 @@ class RucioDownload(Task):
         self.data_overwrite = data_overwrite
         # Perform base class initialization
         Task.__init__(self)
+        
+        #Initiate a dummy variable to get information back
+        self.return_rucio = {}
+      
+        #External or internal database entry (if requested):
+        self.database_entry_extern = False
+      
+    def get_rucio_info(self):
+        """Member function to read out a pre-defined dictionary"""
+        return self.return_rucio
+
+    def ExternalDatabaseEntry(self):
+        """Switch to external data base configuration"""
+        # true: The data base entry is set manually
+        # false: The data base entry is set by RucioDownload class
+        self.database_entry_extern = True
+
+    def SetDatabaseEntry(self, run_doc):
+        """Overwrite the requested run number entry from outside"""
+        self.run_doc = run_doc
+    
+    def SetDownloadConfig(self, rucio_catalogue_config, destination_config):
+        """Load download information from json file as side load"""
+        self.jsonload_data_rse  = destination_config['rucio_download_rse']
+        self.jsonload_data_dir  = destination_config['name']
+        self.jsonload_data_host = destination_config['name']
+        self.jsonload_data_type = destination_config['data_type']
+        self.jsonload_data_restore = True
+        self.jsonload_data_overwrite = False
+
+    def DoDownload(self, datum_original, datum_destination, option_type):
+        """Start the download"""
+
+        #configure the download for raw and processed:
+        for i_type in self.jsonload_data_type:
+            self.data_type = i_type
+            self.data_rse  = self.jsonload_data_rse
+            self.data_dir  = self.jsonload_data_dir
+            self.data_host = self.jsonload_data_host
+            self.data_restore = True
+            self.data_overwrite = False
+            #Do the download:
+            self.each_run()
 
     def each_run(self):
         """Download from rucio catalogue"""
@@ -2224,7 +2293,14 @@ class RucioDownload(Task):
             if os.path.exists(self.data_dir) and self.data_overwrite == False:
               logging.info("The path %s exists already on host %s", self.data_dir, self.data_host)
               logging.info("Exit rucio-download to avoid data loss/overwrite")
-              exit()
+              self.return_rucio = {'type'         : self.data_type,
+                                   'host'         : self.data_host,
+                                   'status'       : 'overwrite_request',
+                                   'location'     : self.data_dir,
+                                   'checksum'     : None,
+                                   'creation_time': datetime.datetime.utcnow(),
+                                  }
+              return 0
             if os.path.exists(self.data_dir) and self.data_overwrite == True:
               logging.info("The path %s exists already on host %s", self.data_dir, self.data_host)
               logging.info("Data of the rucio-download are overwritten!")
@@ -2277,8 +2353,8 @@ class RucioDownload(Task):
             logging.info("Download %s:%s [sucessful]", scope, name)
             logging.info("Checksum test [successful]")
             #Create new entry to the run data base for the target host:
-            if self.data_restore == True and self.data_host == config.get_hostname() and self.data_host not in list_hosts:
-              #Create an entry for the data base:
+            if self.data_restore == True and self.data_host == config.get_hostname() and self.data_host not in list_hosts and self.database_entry_extern == False:
+              #Create an entry for the data base (internal/by RucioDownload class):
               datum_new = {'type'         : data_doc['type'],
                            'host'         : self.data_host,
                            'status'       : 'verifying',
@@ -2297,6 +2373,18 @@ class RucioDownload(Task):
                   self.log.error("Race condition!  Could not copy because another "
                              "process seemed to already start.")
                   return 
+            
+            elif self.data_restore == True and self.data_host == config.get_hostname() and self.database_entry_extern == True:
+              #Summarize the download information for the destination host
+              #Make it available "via get_rucio_info" (external)
+              self.return_rucio = {'type'         : self.data_type,
+                                   'host'         : self.data_host,
+                                   'status'       : 'verifying',
+                                   'location'     : self.data_dir,
+                                   'checksum'     : None,
+                                   'creation_time': datetime.datetime.utcnow(),
+                                  }
+              return 0
             
           else:
             logging.info("Download %s:%s [failed]", scope, name)
@@ -2528,6 +2616,12 @@ class RucioRule(Task):
     def each_run(self):
       """Tell what to do for raw and processed data"""
       
+      #Check first if the json config files fulfil the minimum:
+      if 'data_type' not in config.get_config( config.get_hostname() ):
+         logging.info("Error: Define a data_type in your configuration file")
+         logging.info("       (e.g. 'data_type': ['raw'])")
+         exit()
+      
       #load the transfer rules definitions for each data set:
       self.rule_definition()
 
@@ -2626,26 +2720,40 @@ class RucioRule(Task):
            
         new_rses = []
         new_rses_path = []
-        for i_rse in transfer_list:
+        rule_validation = []
+        
+        for i_rse in all_rse:    
           logging.info("Gather rule information for RSE %s", i_rse)
           logging.info("Execute set/update rules for RSE %s", i_rse)
-          rule_result = self.rucio.set_rule( rucio_location, i_rse, transfer_lifetime[i_rse] )
+          
+          if i_rse in transfer_list:
+            for in_rse in transfer_list:
+              logging.info("Create or update a rule for RSE %s with a lifetime of %s", in_rse, transfer_lifetime[in_rse])
+              rule_result = self.rucio.set_rule( rucio_location, i_rse, transfer_lifetime[i_rse] )
+          else:
+            logging.info("Just check RSE location %s (modus: %s)", i_rse, "-2")
+            rule_result = self.rucio.set_rule( rucio_location, i_rse, "-2" )  
+          
           logging.info(" * Status rule/transfer: %s", rule_result['rule_status'])
           logging.info(" * RSE: %s", rule_result['rule_rse'])
           logging.info(" * RuleID: %s", rule_result['rule_id'])
           logging.info(" * Path: %s", rule_result['rule_path'])
           logging.info(" * Rule expires: %s", rule_result['rule_expired'] )
           logging.info(" * Rule account: %s", rule_result['rule_account'] )
-                
+                    
           if rule_result['rule_status'] == "OK":
+            #Append the rse
             new_rses.append( i_rse )
             new_rses_path.append(rule_result['rule_path'])
-          
-          
-          
-        if method == "rucio" and there['rse'] != new_rses:
+            #Append the rule validation information
+            rule_valid_to = "{rse}:{date}".format(rse=i_rse, date=rule_result['rule_expired'])
+            rule_validation.append( rule_valid_to )
+        
+        #if method == "rucio" and there['rse'] != new_rses:
+        if method == "rucio":    
+        #if method == "rucio" and ( there['rse'] != new_rses or there['rule_info'] != rule_validation ):
           #Notify the runDB if there has been a change in the number of registered RSE
-          if config.DATABASE_LOG:           
+          if config.DATABASE_LOG:
             #Delete old entry
             print("Old entry: ", there)
             self.collection.update({'_id': self.run_doc['_id']},
@@ -2653,7 +2761,7 @@ class RucioRule(Task):
                   
           #Add the modified one:
           there['rse'] = new_rses
-                
+          there['rule_info'] = rule_validation    
           if config.DATABASE_LOG:  
             print("New entry: ", there)
             self.collection.update({'_id': self.run_doc['_id'],},
@@ -2661,9 +2769,10 @@ class RucioRule(Task):
                 
           logging.info("Updated database entry:") 
         
-        elif method == "rucio" and there['rse'] == new_rses:
+        #elif method == "rucio" and (there['rse'] == new_rses or there['rule_info'] == rule_validation):
+        #elif method == "rucio" and there['rse'] == new_rses:
           #Do not notify the runDB in case there is no change at the RSE information
-          logging.info("No database update necessary for type %s", data_type)
+          #logging.info("No database update necessary for type %s", data_type)
       
       elif there == None:
         logging.info("There is no runDB information for rucio-catalogue available: SKIP")

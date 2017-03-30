@@ -480,7 +480,7 @@ def ruciax():
     args = parser.parse_args()
    
     #This one is mandatory: hardcoded science run number!
-    config.set_rucio_campaign("000")
+    config.set_rucio_campaign("001")
 
     log_level = getattr(logging, args.log.upper())
     if not isinstance(log_level, int):
@@ -586,6 +586,8 @@ def massiveruciax():
                         help="Choose: run number start")
     parser.add_argument('--to-run', dest='to_run', type=int, 
                         help="Choose: run number end")
+    parser.add_argument('--last-days', dest='last_days', type=int, 
+                        help="Choose: Focus up/downloads only on the last days")
     parser.add_argument('--log-file', dest='logfile', type=str, default='massive_rucio.log',
                         help="Specify a certain logfile")
     parser.add_argument('--rucio-rule', type=str,
@@ -602,8 +604,9 @@ def massiveruciax():
     end_run = -1
     run_window = False
     run_window_lastruns = False
+    run_lastdays = False
     
-    if args.from_run == None and args.to_run == None:
+    if args.from_run == None and args.to_run == None and args.last_days == None:
       pass
     elif (args.from_run != None and args.to_run == None) or (args.from_run == None and args.to_run != None):
       logging.info("Select (tpc) runs between %s and %s", args.from_run, args.to_run)
@@ -622,6 +625,8 @@ def massiveruciax():
       run_window_lastruns = True
       beg_run = args.from_run
       end_run = args.to_run
+    elif args.from_run == None and args.to_run == None and args.last_days != None:
+      run_lastdays = True  
     
     #configure cax.json
     config_arg = ''
@@ -633,15 +638,18 @@ def massiveruciax():
                          args.config_file)
             config.set_json(args.config_file)
             config_arg = '--config ' + os.path.abspath(args.config_file)
-      
-    # Setup logging
-    log_path = {"xe1t-datamanager": "/home/xe1ttransfer/rucio_log",
-               "midway-login1": "/home/bauermeister/rucio_log",
-               "tegner-login-1": "/afs/pdc.kth.se/home/b/bobau/rucio_log",
-               "login": "/home/bauermeister/rucio_log"}
+    #print(os.environ["HOME"])
     
+    # Setup logging
+    log_path = {"xe1t-datamanager": os.path.join(os.environ["HOME"],"rucio_log"),
+               "midway-login1": os.path.join(os.environ["HOME"],"rucio_log"),
+               "tegner-login-1": os.path.join(os.environ["HOME"],"rucio_log"),
+               "login": os.path.join(os.environ["HOME"],"rucio_log")}
+    
+    #Check if log path exists and create it if not
     if not os.path.exists(log_path[config.get_hostname()]):
         os.makedirs(log_path[config.get_hostname()])
+    #Configure the massive-ruciax logging    
     cax_version = 'massive_ruciax_v%s - ' % __version__
     logging.basicConfig(filename="{logp}/{logf}".format(logp=log_path[config.get_hostname()], logf=args.logfile),
                         level=logging.INFO,
@@ -651,8 +659,8 @@ def massiveruciax():
     config.mongo_password()
     
     #Define additional file to define the rules:
-    abs_config_rule = os.path.abspath( args.config_rule )
     if args.config_rule:
+      abs_config_rule = os.path.abspath( args.config_rule )
       logging.info("Rucio Rule File: %s", abs_config_rule)
       rucio_rule = "--rucio-rule {rulefile}".format( rulefile=abs_config_rule )
     else:
@@ -660,32 +668,49 @@ def massiveruciax():
       
     # Establish mongo connection
     collection = config.mongo_collection()
-    sort_key = (('number', -1),
+    sort_key = (('start', -1),
+                ('number', -1),
                 ('detector', -1),
                 ('_id', -1))
 
     #Construct the pre-basic bash script(s) from rucio_mover.RucioConfig()
     RucioBashConfig = rucio_mover.RucioConfig()
     
+    
+    dt = datetime.timedelta(days=1)
+    
     while True: # yeah yeah
         #query = {'detector':'tpc'}
         query = {}
         
-        docs = list(collection.find(query))
+        
+        if args.run:
+            query['number'] = args.run
+
+        if run_window == True:
+            query['number'] = { '$lt': end_run+1, '$gt': beg_run-1 }
+        
+        if run_window_lastruns == True:
+            query['number'] = { '$gt': beg_run-1 }
+        
+        if run_lastdays == True:
+          t1 = datetime.datetime.utcnow()
+          t0 = datetime.datetime.utcnow() - int(args.last_days) * dt
+          if t1 - t0 < (int(args.last_days) * dt):
+            logging.info("Run ruciax up/downloads only on latest %s days", args.last_days)
+            #See if there is something to do
+            query['start'] = {'$gt' : t0}
+           
+        docs = list(collection.find(query,
+                                    sort=sort_key))
         
         for doc in docs:
+            
             
             #Select a single run for rucio upload (massive-ruciax -> ruciax)
             if args.run:
               if args.run != doc['number']:
                 continue
-            
-            #Rucio upload only of certain run numbers in a sequence
-            if int(doc['number']) < beg_run or int(doc['number']) > end_run and run_window == True:
-              continue
-            
-            if int(doc['number']) < beg_run and run_window_lastruns == True:
-              continue
           
             #Double check if a 'data' field is defind in doc
             if 'data' not in doc:
@@ -735,9 +760,6 @@ def massiveruciax():
 ruciax --once {job}
 """.format(job=job)
 
-            #pre_bash_command =  RucioBashConfig.get_config( config.get_hostname() ).format(
-                                    #account=config.get_config("rucio-catalogue")['rucio_account'] 
-                                    #)
             pre_bash_command = RucioBashConfig.load_host_config( config.get_hostname(), "py3" ).format(
                                     account=config.get_config("rucio-catalogue")['rucio_account'] 
                                     ) 
@@ -826,6 +848,8 @@ def massive_tsmclient():
                         help="Choose: run number start")
     parser.add_argument('--to-run', dest='to_run', type=int, 
                         help="Choose: run number end")
+    parser.add_argument('--last-days', dest='last_days', type=int, 
+                        help="Choose: Focus up/downloads only on the last days")    
     parser.add_argument('--log', dest='log', type=str, default='INFO',
                         help="Logging level e.g. debug")
     parser.add_argument('--logfile', dest='logfile', type=str, default='massive_tsm.log',
@@ -836,8 +860,6 @@ def massive_tsmclient():
     args = parser.parse_args()
     
     log_level = args.log
-    #if not isinstance(log_level, int):
-        #raise ValueError('Invalid log level: %s' % args.log)
 
     run_once = args.once
 
@@ -845,18 +867,30 @@ def massive_tsmclient():
     beg_run = -1
     end_run = -1
     run_window = False
-    if args.from_run == None and args.to_run == None:
+    run_window_lastruns = False
+    run_lastdays = False
+    
+    if args.from_run == None and args.to_run == None and args.last_days == None:
       pass
     elif (args.from_run != None and args.to_run == None) or (args.from_run == None and args.to_run != None):
       logging.info("Select (tpc) runs between %s and %s", args.from_run, args.to_run)
       logging.info("Make a full selection!")
-    elif args.from_run != None and args.to_run != None and args.from_run >= args.to_run:
+    elif args.from_run != None and args.to_run != None and args.from_run > 0 and args.to_run > 0 and args.from_run > args.to_run:
       logging.info("The last run is smaller then the first run!")
-    elif args.from_run != None and args.to_run != None and args.from_run < args.to_run:
+      logging.inof("--> Ruciax exits here")
+      exit()
+    elif args.from_run != None and args.to_run != None and args.from_run > 0 and args.to_run > 0 and args.from_run < args.to_run:
       logging.info("Start (tpc) runs between %s and %s", args.from_run, args.to_run)
       run_window = True
       beg_run = args.from_run
       end_run = args.to_run
+    elif args.from_run != None and args.to_run != None and args.from_run > 0 and args.to_run == -1:
+      logging.info("Start (tpc) runs between %s and to last", args.from_run)
+      run_window_lastruns = True
+      beg_run = args.from_run
+      end_run = args.to_run
+    elif args.from_run == None and args.to_run == None and args.last_days != None:
+      run_lastdays = True  
     
     
     #configure cax.json
@@ -909,21 +943,39 @@ def massive_tsmclient():
                 ('detector', -1),
                 ('_id', -1))
     
+    dt = datetime.timedelta(days=1)
+    
     while True: # yeah yeah
         
         query = {}
-        docs = list(collection.find(query))
         
+        if args.run:
+            query['number'] = args.run
+
+        if run_window == True:
+            query['number'] = { '$lt': end_run+1, '$gt': beg_run-1 }
+        
+        if run_window_lastruns == True:
+            query['number'] = { '$gt': beg_run-1 }
+        
+        if run_lastdays == True:
+          t1 = datetime.datetime.utcnow()
+          t0 = datetime.datetime.utcnow() - int(args.last_days) * dt
+
+          if t1 - t0 < (int(args.last_days) * dt):
+            logging.info("Run massive-tsm for up-/downloads only on latest %s days", args.last_days)
+            #See if there is something to do
+            query['start'] = {'$gt' : t0}
+
+        docs = list(collection.find(query,
+                                    sort=sort_key))
+
         for doc in docs:
             
             #Select a single run for rucio upload (massive-ruciax -> ruciax)
             if args.run:
               if args.run != doc['number']:
                 continue
-            
-            #Rucio upload only of certain run numbers in a sequence
-            if doc['number'] < beg_run or doc['number'] > end_run and run_window == True:
-              continue
             
             #Double check if a 'data' field is defind in doc (runDB entry)
             if 'data' not in doc:
@@ -938,7 +990,7 @@ def massive_tsmclient():
             if host_data == False:
               #Do not try upload data which are not registered in the runDB
               continue
-            
+
             #Detector choice
             local_time = time.strftime("%Y%m%d_%H%M%S", time.localtime())
             if doc['detector'] == 'tpc':
@@ -964,8 +1016,6 @@ def massive_tsmclient():
             #Disable runDB notifications
             if args.disable_database_update == True:
               command = command + " --disable_database_update"
-            
-            #command = general[config.get_hostname()]+command
                         
             logging.info("Command: %s", command)
             
