@@ -8,7 +8,7 @@ from bson.json_util import dumps
 from cax import config
 
 
-class Task():
+class Task:
     def __init__(self):
         # Grab the Run DB so we can query it
         self.collection = config.mongo_collection()
@@ -38,7 +38,7 @@ class Task():
                                                               projection=('_id'),
                                                               sort=(('start', -1),))]
         except pymongo.errors.CursorNotFound:
-            self.log.warning("Curson not found exception.  Skipping")
+            self.log.warning("Cursor not found exception.  Skipping")
             return
 
         # Iterate over each run

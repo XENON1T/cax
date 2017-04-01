@@ -1,7 +1,3 @@
-# Temporary python files
-*.py[cod]
-__pycache__
-
 # Data
 *.pklz
 *.xed
@@ -70,3 +66,15 @@ analysis/analysis_results
 # Numba caches
 *.nbc
 *.nbi
+
+# Compiled python files
+__pycache__
+*.py[cod]
+
+# Eggs
+.eggs
+*.egg_info
+cax.egg-info
+
+# Pycharm
+.idea

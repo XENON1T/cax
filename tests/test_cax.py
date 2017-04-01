@@ -1,30 +1,36 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+import pytest
 
-"""
-test_cax
-----------------------------------
-
-Tests for `cax` module.
-"""
-
-import unittest
-
-from cax import cax
+# Import the lone_run_collection fixture, which should be given as an argument to any task.
+# flake8 will complain it's not used, please ignore this (just loading the fixture does the magic)
+from .common import lone_run_collection
 
 
-class TestCax(unittest.TestCase):
+def test_task(lone_run_collection):
+    """Tests the task framework by a simple task that looks at the fake runs db.
+    """
+    from cax.task import Task
 
-    def setUp(self):
-        pass
+    class ScanningTask(Task):
+        data_entries_found = 0
 
-    def tearDown(self):
-        pass
+        def each_location(self, data_doc):
+            self.data_entries_found += 1
+            pass
 
-    def test_000_something(self):
-        pass
+    t = ScanningTask()
+    t.go()
+    assert t.data_entries_found == 1
 
 
-if __name__ == '__main__':
-    import sys
-    sys.exit(unittest.main())
+def test_checksum(lone_run_collection):
+    run_status = lone_run_collection.find_one({})['data'][0]['status']
+
+    from cax.tasks.checksum import AddChecksum
+    t = AddChecksum()
+
+    # There is no checksum in the starting runs collection. This is ok only if we're in verifying or error.
+    if run_status in ['verifying', 'error']:
+        t.go()
+    else:
+        with pytest.raises(Exception):
+            t.go()
