@@ -2,7 +2,7 @@
 
 This will setup a fake runs db and make cax think we're running on midway.
 """
-
+from datetime import datetime
 import os
 import tempfile
 
@@ -39,6 +39,8 @@ def lone_run_collection(request):
             outfile.write("Hi there cax tester!")
 
         runs_collection.insert_one({'number': 1,
+                                    'start': datetime.now(),
+                                    'end': datetime.now(),          # cax checks this to see a run has ended
                                     'data': [
                                         {'host': 'midway-login1',
                                          'location': os.path.abspath(dirname),

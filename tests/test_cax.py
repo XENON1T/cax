@@ -23,14 +23,23 @@ def test_task(lone_run_collection):
 
 
 def test_checksum(lone_run_collection):
-    run_status = lone_run_collection.find_one({})['data'][0]['status']
+
+    def data_doc():
+        return lone_run_collection.find_one({})['data'][0]
+
+    run_status = data_doc()['status']
 
     from cax.tasks.checksum import AddChecksum
     t = AddChecksum()
+    t.go()
 
-    # There is no checksum in the starting runs collection. This is ok only if we're in verifying or error.
-    if run_status in ['verifying', 'error']:
-        t.go()
+    if run_status == 'verifying':
+        # AddChecksum should now have added a checksum
+        assert 'checksum' in data_doc()
+
     else:
-        with pytest.raises(Exception):
-            t.go()
+        # AddChecksum currently does nothing if the status isn't verifying
+        # (although there is a lot of code that  for status != verifying, this is all unreachable
+        # due to a status check at the top, which was probably added later...)
+        assert 'checksum' not in data_doc()
+
