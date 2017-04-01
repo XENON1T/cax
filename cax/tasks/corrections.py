@@ -1,8 +1,5 @@
 """Add electron lifetime
 """
-import datetime
-
-import numpy as np
 import sympy
 import pytz
 import hax
@@ -33,16 +30,17 @@ class CorrectionBase(Task):
     This is a subsection of processor, so the correction versions used in processing will be stored in the processor's
     metadata.
     """
-    key = 'correction.setting.not.given'
-    collection_name = 'purity'
+    key = 'not_set'
+    collection_name = 'not_set'
     version = 'not_set'
 
     def __init__(self):
         self.correction_collection = config.mongo_collection(self.collection_name)
+        if self.key == 'not_set':
+            raise ValueError("You must set a correction key attribute")
+        if self.collection_name == 'not_set':
+            raise ValueError("You must set a correction collection_name attribute")
         Task.__init__(self)
-
-    def evaluate(self):
-        raise NotImplementedError()
 
     def each_run(self):
         if 'end' not in self.run_doc:
@@ -63,20 +61,24 @@ class CorrectionBase(Task):
             self.function = parse_expr(cdoc['function'])
 
         # Check if this correction's version correction has already been applied. If so, skip this run.
-        this_run_version = self.run_doc.get('processor', {}).get('correction_versions', {}).get(self.__class__.__name__,
-                                                                                                'not_set')
+        classname = self.__class__.__name__
+        this_run_version = self.run_doc.get('processor', {}).get('correction_versions', {}).get(classname, 'not_set')
         if this_run_version == self.version:
             # No change was made in the correction, nothing to do for this run.
             return
 
-        # We have to recompute the correction. This is done in the evaluate method.
-        # There used to be an extra check for self.key: {'$exists': False} in the query, but now that we allow updates
-        # this is no longer appropriate.
+        # We have to (re)compute the correction setting value. This is done in the evaluate method.
+        # There used to be an extra check for self.key: {'$exists': False} in the query, but now that we allow
+        # automatic updates of correction values by cax this is no longer appropriate.
         try:
-            self.collection.find_and_modify({'_id': self.run_doc['_id']},
-                                            {'$set': {self.key: self.evaluate()}})
+            self.collection.find_one_and_update({'_id': self.run_doc['_id']},
+                                                {'$set': {self.key: self.evaluate(),
+                                                          'processor.correction_versions.' + classname: self.version}})
         except RuntimeError as e:
             self.log.exception(e)
+
+    def evaluate(self):
+        raise NotImplementedError
 
     def evaluate_function(self, **kwargs):
         """Evaluate the sympy function of this correction with the given kwargs"""
@@ -86,6 +88,7 @@ class CorrectionBase(Task):
 class AddElectronLifetime(CorrectionBase):
     """Insert the electron lifetime appropriate to each run"""
     key = 'processor.DEFAULT.electron_lifetime_liquid'
+    collection_name = 'purity'
 
     def evaluate(self):
         lifetime = self.evaluate_function(t=self.run_doc['start'].timestamp())
