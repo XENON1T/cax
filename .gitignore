@@ -1,0 +1,72 @@
+# Temporary python files
+*.py[cod]
+__pycache__
+
+# Data
+*.pklz
+*.xed
+*.root
+*.png
+*.h5
+*.hdf
+*.hdf5
+fax_truth.csv
+
+# C extensions
+*.so
+
+# Packages
+*.eggs
+*.egg
+*.egg-info
+dist
+build
+eggs
+parts
+var
+sdist
+develop-eggs
+.installed.cfg
+lib
+lib64
+
+# Installer logs
+pip-log.txt
+
+# Unit test / coverage reports
+.coverage
+.tox
+nosetests.xml
+htmlcov
+
+# Translations
+*.mo
+
+# Mr Developer
+.mr.developer.cfg
+.project
+.pydevproject
+
+# Complexity
+output/*.html
+output/*/index.html
+
+# Sphinx
+docs/_build
+
+#Pycharm or something?
+.idea
+
+.ipynb_checkpoints
+
+Xerawdp_matching
+Bad_ideas
+tpc_kr_150410.eve
+
+debug_event_plots
+debug_output
+analysis/analysis_results
+
+# Numba caches
+*.nbc
+*.nbi
