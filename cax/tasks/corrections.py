@@ -97,6 +97,7 @@ class AddElectronLifetime(CorrectionBase):
 
 class AddDriftVelocity(CorrectionBase):
     key = 'processor.DEFAULT.drift_velocity_liquid'
+    collection = 'drift_velocity'
 
     def evaluate(self):
         run_number = self.run_doc['number']
@@ -108,22 +109,10 @@ class AddDriftVelocity(CorrectionBase):
         cathode_kv = hax.slow_control.get('XE1T.GEN_HEINZVMON.PI', run_number).mean()
 
         # Get the drift velocity
-        value = self.vd(cathode_kv)
+        value = self.evaluate_function(v=cathode_kv)
 
         self.log.info("Run %d: calculated drift velocity of %0.3f km/sec" % (run_number, value))
         return value * units.km / units.s
-
-    @staticmethod
-    def vd(cathode_v):
-        """Return the drift velocity in XENON1T in km/sec for a given cathode voltage in kV
-        Power-law fit to the datapoints in xenon:xenon1t:aalbers:drift_and_diffusion
-
-        When we're well beyond the range of the fit, we will take the value to be constant (to avoid crazy things like
-        nan or negative values).
-        """
-        cathode_v = np.asarray(cathode_v).copy()
-        cathode_v = np.clip(cathode_v, 7, 20)
-        return (42.2266 * cathode_v - 268.6557)**0.067018
 
 
 class AddGains(CorrectionBase):
@@ -164,19 +153,17 @@ class AddGains(CorrectionBase):
         voltages = hax.slow_control.get(['PMT %03d' % x for x in range(254)],
                                          self.run_doc['number']).median().values
 
-        # Resize for acquisition monitor, where 0 voltage here
+        # Append zeros to voltage list, to accomodate acquisition monitor channels.
         voltages.resize(len(PAX_CONFIG['DEFAULT']['pmts']))
 
         gains = []
         for i, voltage in enumerate(voltages):
             self.log.debug("Deriving HV for PMT %d" % i)
-            gain = self.function.evalf(subs={V  : float(voltage),
+            gain = self.function.evalf(subs={V: float(voltage),
                                              pmt: i,
-                                             t : self.run_doc['start'].timestamp(),
-                                             't0' : 0
+                                             t: self.run_doc['start'].timestamp(),
+                                             't0': 0
                                             })
             gains.append(float(gain) * self.correction_units)
 
         return gains
-
-
