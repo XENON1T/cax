@@ -18,8 +18,9 @@ if os.environ.get('MONGO_PASSWORD') is not None:
                        "It is not safe to run the cax tests with the possibility of accessing the true runs db.")
 
 # Replace cax's mongo_collection with a mongomock collection
-runs_collection = mongomock.MongoClient(cax_config.RUNDB_URI)['run']['runs_new']
-cax_config.mongo_collection = lambda name='runs_new': runs_collection
+runs_db = mongomock.MongoClient(cax_config.RUNDB_URI)['run']
+runs_collection = runs_db['runs_new']
+cax_config.mongo_collection = lambda name='runs_new': runs_db[name]
 
 # Pretend to be midway
 cax_config.HOST = 'midway-login1'

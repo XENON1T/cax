@@ -13,11 +13,11 @@ with open('HISTORY.rst') as history_file:
 
 requirements = [
     'checksumdir', 'scp', 'pagerduty-api', 'pymongo', 'paramiko',
-    'numpy', 'sympy', 'pytz', 
+    'numpy', 'sympy', 'pytz',
 ]
 
 test_requirements = [
-    'pytest', 'mongomock'
+    'pytest', 'mongomock',
 ]
 
 setup(
@@ -49,6 +49,7 @@ setup(
     ],
     test_suite='tests',
     tests_require=test_requirements,
+    setup_requires=['pytest-runner'],
     entry_points={
         'console_scripts': [
             'cax = cax.main:main',

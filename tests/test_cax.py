@@ -1,9 +1,6 @@
-import pytest
-
 # Import the lone_run_collection fixture, which should be given as an argument to any task.
 # flake8 will complain it's not used, please ignore this (just loading the fixture does the magic)
 from .common import lone_run_collection
-
 
 def test_task(lone_run_collection):
     """Tests the task framework by a simple task that looks at the fake runs db.
@@ -42,4 +39,3 @@ def test_checksum(lone_run_collection):
         # (although there is a lot of code that  for status != verifying, this is all unreachable
         # due to a status check at the top, which was probably added later...)
         assert 'checksum' not in data_doc()
-
