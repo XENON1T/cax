@@ -1,16 +1,11 @@
 """Add electron lifetime
 """
 import datetime
-from collections import defaultdict
 
 import numpy as np
-import os
 import sympy
-import time
 import pytz
-import requests
 import hax
-from hax import slow_control
 from pax import configuration, units
 from sympy.parsing.sympy_parser import parse_expr
 
