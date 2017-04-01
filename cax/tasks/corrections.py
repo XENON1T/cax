@@ -16,9 +16,26 @@ PAX_CONFIG = configuration.load_configuration('XENON1T')
 PAX_CONFIG_MV = configuration.load_configuration('XENON1T_MV')
 
 class CorrectionBase(Task):
-    "Derive correction"
+    """Base class for corrections.
 
+    Child classes can set the following class attributes:
+        key:  run doc setting this correction will override (usually processor.XXX,
+                                                             you can leave off processor if you want)
+        collection_name: collection in the runs db where the correction values are stored.
+
+    We expect documents in the correction contain:
+      - calculation_time: timestamp, indicating when YOU made this correction setting
+    And optionally also:
+      - version: string indicating correction version. If not given, timestamp-based version will be used.
+      - function: sympy expression, passed to sympy.evaluate then stored in the 'function' instance attribute
+
+    We keep track of the correction versions in the run doc, in processor.correction_versions.
+    This is a subsection of processor, so the correction versions used in processing will be stored in the processor's
+    metadata.
+    """
+    key = 'correction.setting.not.given'
     collection_name = 'purity'
+    version = 'not_set'
 
     def __init__(self):
         self.correction_collection = config.mongo_collection(self.collection_name)
@@ -28,67 +45,58 @@ class CorrectionBase(Task):
         raise NotImplementedError()
 
     def each_run(self):
-        if self.key == 'slow_control' and 'slow_control' in self.run_doc:
-            return
-        else:
-            short_key = self.key.split('.')[-1]
-            if 'processor' in self.run_doc and \
-                  'DEFAULT' in self.run_doc['processor'] and \
-                   short_key in self.run_doc['processor']['DEFAULT']:
-                return
-
         if 'end' not in self.run_doc:
+            # Run is still in progress, don't compute the correction
             return
-
-        self.get_correction()
 
         if not config.DATABASE_LOG:
+            # This setting apparently means we should do nothing?
             return
 
-        # Update run database
+        # Fetch the latest correction settings.
+        # We can't do this in init: cax is a long-running application, and corrections may change while it is running.
+        self.correction_doc = cdoc = self.correction_collection.find_one(sort=(('calculation_time', -1), ))
+        self.version = cdoc.get('version', str(cdoc['calculation_time']))
+
+        # Get the correction sympy function, if one is set
+        if 'function' in cdoc:
+            self.function = parse_expr(cdoc['function'])
+
+        # Check if this correction's version correction has already been applied. If so, skip this run.
+        this_run_version = self.run_doc.get('processor', {}).get('correction_versions', {}).get(self.__class__.__name__,
+                                                                                                'not_set')
+        if this_run_version == self.version:
+            # No change was made in the correction, nothing to do for this run.
+            return
+
+        # We have to recompute the correction. This is done in the evaluate method.
+        # There used to be an extra check for self.key: {'$exists': False} in the query, but now that we allow updates
+        # this is no longer appropriate.
         try:
-            self.collection.find_and_modify({'_id'   : self.run_doc['_id'],
-                                             self.key: {'$exists': False}},
+            self.collection.find_and_modify({'_id': self.run_doc['_id']},
                                             {'$set': {self.key: self.evaluate()}})
         except RuntimeError as e:
             self.log.exception(e)
 
-    def get_correction(self):
-        # Fetch the latest electron lifetime fit
-        doc = self.correction_collection.find_one(sort=(('calculation_time',
-                                                         -1),))
-        # Get fit function
-        self.function = parse_expr(doc['function'])
-
-    def get_time_range(self):
-        if self.run_doc['end'] < datetime.datetime(2016, 7, 20):
-            dt = datetime.timedelta(minutes=30)
-        else:
-            dt = datetime.timedelta(minutes=3)
-
-        return (self.run_doc['start'] - dt,
-                self.run_doc['end'] + dt)
+    def evaluate_function(self, **kwargs):
+        """Evaluate the sympy function of this correction with the given kwargs"""
+        return self.function.evalf(subs=kwargs)
 
 
 class AddElectronLifetime(CorrectionBase):
+    """Insert the electron lifetime appropriate to each run"""
     key = 'processor.DEFAULT.electron_lifetime_liquid'
-    correction_units = units.us
 
     def evaluate(self):
-        # Compute lifetime from this function on this dataset
-        subs = {"t": self.run_doc['start'].timestamp()}
-        lifetime = self.function.evalf(subs=subs)
-        lifetime = float(lifetime)  # Convert away from Sympy type.
+        lifetime = self.evaluate_function(t=self.run_doc['start'].timestamp())
+        lifetime = float(lifetime)      # Convert away from Sympy type.
+        self.log.info("Run %d: calculated lifetime of %d us" % (self.run_doc['number'], lifetime))
 
-        run_number = self.run_doc['number']
-        self.log.info("Run %d: calculated lifetime of %d us" % (run_number,
-                                                                lifetime))
-        return lifetime * self.correction_units
+        return lifetime * units.us
 
 
 class AddDriftVelocity(CorrectionBase):
     key = 'processor.DEFAULT.drift_velocity_liquid'
-    correction_units = units.km / units.s
 
     def evaluate(self):
         run_number = self.run_doc['number']
@@ -103,7 +111,7 @@ class AddDriftVelocity(CorrectionBase):
         value = self.vd(cathode_kv)
 
         self.log.info("Run %d: calculated drift velocity of %0.3f km/sec" % (run_number, value))
-        return value * self.correction_units
+        return value * units.km / units.s
 
     @staticmethod
     def vd(cathode_v):
@@ -119,12 +127,9 @@ class AddDriftVelocity(CorrectionBase):
 
 
 class AddGains(CorrectionBase):
-    """Copy data to here
-
-    If data exists at a reachable host but not here, pull it.
-    """
-    collection_name = 'gains'
+    """Add PMT gains to each run"""
     key = 'processor.DEFAULT.gains'
+    collection_name = 'gains'
     correction_units = units.V  # should be 1
 
     def evaluate(self):
