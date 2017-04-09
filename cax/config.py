@@ -216,7 +216,7 @@ def processing_script(args={}):
                         partition='' if midway else '#SBATCH --partition=main',
 #                        partition='xenon1t' if midway else 'main',
 #                        partition='kicp' if midway else 'main',
-                        base='/project2/lgrandi/xenon1t' if midway else '/cfs/klemming/projects/xenon/xenon1t',
+                        base='/project/lgrandi/xenon1t' if midway else '/cfs/klemming/projects/xenon/xenon1t',
                         account='pi-lgrandi' if midway else 'xenon',
                         time='48:00:00',
                         anaconda='/project/lgrandi/anaconda3/bin' if midway else '/cfs/klemming/nobackup/b/bobau/ToolBox/TestEnv/Anaconda3/bin',
