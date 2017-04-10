@@ -111,10 +111,12 @@ class RenameSingle(Task):
             self.log.info("Moving %s to %s" % (self.input,
                                                self.output))
             # Perform renaming
-            os.renames(self.input,
-                       self.output)
+            try:
+              shutil.move(self.input, self.output)
+            except Exception as e:
+              print( e )
 
-            # Notify run database
+            ## Notify run database
             if config.DATABASE_LOG is True:
                 self.collection.update({'_id' : self.run_doc['_id'],
                                         'data': {'$elemMatch': data_doc}},
