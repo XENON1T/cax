@@ -2053,12 +2053,21 @@ class RucioPurge(Task):
         # if both is True: Free for deletion
         nb_copies_xe1tdatamanager_b = False
         nb_copies_tape_b            = False
+        checksum_agree              = False
+        checksum_xe1tdatamanager = "no checksum datamanager"
+        checksum_tape            = "no tape checksum"
         for data_doc in self.run_doc['data']:
           if data_doc['host'] == "xe1t-datamanager" and data_doc['status'] == "transferred":
             nb_copies_xe1tdatamanager_b = True
+            checksum_xe1tdatamanager = data_doc['checksum']
           if data_doc['host'] == "tsm-server" and data_doc['status'] == "transferred":
-            nb_copies_tape_b = True          
-          
+            nb_copies_tape_b = True
+            checksum_tape = data_doc['checksum']
+        
+        #Another test if checksums of xe1t-datamanager and tape are the same AND not none
+        if checksum_tape != None and checksum_xe1tdatamanager != None and checksum_xe1tdatamanager = checksum_tape:
+          checksum_agree = True
+        
         check_for_delete = False  
         for data_doc in self.run_doc['data']:
           #Check for rucio-catalogue entries in runDB
@@ -2071,13 +2080,15 @@ class RucioPurge(Task):
           #Evaluate when rucio-purge is allowed to delete a data set from xe1t datamanager:
           if len( data_doc['rse'] ) >= 1 and \
              nb_copies_xe1tdatamanager_b == True and \
-             nb_copies_tape_b == True:                              
+             nb_copies_tape_b == True and
+             checksum_agree == True:                              
              logging.info("<-\____________________________________________/->>>")
              logging.info("   Dataset: %s | Run number: %s", self.run_doc['name'],  self.run_doc['number'])
              logging.info("   --------------------------------------------------")
+             logging.info("   Checksum test for xe1t-datamanager and tape: %s", str(checksum_agree))
              logging.info("   Rucio dataset %s is on tape: %s", data_doc['location'], nb_copies_tape_b)
              logging.info("   Rucio dataset %s is on xe1t-datamanager: %s", data_doc['location'], nb_copies_xe1tdatamanager_b)
-             logging.info("   Rucio dataset %s has two ore more copies at:", data_doc['location'])
+             logging.info("   Rucio dataset %s has one ore more copies at:", data_doc['location'])
              for i in data_doc['rse']:
                logging.info("     -Rucio Storage Element: %s", i )
              check_for_delete = True
@@ -2085,7 +2096,8 @@ class RucioPurge(Task):
         for data_doc in self.run_doc['data']:
           # Only if previous check matches: start to delete data 
           if data_doc['host'] == "xe1t-datamanager" and data_doc['status'] == "transferred" and \
-             check_for_delete == True and nb_copies_xe1tdatamanager_b == True and nb_copies_tape_b == True:
+             check_for_delete == True and nb_copies_xe1tdatamanager_b == True and nb_copies_tape_b == True\
+             and checksum_agree == True:
             
             location = data_doc['location']
             logging.info("   Dataset %s is set for deletion.", self.run_doc['name'] )

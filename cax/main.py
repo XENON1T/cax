@@ -103,7 +103,7 @@ def main():
         corrections.AddDriftVelocity(), #  Adds drift velocity to the run, also computed from slow control info
         #corrections.AddSlowControlInformation(),  
         data_mover.CopyPush(),  # Upload data through e.g. scp or gridftp to this location where cax running
-        #tsm_mover.AddTSMChecksum(), # Add forgotten Checksum for runDB for TSM client.
+        tsm_mover.AddTSMChecksum(), # Add forgotten Checksum for runDB for TSM client.
 	checksum.CompareChecksums(),  # See if local data corrupted
         clear.RetryStalledTransfer(),  # If data transferring e.g. 48 hours, probably cax crashed so delete then retry
         clear.RetryBadChecksumTransfer(),  # If bad checksum for local data and can fetch from somewhere else, delete our copy
@@ -112,11 +112,9 @@ def main():
         checksum.AddChecksum(),  # Add checksum for data here so can know if corruption (useful for knowing when many good copies!)
 
         filesystem.SetPermission(),  # Set any permissions (primarily for Tegner) for new data to make sure analysts can access
-
+        # clear.BufferPurger(),  # Clear old data at some locations as specified in cax.json
         process.ProcessBatchQueue(),  # Process the data with pax
-        process_hax.ProcessBatchQueueHax(),  # Process the data with hax
-        clear.PurgeProcessed(), #Clear the processed data for a given version
-        clear.BufferPurger()  # Clear old data at some locations as specified in cax.json
+        process_hax.ProcessBatchQueueHax()  # Process the data with hax
     ]
 
     # Raises exception if unknown host
