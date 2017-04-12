@@ -2065,7 +2065,7 @@ class RucioPurge(Task):
             checksum_tape = data_doc['checksum']
         
         #Another test if checksums of xe1t-datamanager and tape are the same AND not none
-        if checksum_tape != None and checksum_xe1tdatamanager != None and checksum_xe1tdatamanager = checksum_tape:
+        if checksum_tape != None and checksum_xe1tdatamanager != None and checksum_xe1tdatamanager == checksum_tape:
           checksum_agree = True
         
         check_for_delete = False  
@@ -2080,8 +2080,7 @@ class RucioPurge(Task):
           #Evaluate when rucio-purge is allowed to delete a data set from xe1t datamanager:
           if len( data_doc['rse'] ) >= 1 and \
              nb_copies_xe1tdatamanager_b == True and \
-             nb_copies_tape_b == True and
-             checksum_agree == True:                              
+             nb_copies_tape_b == True and checksum_agree == True:                              
              logging.info("<-\____________________________________________/->>>")
              logging.info("   Dataset: %s | Run number: %s", self.run_doc['name'],  self.run_doc['number'])
              logging.info("   --------------------------------------------------")
@@ -2092,7 +2091,7 @@ class RucioPurge(Task):
              for i in data_doc['rse']:
                logging.info("     -Rucio Storage Element: %s", i )
              check_for_delete = True
-               
+              
         for data_doc in self.run_doc['data']:
           # Only if previous check matches: start to delete data 
           if data_doc['host'] == "xe1t-datamanager" and data_doc['status'] == "transferred" and \
@@ -2115,7 +2114,15 @@ class RucioPurge(Task):
                 shutil.rmtree( location )
               else:
                 os.remove( location )
-
+        
+        if check_for_delete == False:
+          logging.info("<--| Deletion not possible:    >")
+          logging.info("   Dataset: %s | Run number: %s", self.run_doc['name'],  self.run_doc['number'])
+          logging.info("   No copy in the rucio catalogue")
+          logging.info("   Copy on Tape: %s", nb_copies_tape_b)
+          logging.info("   Copy on xe1t-datamanager: %s", nb_copies_xe1tdatamanager_b)
+          logging.info("   Checksum test is ok: %s", checksum_agree)
+ 
               #break
 
 class RucioConfig():
