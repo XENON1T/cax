@@ -21,7 +21,7 @@ from cax.tasks.clear import BufferPurger
 
 from cax.tasks.tsm_mover import TSMclient
 from cax.tasks.rucio_mover import RucioBase, RucioRule, RucioDownload
-
+from cax.tasks.checksum import ChecksumMethods
 
 import subprocess
 
@@ -580,8 +580,25 @@ class CopyBase(Task):
             logging.info("Check the error(s) and start again")
           return
         else:
-          logging.info("Pre-test of %s counts %s files for tape upload", raw_data_path+raw_data_filename, len(list_files))
+          logging.info("Pre-test of %s counts %s files for tape upload [succcessful]", raw_data_path+raw_data_filename, len(list_files))
 
+
+        #Do a checksum pre-test:
+        checksum_pretest_list = []
+        for i_file in files:
+          f_path = os.path.join(raw_data_path, raw_data_filename, i_file)
+          pre_test_checksum = ChecksumMethods.get_crc32(self,f_path)
+          checksum_pretest_list.append(pre_test_checksum)
+          
+        double_counts = set([x for x in checksum_pretest_list if checksum_pretest_list.count(x) > 1])
+        
+        if len(double_counts) > 0:
+          logging.info("Pre checksum test: [failed]")
+          logging.info("There are two or more identical checksums observed in %s", os.path.join(raw_data_path, raw_data_filename))
+          return
+        else:
+          logging.info("Pre checksum test: [succcessful]")
+        
         #Check first if everything is fine with the dsmc client
         if self.tsm.check_client_installation() == False:
           logging.info("There is a problem with your dsmc client")
