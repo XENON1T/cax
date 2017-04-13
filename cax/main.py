@@ -103,7 +103,7 @@ def main():
         corrections.AddDriftVelocity(), #  Adds drift velocity to the run, also computed from slow control info
         #corrections.AddSlowControlInformation(),  
         data_mover.CopyPush(),  # Upload data through e.g. scp or gridftp to this location where cax running
-        tsm_mover.AddTSMChecksum(), # Add forgotten Checksum for runDB for TSM client.
+        #tsm_mover.AddTSMChecksum(), # Add forgotten Checksum for runDB for TSM client.
 	checksum.CompareChecksums(),  # See if local data corrupted
         clear.RetryStalledTransfer(),  # If data transferring e.g. 48 hours, probably cax crashed so delete then retry
         clear.RetryBadChecksumTransfer(),  # If bad checksum for local data and can fetch from somewhere else, delete our copy
