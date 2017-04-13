@@ -7,7 +7,7 @@ import os
 import checksumdir
 import shutil
 import subprocess
-from zlib import adler32
+from zlib import adler32, crc32
 
 from cax import config
 from ..task import Task
@@ -32,6 +32,16 @@ class ChecksumMethods():
                 asum += 2**32
 
         return hex(asum)[2:10].zfill(8).lower()
+
+    def get_crc32(self, fname):
+        """Calcualte an crc32 checksum in python
+            Used for cross checks for tape uploads
+            2^32 hashes allow to calculate a quick checksum
+        """
+        prev = 0
+        for eachLine in open(fname,"rb"):
+          prev = crc32(eachLine, prev)
+        return "%X"%(prev & 0xFFFFFFFF)
 
 class AddChecksum(Task):
     """Perform a checksum on accessible data.

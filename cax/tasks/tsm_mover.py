@@ -308,12 +308,13 @@ class AddTSMChecksum(Task):
     """
     
     def variables(self):
-        self.checksum_xe1t = ''
+        self.checksum_xe1t = 'no_checksum_xe1tdatam'
     
     def each_location(self, data_doc):
         #print("each location")
         hostname = config.get_hostname()
         destination = config.get_config("tsm-server")
+        self.variables()
         
         if data_doc['host'] == "xe1t-datamanager":
             self.checksum_xe1t = data_doc['checksum']
@@ -374,7 +375,8 @@ class AddTSMChecksum(Task):
             logging.info("MD5 Hash (downloaded data): %s", checksum_after)
             
             #Add to runDB and compare
-            if data_doc['checksum'] == None and self.checksum_xe1t == checksum_after:
+            #if data_doc['checksum'] == None and self.checksum_xe1t == checksum_after:
+            if data_doc['checksum'] == None and self.checksum_xe1t == "no_checksum_xe1tdatam":    
               logging.info("No checksum for database entry TSM-server")
               logging.info("Checksums for xe1t-datamanager is verfied")
               
@@ -384,10 +386,10 @@ class AddTSMChecksum(Task):
                                         'data': {'$elemMatch': data_doc}},
                                        {'$set': {'data.$.checksum': checksum_after}})  
             
-            #Delete from temp directory
-            if data_doc['checksum'] == None and self.checksum_xe1t == checksum_after:
-                logging.info("Delete temp. directory for checksum verification: %s", dfolder)
-                shutil.rmtree(dfolder)
+              #Delete from temp directory
+            #if data_doc['checksum'] == None and self.checksum_xe1t == checksum_after:
+              logging.info("Delete temp. directory for checksum verification: %s", dfolder)
+              shutil.rmtree(dfolder)
 
         
 

@@ -21,7 +21,7 @@ from cax.tasks.clear import BufferPurger
 
 from cax.tasks.tsm_mover import TSMclient
 from cax.tasks.rucio_mover import RucioBase, RucioRule, RucioDownload
-
+from cax.tasks.checksum import ChecksumMethods
 
 import subprocess
 
@@ -541,6 +541,12 @@ class CopyBase(Task):
         return 0
 
     def copy_tsm(self, datum, destination, method, option_type):
+        
+        #hard coded sha512 checksum which stands for an empty directory
+        #(Used for verifying the goodness of the uploaded data)"
+        checksum_empty_dir = "cf83e1357eefb8bdf1542850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5d85f2b0ff8318d2877eec2f63b931bd47417a81a538327af927da3e"
+        
+        #Init the TSM client for tape backup from an extern class
         self.tsm = TSMclient()
 
         logging.info('Tape Backup to PDC STOCKHOLM')
@@ -554,6 +560,49 @@ class CopyBase(Task):
         logging.info("Path to raw data: %s", raw_data_path)
         logging.info("Path to tsm data: %s", raw_data_tsm)
         logging.info("File/Folder for backup: %s", raw_data_filename)
+        
+        #Do a simple pretest to analyse the directly what is going to be backuped
+        #continue only if there are files in the directory and no more folders
+        list_files = []
+        list_folders = []
+        for root, dirs, files in os.walk(raw_data_path+raw_data_filename):
+          for name in files:
+            list_files.append(name)
+          for name in dirs:
+            list_folders.append(name)
+        
+        if len(list_files) == 0 or len(list_folders) > 0:
+          logging.info("ERROR: There are %s files in %s", len(list_files), raw_data_path+raw_data_filename)
+          if len(list_folders) > 0:
+            looging.info("ERROR: These folders are found in %s:", raw_data_path+raw_data_filename)
+            for i_folders in list_folders:
+              logging.info("  <> %s", i_folders)
+            logging.info("Check the error(s) and start again")
+          return
+        else:
+          logging.info("Pre-test of %s counts %s files for tape upload [succcessful]", raw_data_path+raw_data_filename, len(list_files))
+
+
+        #Do a checksum pre-test:
+        checksum_pretest_list = []
+        for i_file in files:
+          f_path = os.path.join(raw_data_path, raw_data_filename, i_file)
+          pre_test_checksum = ChecksumMethods.get_crc32(self,f_path)
+          checksum_pretest_list.append(pre_test_checksum)
+          
+        double_counts = set([x for x in checksum_pretest_list if checksum_pretest_list.count(x) > 1])
+        
+        if len(double_counts) > 0:
+          logging.info("Pre checksum test: [failed]")
+          logging.info("There are two or more identical checksums observed in %s", os.path.join(raw_data_path, raw_data_filename))
+          return
+        else:
+          logging.info("Pre checksum test: [succcessful]")
+        
+        #Check first if everything is fine with the dsmc client
+        if self.tsm.check_client_installation() == False:
+          logging.info("There is a problem with your dsmc client")
+          return        
 
         self.log.debug("Notifying run database")
         datum_new = {'type'         : datum['type'],
@@ -576,20 +625,6 @@ class CopyBase(Task):
                 return
 
         logging.info("Start tape upload")
-
-
-        if self.tsm.check_client_installation() == False:
-          logging.info("There is a problem with your dsmc client")
-          if config.DATABASE_LOG:
-            self.collection.update({'_id' : self.run_doc['_id'],
-                                  'data': {
-                                        '$elemMatch': datum_new}},
-                                   {'$set': {'data.$.status': "error",
-                                             'data.$.location': "n/a",
-                                             'data.$.checksum': "n/a",
-                                             }
-                                   })
-          return
 
         #Prepare a copy from raw data location to tsm location ( including renaming)
         checksum_before_raw = self.tsm.get_checksum_folder( raw_data_path+raw_data_filename )
@@ -654,13 +689,18 @@ class CopyBase(Task):
         logging.info("MD5 Hash (raw data): %s", checksum_after)
 
         status = ""
-        if checksum_before_tsm == checksum_after:
+        if checksum_before_tsm == checksum_after and checksum_empty_dir != checksum_before_tsm and checksum_empty_dir != checksum_after:
           logging.info("Upload to tape: [succcessful]")
           status = "transferred"
         else:
           logging.info("Upload to tape: [failed]")
           status = "error"
-
+        
+        #Print a warning if the checksum crosscheck fails!
+        if checksum_empty_dir == checksum_before_tsm or checksum_empty_dir == checksum_after:
+          logging.info("Checksum test indicates an empty folder before or after the tape upload")
+          logging.info("Check your raw data directory %s for files", raw_data_tsm + raw_data_filename)
+        
         ##Delete check folder
         shutil.rmtree(raw_data_tsm + raw_data_filename)
         shutil.rmtree(test_download + "/" + raw_data_filename)
