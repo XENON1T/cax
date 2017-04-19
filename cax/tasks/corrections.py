@@ -25,7 +25,8 @@ class CorrectionBase(Task):
     And optionally also:
       - version: string indicating correction version. If not given, timestamp-based version will be used.
       - function: sympy expression, passed to sympy.evaluate then stored in the 'function' instance attribute
-
+                  NOTE: if you can't express your correction as a sympy function you can add a custom handling
+                  by overriding the 'evaluate' method with whatever you need
     We keep track of the correction versions in the run doc, in processor.correction_versions.
     This is a subsection of processor, so the correction versions used in processing will be stored in the processor's
     metadata.
@@ -170,3 +171,16 @@ class AddGains(CorrectionBase):
             gains.append(float(gain) * self.correction_units)
 
         return gains
+
+
+class SetNeuralNetwork(CorrectionBase):
+    '''Set the proper neural network file according to run number'''
+    key = "processor.NeuralNet.PosRecNeuralNet.neural_net_file"
+    collection_name = 'neural_network'
+    
+    def evaluate(self):
+        number = self.run_doc['number']
+        for rdef in self.correction_doc['correction']:
+            if number >= rdef['min'] and number < rdef['max']:
+                return rdef['value']
+        return None
