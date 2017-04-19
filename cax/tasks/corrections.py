@@ -209,3 +209,14 @@ class SetLightCollectionEfficiency(CorrectionBase):
 				return rdef['value']
 		return None
 
+class SetS2xyMap(CorrectionBase):
+    """Set the proper S2 x, y map according to run number"""
+    key = 'processor.WaveformSimulator.s2_light_yield_map'
+    collection_name = 'light_collection_efficiency'
+    
+    def evaluate(self):
+        number = self.run_doc['number']
+        for rdef in self.correction_doc['correction']:
+            if number >= rdef['min'] and number < rdef['max']:
+                return rdef['value']
+        return None
