@@ -184,3 +184,28 @@ class SetNeuralNetwork(CorrectionBase):
             if number >= rdef['min'] and number < rdef['max']:
                 return rdef['value']
         return None
+
+class SetFieldDistortion(CorrectionBase):
+	'''Set the proper field distortion map according to run number'''
+	key = 'processor.simulator.rz_position_distortion_map'
+	collection_name = 'field_distortion'
+
+	def evaluate(self):
+		number = self.run_doc['number']
+		for rdef in self.correction_doc['correction']:
+			if number >= rdef['min'] and number < rdef['max']:
+				return rdef['value']
+		return None
+
+class SetLightCollectionEfficiency(CorrectionBase):
+	'''Set the proper LCE map according to run number'''
+	key = 'processor.simulator.s1_light_yield_map'
+	collection_name = 'light_collection_efficiency'
+
+	def evaluate(self):
+		number = self.run_doc['number']
+		for rdef in self.correction_doc['correction']:
+			if number >= rdef['min'] and number < rdef['max']:
+				return rdef['value']
+		return None
+
