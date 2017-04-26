@@ -1,6 +1,13 @@
   History
 =======
 
+5.2.0 (2017-04-26)
+-------------------
+* Switch to new common account
+* Rucio updates
+* Tape updates
+* Corrections versioning (#95)
+
 5.1.0 (2017-03-20)
 -------------------
 * Rucio updates
