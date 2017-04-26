@@ -92,7 +92,7 @@ class AddElectronLifetime(CorrectionBase):
     collection_name = 'purity'
 
     def evaluate(self):
-	t = sympy.symbols('t', integer=True)
+        t = sympy.symbols('t', integer=True)
         lifetime = self.evaluate_function(t=self.run_doc['start'].timestamp())
         lifetime = float(lifetime)      # Convert away from Sympy type.
         self.log.info("Run %d: calculated lifetime of %d us" % (self.run_doc['number'], lifetime))
@@ -153,9 +153,9 @@ class AddGains(CorrectionBase):
         # Minimal init of hax. It's ok if hax is inited again with different settings before or after this.
         hax.init(pax_version_policy='loose', main_data_paths=[])
 
-	gains = []
-	for i in range(0, len(PAX_CONFIG['DEFAULT']['pmts'])):
-	    gain = self.function.evalf(subs={pmt: i,
+        gains = []
+        for i in range(0, len(PAX_CONFIG['DEFAULT']['pmts'])):
+            gain = self.function.evalf(subs={pmt: i,
                                              t: self.run_doc['start'].timestamp(),
                                              't0': 0
                                        })
