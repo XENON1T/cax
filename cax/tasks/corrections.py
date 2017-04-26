@@ -101,7 +101,7 @@ class AddElectronLifetime(CorrectionBase):
 
 class AddDriftVelocity(CorrectionBase):
     key = 'processor.DEFAULT.drift_velocity_liquid'
-    collection = 'drift_velocity'
+    collection_name = 'drift_velocity'
 
     def evaluate(self):
         run_number = self.run_doc['number']
