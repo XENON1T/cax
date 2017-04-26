@@ -152,22 +152,12 @@ class AddGains(CorrectionBase):
         # Minimal init of hax. It's ok if hax is inited again with different settings before or after this.
         hax.init(pax_version_policy='loose', main_data_paths=[])
 
-        # Grab voltages from SC
-        self.log.info("Getting voltages at %d" % timestamp)
-        voltages = hax.slow_control.get(['PMT %03d' % x for x in range(254)],
-                                         self.run_doc['number']).median().values
-
-        # Append zeros to voltage list, to accomodate acquisition monitor channels.
-        voltages.resize(len(PAX_CONFIG['DEFAULT']['pmts']))
-
-        gains = []
-        for i, voltage in enumerate(voltages):
-            self.log.debug("Deriving HV for PMT %d" % i)
-            gain = self.function.evalf(subs={V: float(voltage),
-                                             pmt: i,
+	gains = []
+	for i in range(0, len(PAX_CONFIG['DEFAULT']['pmts'])):
+	    gain = self.function.evalf(subs={pmt: i,
                                              t: self.run_doc['start'].timestamp(),
                                              't0': 0
-                                            })
+                                       })
             gains.append(float(gain) * self.correction_units)
 
         return gains
