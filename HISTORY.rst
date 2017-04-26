@@ -1,6 +1,10 @@
   History
 =======
 
+5.2.1 (2017-04-26)
+-------------------
+* Bug fixes for corrections versioning
+
 5.2.0 (2017-04-26)
 -------------------
 * Switch to new common account
