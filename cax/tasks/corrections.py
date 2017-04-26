@@ -187,7 +187,7 @@ class SetNeuralNetwork(CorrectionBase):
 
 class SetFieldDistortion(CorrectionBase):
 	'''Set the proper field distortion map according to run number'''
-	key = 'processor.simulator.rz_position_distortion_map'
+	key = 'processor.WaveformSimulator.rz_position_distortion_map'
 	collection_name = 'field_distortion'
 
 	def evaluate(self):
@@ -199,7 +199,7 @@ class SetFieldDistortion(CorrectionBase):
 
 class SetLightCollectionEfficiency(CorrectionBase):
 	'''Set the proper LCE map according to run number'''
-	key = 'processor.simulator.s1_light_yield_map'
+	key = 'processor.WaveformSimulator.s1_light_yield_map'
 	collection_name = 'light_collection_efficiency'
 
 	def evaluate(self):
@@ -212,7 +212,7 @@ class SetLightCollectionEfficiency(CorrectionBase):
 class SetS2xyMap(CorrectionBase):
     """Set the proper S2 x, y map according to run number"""
     key = 'processor.WaveformSimulator.s2_light_yield_map'
-    collection_name = 'light_collection_efficiency'
+    collection_name = 's2_xy_map'
     
     def evaluate(self):
         number = self.run_doc['number']
