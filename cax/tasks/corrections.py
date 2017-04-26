@@ -92,6 +92,7 @@ class AddElectronLifetime(CorrectionBase):
     collection_name = 'purity'
 
     def evaluate(self):
+	t = sympy.symbols('t', integer=True)
         lifetime = self.evaluate_function(t=self.run_doc['start'].timestamp())
         lifetime = float(lifetime)      # Convert away from Sympy type.
         self.log.info("Run %d: calculated lifetime of %d us" % (self.run_doc['number'], lifetime))
