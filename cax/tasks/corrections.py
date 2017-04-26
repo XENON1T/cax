@@ -113,7 +113,7 @@ class AddDriftVelocity(CorrectionBase):
         cathode_kv = hax.slow_control.get('XE1T.GEN_HEINZVMON.PI', run_number).mean()
 
         # Get the drift velocity
-        value = self.evaluate_function(v=cathode_kv)
+        value = float(self.evaluate_function(v=cathode_kv))
 
         self.log.info("Run %d: calculated drift velocity of %0.3f km/sec" % (run_number, value))
         return value * units.km / units.s
