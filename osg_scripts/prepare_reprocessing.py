@@ -1,22 +1,28 @@
+#from cax.dag_writer_mod import dag_writer
 from cax.dag_writer import dag_writer
 import numpy as np
-import pymongo
-from get_gains import get_runs_with_gains
-from get_sciencerun_list import get_science_runlist
 from make_runlist import make_runlist
 
 runlist = make_runlist()
-
+# from Zach 6378-6730
+#runlist = [6734]
+#with open("/home/ershockley/murra.csv") as f:
+#    for num, line in enumerate(f.readlines()):
+#        line = line.split(',')
+#        if num == 0:
+#            continue
+#        for col in [4,5]:
+#            if line[col] != "":
+#                runlist.append(int(line[col]))
+#runlist = sorted(runlist)
 print(len(runlist))
+runlist = sorted(runlist)
 
-# divide into n dags of Y runs
-runs_per_dag = 1500
-n_dags = int(np.ceil(len(runlist)/runs_per_dag))
+#runlist = np.arange(6378, 6731)
 
-for i in range(n_dags):
-    j = int(i*np.ceil(runs_per_dag))
-    sublist = runlist[j:j+runs_per_dag]
+#list1 = runlist[:np.ceil(len(runlist)/2)]
+#list2 = runlist[np.ceil(len(runlist)/2):]
 
-    logdir = "/xenon/ershockley/reprocessing"
-    dag = dag_writer(sublist, "v6.6.2", logdir, reprocessing = True, n_retries=9)
-    dag.write_outer_dag(logdir + "/662_finishSR0_%i.dag" % i)
+logdir = "/xenon/ershockley/reprocessing"
+dag = dag_writer(runlist, "v6.6.5", logdir, reprocessing = True, n_retries=9)
+dag.write_outer_dag(logdir + "/665_SR1.dag")

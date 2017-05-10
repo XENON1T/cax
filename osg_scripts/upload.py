@@ -67,13 +67,19 @@ def get_ziplist(name):
 
     return ziplist
 
-def _upload(name, n_zips, pax_version, update_database=True):
+def _upload(name, n_zips, pax_version, detector = "tpc", update_database=True):
     
     # get run name from raw directory
     #name = rawdir.split('/')[-1]
 
+    if detector == "tpc":
+        MV = ""
+    else:
+        MV = "_MV"
+
     # check how many processed zip files we have back 
-    procdir = config.get_processing_dir("login", pax_version) + "/" + name
+    procdir = config.get_processing_dir("login", pax_version) + "/" + name + MV
+    print(procdir)
     n_processed = len(os.listdir(procdir))
     print("Processed files: ",n_processed)
 
@@ -82,7 +88,7 @@ def _upload(name, n_zips, pax_version, update_database=True):
     print("nzips: ", n_zips)
 
     # do we want a fancier query here? Could clean up below slightly then.
-    query = {'detector' : 'tpc',
+    query = {'detector' : detector,
              'name' : name}
     
     API = api()
@@ -111,9 +117,9 @@ def _upload(name, n_zips, pax_version, update_database=True):
     # if we don't have expected number of root files back, tell DB there was an error
     if n_processed != n_zips:
         print("There was an error during processing. Missing root files for these %i zips:" % (n_zips - n_processed))
-        #for zip in get_ziplist(name):
-        #    if not os.path.exists(procdir + "/" + zip.replace(".zip", ".root")):
-        #        print("\t%s" % zip)
+        for zip in get_ziplist(name):
+            if not os.path.exists(procdir + "/" + zip.replace(".zip", ".root")):
+                print("\t%s" % zip)
         updatum["status"] = 'error'
 
     # if all root files present, then perform hadd, checksum, and register to database

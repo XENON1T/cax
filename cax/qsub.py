@@ -77,7 +77,7 @@ def submit_job(script, name='', extra=''):
 
     delete_script(fileobj)
 
-def submit_dag_job(run_number, logdir, outer_dag, inner_dag, outputdir, submitscript, paxversion, json_file):
+def submit_dag_job(run_id, logdir, outer_dag, inner_dag, outputdir, submitscript, paxversion, json_file):
 
     from cax.dag_writer import dag_writer
 
@@ -96,7 +96,7 @@ def submit_dag_job(run_number, logdir, outer_dag, inner_dag, outputdir, submitsc
     # now check if outer dag exists
     if not os.path.isfile(outer_dag):
         print("No OUTER dag file exists, writing one now")
-        DAG = dag_writer([run_number], paxversion, logdir)
+        DAG = dag_writer([run_id], paxversion, logdir)
         DAG.write_outer_dag(outer_dag)
 
     submit_command = ('condor_submit_dag -config /xenon/ershockley/reprocessing/dag_config {script}'.format(script=outer_dag))

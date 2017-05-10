@@ -16,7 +16,7 @@ HOST = os.environ.get("HOSTNAME") if os.environ.get("HOSTNAME") else socket.geth
 DATA_USER_PDC = 'bobau'
 DATA_GROUP_PDC = 'xenon-users'
 
-DETECTOR = "tpc"
+#DETECTOR = "tpc"
 API_URL = "https://xenon1t-daq.lngs.infn.it/runs_api/runs/runs/"
 
 
@@ -202,9 +202,9 @@ def fill_args(args, default_args):
     # used in processing_script() below to assign default values to args not passed to processing_scrit()
     for key, value in default_args.items():
         if key not in args:
-            print('ARGS:', args)
-            print('KEY:', key)
-            print('value', value)
+            #print('ARGS:', args)
+            #print('KEY:', key)
+            #print('value', value)
             args[key] = value
 
 # for midway and tegner

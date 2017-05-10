@@ -11,6 +11,7 @@ import checksumdir
 import json
 import time
 import subprocess
+import re
 #from pymongo import ReturnDocument
 
 from cax import config
@@ -25,9 +26,19 @@ def has_tag(doc, name):
             return True
         return False
 
-def clear_errors(run_number, pax_version):
-    query = {'detector': 'tpc',
-             'number'    : int(run_number),
+def clear_errors(id, pax_version, detector='tpc'):
+
+    if isinstance(id, int):
+        identifier = 'number'
+    elif isinstance(id, str):
+        if detector == 'tpc':
+            print("Warning: is %s the run name?" % id)
+        identifier = 'name'
+    else:
+        raise ValueError("run id is not int or string")
+
+    query = {'detector': detector,
+             identifier   : id,
              "data" : {"$elemMatch" : {"host" : 'login',
                                       "type" : "processed",
                                       "pax_version" : pax_version
@@ -43,7 +54,7 @@ def clear_errors(run_number, pax_version):
 
          # if query returns northing, there is no error
     if doc is None:
-        print("no errors need clearing")
+        #print("no errors need clearing")
         return
 
     # if there is an error, remove that entry from database
@@ -55,11 +66,21 @@ def clear_errors(run_number, pax_version):
                 parameters = entry
 
         if parameters is not None:
-            print("Clearing errors for run %s" %run_number)
+            print("Clearing errors for run %s" %id)
             API.remove_location(doc["_id"], parameters)
             time.sleep(0.5)
         else:
             print("Could not find relevant entry in doc")
+
+def is_on_stash(rucio_name):
+    # checks if run with rucio_name is on stash
+    out = subprocess.Popen(["rucio", "list-rules", rucio_name], stdout=subprocess.PIPE).stdout.read()
+    out = out.decode("utf-8").split("\n")
+    for line in out:
+        line = re.sub(' +', ' ', line).split(" ")
+        if len(line) > 4 and line[4] == "UC_OSG_USERDISK" and line[3][:2] == "OK":
+            return True
+    return False
 
 
 def rucio_AddRule(dataset):
@@ -78,15 +99,23 @@ def rucio_AddRule(dataset):
     #time.sleep(20*60)
     return stdout_value, stderr_value
              
-def pre_script(run_number, pax_version, update_database=True):
+def pre_script(run_id, pax_version, detector = 'tpc'):
 
     # first clear any relevant errors
-    
-    clear_errors(run_number, pax_version)
+    if detector == 'tpc':
+        run_id = int(run_id)
+        identifier = 'number'
+
+    elif detector == 'muon_veto':
+        identifier = 'name'
+    else:
+        raise ValueError("Detector %s does not exist" % detector)
+
+    clear_errors(run_id, pax_version, detector)
     
     # query that checks if it's okay that we process this run
-    query = {'detector': 'tpc',
-             'number'    : int(run_number),
+    query = {'detector': detector,
+             identifier    : run_id,
              "data" : {"$not" : {"$elemMatch" : {"host" : 'login',
                                                  "type" : "processed",
                                                  "pax_version" : pax_version
@@ -100,6 +129,9 @@ def pre_script(run_number, pax_version, update_database=True):
              'processor.DEFAULT.gains' : {'$exists' : True},
              'processor.DEFAULT.electron_lifetime_liquid' : {'$exists' : True},
              'processor.DEFAULT.drift_velocity_liquid' : {'$exists' : True},
+             'processor.correction_versions' : {'$exists' : True},
+             'processor.WaveformSumulator' : {'$exists' : True},
+             'processor.NeuralNet': {'$exists': True},
              'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess'}}}
              }
     
@@ -114,7 +146,7 @@ def pre_script(run_number, pax_version, update_database=True):
 
     # if run doesn't satisfy above query, we don't process
     if doc is None:
-        print("Run %s is not suitable for OSG processing. Check run doc" % run_number)
+        print("Run %s is not suitable for OSG processing. Check run doc" % id)
         sys.exit(1)
 
 
@@ -146,15 +178,16 @@ def pre_script(run_number, pax_version, update_database=True):
             #    print("RUCIO: ", out)
             #time.sleep(20*60)
 
-    if len(doc["processor"]["DEFAULT"]["gains"]) == 254:
-        print("Adding gains for acquisition monitor")
-        doc["processor"]["DEFAULT"]["gains"] += [2.5e6 / 31.25] + [1e5] * 5
-
-    print("gain count: ",len(doc["processor"]["DEFAULT"]["gains"]))
+#    if len(doc["processor"]["DEFAULT"]["gains"]) == 254:
+#        print("Adding gains for acquisition monitor")
+#        doc["processor"]["DEFAULT"]["gains"] += [2.5e6 / 31.25] + [1e5] * 5
 
     name = doc["name"]
     
     procdir = config.get_processing_dir("login", pax_version) + "/" + name
+
+    if detector == 'muon_veto':
+        procdir = procdir + "_MV"
 
     datum = {'host'          : 'login',
              'type'          : 'processed',
@@ -165,8 +198,12 @@ def pre_script(run_number, pax_version, update_database=True):
              'creation_time' : datetime.datetime.utcnow(),
              'creation_place': 'OSG'}
 
+    if detector == 'tpc':
+        json_file = "/xenon/ershockley/jsons/" + name + ".json"
 
-    json_file = "/xenon/ershockley/jsons/" + str(name) + ".json"
+    elif detector == 'muon_veto':
+        json_file = "/xenon/ershockley/jsons/" + name + "_MV.json"
+
     with open(json_file, "w") as f:
         json.dump(doc, f)
     

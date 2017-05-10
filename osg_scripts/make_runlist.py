@@ -13,10 +13,10 @@ def make_runlist():
     collection = db['runs_new']
     
     query = {"detector" : "tpc",
-             "tags.name" : "_sciencerun0"}
-             #"$or" : [{"tags.name" : "_sciencerun0"},{"tags.name" : "_sciencerun0_candidate"}]}
-             #"source.type" : "none"}
-             #"source.type" : {"$ne" : "LED"}}
+             "number" : {"$gt" : 6730},
+             "processor.correction_versions" : {"$exists" : True},
+             "trigger.events_built" : {"$gt" : 0}
+             }
 
     version = 'v' + __version__
 
@@ -49,9 +49,9 @@ def make_runlist():
             bad.append(run['number'])
             continue
 
-        if run["trigger"]["events_built"] < 1:
-            bad.append(run['number'])
-            continue
+#        if run["trigger"]["events_built"] < 1:
+#            bad.append(run['number'])
+#            continue
 
         for d in run['data']:
             if d['type'] == 'processed' and 'pax_version' in d:

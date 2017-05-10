@@ -45,7 +45,7 @@ def main():
         print(__version__)
         exit()
 
-    print(args.run, config.get_hostname())
+    #print(args.run, config.get_hostname())
 
     if args.host:
         config.HOST = args.host

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-## takes 10 arguments: ##
+## takes 11 arguments: ##
 
   # 1 - name of run being processed
   # 2 - uri of input raw data file
@@ -12,6 +12,7 @@
   # 8 - disable_updates  
   # 9 - json file
   # 10 - on rucio? (True or False)
+  # 11 - rucio rse
 
 echo $@
 echo
@@ -56,6 +57,9 @@ start_dir=$PWD
 echo "start dir is $start_dir. Here's whats inside"
 ls -l *user_cert*
 ls -l  *.json
+
+json_file=$(ls *json)
+
 echo ""
 if [ "${OSG_WN_TMP}" == "" ];
 then
@@ -89,7 +93,7 @@ echo ${10}
 
 if [[ ${10} == 'True' ]]; then
 
-    sleep $[ ( $RANDOM % 300 )  + 1 ]s
+    sleep $[ ( $RANDOM % 2000 )  + 1 ]s
     echo "Performing rucio download"
     unset X509_USER_KEY
     unset X509_USER_CERT
@@ -100,7 +104,14 @@ if [[ ${10} == 'True' ]]; then
 
     env | grep X509
 
-    rucio -T 18000 download $2 --no-subdir --dir ${rawdata_path} --rse UC_OSG_USERDISK
+    if [[ -z ${11} ]]; then
+	echo "rucio -T 18000 download $2 --no-subdir --dir ${rawdata_path} --rse UC_OSG_USERDISK"
+	rucio -T 18000 download $2 --no-subdir --dir ${rawdata_path} --rse UC_OSG_USERDISK
+
+    else 
+	echo "rucio -T 18000 download $2 --no-subdir --dir ${rawdata_path} --rse ${11}"
+	rucio -T 18000 download $2 --no-subdir --dir ${rawdata_path} --rse ${11}
+    fi
     #rucio --certificate ${start_dir}/user_cert download $2 --no-subdir --dir ${rawdata_path}
 fi
 
@@ -133,8 +144,8 @@ echo 'Processing...'
 
 stash_loc=$6
 
-echo "cax-process $1 $rawdata_path $3 $4 output $7 $8 $start_dir/$1.json" 
-cax-process $1 $rawdata_path $3 $4 output $7 $8 $start_dir/$1.json
+echo "cax-process $1 $rawdata_path $3 $4 output $7 $8 $start_dir/${json_file}" 
+cax-process $1 $rawdata_path $3 $4 output $7 $8 ${start_dir}/${json_file}
 
 if [[ $? -ne 0 ]];
 then 
@@ -145,7 +156,7 @@ fi
 pwd
 ls output
 echo ${start_dir}/output/$1.root
-out_file=${start_dir}/output/$1.root
+#out_file=${start_dir}/output/$1.root
 source deactivate
 
 source /cvmfs/oasis.opensciencegrid.org/osg-software/osg-wn-client/3.3/current/el6-x86_64/setup.sh
@@ -168,11 +179,11 @@ fi
 
 echo "---- Test line ----"
 echo "Processing done, here's what's inside the output directory:"
-ls ${start_dir}/output/
-
+outfile=$(ls ${start_dir}/output/)
+echo "outfile: $outfile"
 echo "Arg 6: $6"
-echo "time gfal-copy --cert ${start_dir}/user_cert -T 36000 -t 36000 -f -p --checksum md5 file://${out_file} ${stash_loc}"
-time gfal-copy --cert ${start_dir}/user_cert -T 36000 -t 36000 -f -p --checksum md5 file://${out_file} ${stash_loc} 
+echo "time gfal-copy --cert ${outfile} -T 36000 -t 36000 -f -p --checksum md5 file://${out_file} ${stash_loc}"
+time gfal-copy --cert ${start_dir}/user_cert -T 36000 -t 36000 -f -p --checksum md5 file://${start_dir}/output/${outfile} ${stash_loc} 
 
 if [[ $? -ne 0 ]];
 then 
