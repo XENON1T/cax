@@ -101,6 +101,10 @@ def main():
         corrections.AddElectronLifetime(),  # Add electron lifetime to run, which is just a function of calendar time
         corrections.AddGains(), #  Adds gains to a run, where this is computed using slow control information
         corrections.AddDriftVelocity(), #  Adds drift velocity to the run, also computed from slow control info
+	corrections.SetS2xyMap(),
+        corrections.SetLightCollectionEfficiency(),
+        corrections.SetFieldDistortion(),
+        corrections.SetNeuralNetwork(),
         #corrections.AddSlowControlInformation(),  
         data_mover.CopyPush(),  # Upload data through e.g. scp or gridftp to this location where cax running
         #tsm_mover.AddTSMChecksum(), # Add forgotten Checksum for runDB for TSM client.
