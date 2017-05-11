@@ -166,7 +166,7 @@ class AddGains(CorrectionBase):
 
 class SetNeuralNetwork(CorrectionBase):
     '''Set the proper neural network file according to run number'''
-    key = "processor.NeuralNet.PosRecNeuralNet.neural_net_file"
+    key = "processor.NeuralNet|PosRecNeuralNet.neural_net_file"
     collection_name = 'neural_network'
     
     def evaluate(self):
