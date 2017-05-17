@@ -675,7 +675,9 @@ class CopyBase(Task):
         #Make sure that temp. download directory exists:
         if not os.path.exists(test_download):
           os.makedirs(test_download)
+        logging.info("Start the re-download to %s", test_download)
         tsm_download_result = self.tsm.download( raw_data_tsm + raw_data_filename, test_download, raw_data_filename)
+        logging.info("Finished the re-download")
         if os.path.exists( raw_data_tsm + raw_data_filename ) == False:
           logging.info("Download to %s failed. Checksum will not match", test_download)
 
