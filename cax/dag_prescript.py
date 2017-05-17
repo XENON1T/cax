@@ -130,8 +130,8 @@ def pre_script(run_id, pax_version, detector = 'tpc'):
              'processor.DEFAULT.electron_lifetime_liquid' : {'$exists' : True},
              'processor.DEFAULT.drift_velocity_liquid' : {'$exists' : True},
              'processor.correction_versions' : {'$exists' : True},
-             'processor.WaveformSumulator' : {'$exists' : True},
-             'processor.NeuralNet': {'$exists': True},
+             'processor.WaveformSimulator' : {'$exists' : True},
+             'processor.NeuralNet|PosRecNeuralNet': {'$exists': True},
              'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess'}}}
              }
     
@@ -203,9 +203,6 @@ def pre_script(run_id, pax_version, detector = 'tpc'):
 
     elif detector == 'muon_veto':
         json_file = "/xenon/ershockley/jsons/" + name + "_MV.json"
-
-    with open(json_file, "w") as f:
-        json.dump(doc, f)
     
     API.add_location(doc['_id'], datum)
     print('new entry added to database')

@@ -40,7 +40,7 @@ def _process(name, in_location, host, pax_version,
         print("This pax version is %s, not %s. Abort processing." % ("v" + pax.__version__, pax_version))
         sys.exit(1)
     # Import pax so can process the data
-    from pax import core, parallel, configuration
+    from pax import core, parallel, configuration, fix_sections_from_mongo
 
     # Grab the Run DB if not passing json so we can query it
     if json_file == "":
@@ -126,6 +126,7 @@ def _process(name, in_location, host, pax_version,
 
     mongo_config = doc['processor']
     config_dict = configuration.combine_configs(mongo_config,config_dict)
+    config_dict = fix_sections_from_mongo(config_dict)
 
     # Add run number and run name to the config_dict
     config_dict.setdefault('DEFAULT', {})
@@ -213,8 +214,8 @@ class ProcessBatchQueue(Task):
                  'processor.DEFAULT.electron_lifetime_liquid' : {'$exists' : True},
                  'processor.DEFAULT.drift_velocity_liquid' : {'$exists' : True},
                  'processor.correction_versions': {'$exists': True},
-                 'processor.WaveformSumulator': {'$exists': True},
-                 'processor.NeuralNet': {'$exists': True},
+                 'processor.WaveformSimulator': {'$exists': True},
+                 'processor.NeuralNet|PosRecNeuralNet': {'$exists': True},
                  'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess'}}}
                  }
 
@@ -398,9 +399,6 @@ class ProcessBatchQueue(Task):
                      'checksum'      : None,
                      'creation_time' : datetime.datetime.utcnow(),
                      'creation_place': 'OSG'}
-
-            with open(json_file, "w") as f:
-                json.dump(self.run_doc, f, default=json_util.default)
 
             self.submit(out_location, ncpus, disable_updates, json_file)
 

@@ -80,7 +80,9 @@ sleep 2
             json_file = "/xenon/ershockley/jsons/" + name + ".json"
 
         with open(json_file, "w") as f:
-            json.dump(doc, f)
+            # fix doc so that all '|' become '.' in json
+            fixed_doc = self.FixKeys(doc)
+            json.dump(fixed_doc, f)
             
         return json_file
         
@@ -471,3 +473,11 @@ queue 1
             if len(line) > 4 and line[4] == "UC_OSG_USERDISK" and line[3][:2] == "OK":
                 return True
         return False
+
+    def FixKeys(self, dictionary):
+        for key, value in dictionary.items():
+            if type(value) in [type(dict())]:
+                dictionary[key] = self.FixKeys(value)
+            if '|' in key:
+                dictionary[key.replace('|', '.')] = dictionary.pop(key)
+        return dictionary

@@ -72,16 +72,16 @@ fi
 # submit massive-cax job to verify transfer
 if [[ $6 == 'tpc' ]]; then
     echo "Submitting massive cax job on midway for tpc run $3" >> $post_log 
-    echo "ssh mklinton@midway-login1.rcc.uchicago.edu '/project/lgrandi/general_scripts/verify_stash_transfers.sh $3 $2 $did $6'" >> $post_log 2>&1
-    ssh mklinton@midway-login1.rcc.uchicago.edu "/project/lgrandi/general_scripts/verify_stash_transfers.sh $3 $2 $did $6" >> $post_log 2>&1
+    echo "ssh mklinton@midway2-login1.rcc.uchicago.edu '/project/lgrandi/general_scripts/verify_stash_transfers.sh $3 $2 $did $6'" >> $post_log 2>&1
+    ssh mklinton@midway2-login1.rcc.uchicago.edu "/project/lgrandi/general_scripts/verify_stash_transfers.sh $3 $2 $did $6" >> $post_log 2>&1
 
     ex=$?
 fi
 
 if [[ $6 == 'muon_veto' ]]; then
     echo "Submitting massive cax job on midway for MV run $1" >> $post_log
-    echo "ssh mklinton@midway-login1.rcc.uchicago.edu '/project/lgrandi/general_scripts/verify_stash_transfers.sh $1 $2 $did'" >> $post_log 2>&1
-    ssh mklinton@midway-login1.rcc.uchicago.edu "/project/lgrandi/general_scripts/verify_stash_transfers.sh $1 $2 $did" >> $post_log 2>&1
+    echo "ssh mklinton@midway2-login1.rcc.uchicago.edu '/project/lgrandi/general_scripts/verify_stash_transfers.sh $1 $2 $did'" >> $post_log 2>&1
+    ssh mklinton@midway2-login1.rcc.uchicago.edu "/project/lgrandi/general_scripts/verify_stash_transfers.sh $1 $2 $did" >> $post_log 2>&1
 
     ex=$?
 fi

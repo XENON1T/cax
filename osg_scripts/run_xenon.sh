@@ -93,7 +93,7 @@ echo ${10}
 
 if [[ ${10} == 'True' ]]; then
 
-    sleep $[ ( $RANDOM % 2000 )  + 1 ]s
+    sleep $[ ( $RANDOM % 1200 )  + 1 ]s
     echo "Performing rucio download"
     unset X509_USER_KEY
     unset X509_USER_CERT
@@ -106,22 +106,25 @@ if [[ ${10} == 'True' ]]; then
 
     if [[ -z ${11} ]]; then
 	echo "rucio -T 18000 download $2 --no-subdir --dir ${rawdata_path} --rse UC_OSG_USERDISK"
-	rucio -T 18000 download $2 --no-subdir --dir ${rawdata_path} --rse UC_OSG_USERDISK
+	download="rucio -T 18000 download $2 --no-subdir --dir ${rawdata_path} --rse UC_OSG_USERDISK"
+	#rucio -T 18000 download $2 --no-subdir --dir ${rawdata_path} --rse UC_OSG_USERDISK
 
     else 
 	echo "rucio -T 18000 download $2 --no-subdir --dir ${rawdata_path} --rse ${11}"
-	rucio -T 18000 download $2 --no-subdir --dir ${rawdata_path} --rse ${11}
+	download="rucio -T 18000 download $2 --no-subdir --dir ${rawdata_path} --rse ${11}"
     fi
     #rucio --certificate ${start_dir}/user_cert download $2 --no-subdir --dir ${rawdata_path}
 fi
 
 if [[ ${10} == 'False' ]]; then 
-    sleep $[ ( $RANDOM % 600 )  + 1 ]s
+    #sleep $[ ( $RANDOM % 600 )  + 1 ]s
     echo "Performing gfal copy"
-
-    (time gfal-copy -v -f -p -t 3600 -T 3600 -K md5 --cert ${start_dir}/user_cert $2 file://${rawdata_path}) || (sleep 30s && time gfal-copy -v -f -p -t 3600 -T 3600 -K md5 --cert ${start_dir}/user_cert $2 file://${rawdata_path})
+    download="gfal-copy -v -f -p -t 3600 -T 3600 -K md5 --cert ${start_dir}/user_cert $2 file://${rawdata_path}"
 
 fi
+# perform the download
+echo "($download) || (sleep 60s && $download) || (sleep 120s && $download)"
+($download) || (sleep $[ ( $RANDOM % 60 )  + 1 ]s && $download) || (sleep $[ ( $RANDOM % 120 )  + 1 ]s && $download)  || exit 1
 
 export PATH=/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/bin:$PATH
 cd /cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/envs/pax_$4_OSG/
