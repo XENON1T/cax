@@ -551,6 +551,27 @@ class CopyBase(Task):
 
         logging.info('Tape Backup to PDC STOCKHOLM')
         print( datum, destination, method, option_type)
+        
+        logging.debug("Notifying run database")
+        datum_new = {'type'         : datum['type'],
+                     'host'         : destination,
+                     'status'       : 'transferring',
+                     'location'     : "n/a",
+                     'checksum'     : None,
+                     'creation_time': datetime.datetime.utcnow(),
+                     }
+        logging.info("new entry for rundb: %s", datum_new )
+
+        if config.DATABASE_LOG == True:
+            result = self.collection.update_one({'_id': self.run_doc['_id'],
+                                                 },
+                                   {'$push': {'data': datum_new}})
+
+            if result.matched_count == 0:
+                self.log.error("Race condition!  Could not copy because another "
+                               "process seemed to already start.")
+                return
+        
 
         raw_data_location = datum['location']
         raw_data_filename = datum['location'].split('/')[-1]
@@ -578,6 +599,16 @@ class CopyBase(Task):
             for i_folders in list_folders:
               logging.info("  <> %s", i_folders)
             logging.info("Check the error(s) and start again")
+          
+            if config.DATABASE_LOG:
+              self.collection.update({'_id' : self.run_doc['_id'],
+                                  'data': {
+                                        '$elemMatch': datum_new}},
+                                   {'$set': {'data.$.status': "error",
+                                             'data.$.location': "n/a",
+                                             'data.$.checksum': "n/a",
+                                             }
+                                   })
           return
         else:
           logging.info("Pre-test of %s counts %s files for tape upload [succcessful]", raw_data_path+raw_data_filename, len(list_files))
@@ -595,6 +626,15 @@ class CopyBase(Task):
         if len(double_counts) > 0:
           logging.info("Pre checksum test: [failed]")
           logging.info("There are two or more identical checksums observed in %s", os.path.join(raw_data_path, raw_data_filename))
+          if config.DATABASE_LOG:
+            self.collection.update({'_id' : self.run_doc['_id'],
+                                  'data': {
+                                        '$elemMatch': datum_new}},
+                                   {'$set': {'data.$.status': "error",
+                                             'data.$.location': "n/a",
+                                             'data.$.checksum': "n/a",
+                                             }
+                                   })
           return
         else:
           logging.info("Pre checksum test: [succcessful]")
@@ -602,27 +642,36 @@ class CopyBase(Task):
         #Check first if everything is fine with the dsmc client
         if self.tsm.check_client_installation() == False:
           logging.info("There is a problem with your dsmc client")
+          if config.DATABASE_LOG:
+            self.collection.update({'_id' : self.run_doc['_id'],
+                                  'data': {
+                                        '$elemMatch': datum_new}},
+                                   {'$set': {'data.$.status': "error",
+                                             'data.$.location': "n/a",
+                                             'data.$.checksum': "n/a",
+                                             }
+                                   })
           return        
 
-        self.log.debug("Notifying run database")
-        datum_new = {'type'         : datum['type'],
-                     'host'         : destination,
-                     'status'       : 'transferring',
-                     'location'     : "n/a",
-                     'checksum'     : None,
-                     'creation_time': datetime.datetime.utcnow(),
-                     }
-        logging.info("new entry for rundb: %s", datum_new )
+        #logging.debug("Notifying run database")
+        #datum_new = {'type'         : datum['type'],
+                     #'host'         : destination,
+                     #'status'       : 'transferring',
+                     #'location'     : "n/a",
+                     #'checksum'     : None,
+                     #'creation_time': datetime.datetime.utcnow(),
+                     #}
+        #logging.info("new entry for rundb: %s", datum_new )
 
-        if config.DATABASE_LOG == True:
-            result = self.collection.update_one({'_id': self.run_doc['_id'],
-                                                 },
-                                   {'$push': {'data': datum_new}})
+        #if config.DATABASE_LOG == True:
+            #result = self.collection.update_one({'_id': self.run_doc['_id'],
+                                                 #},
+                                   #{'$push': {'data': datum_new}})
 
-            if result.matched_count == 0:
-                self.log.error("Race condition!  Could not copy because another "
-                               "process seemed to already start.")
-                return
+            #if result.matched_count == 0:
+                #self.log.error("Race condition!  Could not copy because another "
+                               #"process seemed to already start.")
+                #return
 
         logging.info("Start tape upload")
 
@@ -678,8 +727,10 @@ class CopyBase(Task):
         logging.info("Start the re-download to %s", test_download)
         tsm_download_result = self.tsm.download( raw_data_tsm + raw_data_filename, test_download, raw_data_filename)
         logging.info("Finished the re-download")
-        if os.path.exists( raw_data_tsm + raw_data_filename ) == False:
-          logging.info("Download to %s failed. Checksum will not match", test_download)
+        if os.path.exists( test_download + "/" + raw_data_filename ) == False:
+          logging.info("Download to %s failed. Checksum will not match", test_download+ "/" +raw_data_filename)          
+        else:
+          logging.info("Download to %s succcessful. Folder exists", test_download + "/" +raw_data_filename)  
 
         checksum_after = self.tsm.get_checksum_folder( test_download  + "/" + raw_data_filename )
         logging.info("Summary of the download for checksum comparison:")
@@ -706,7 +757,8 @@ class CopyBase(Task):
         ##Delete check folder
         shutil.rmtree(raw_data_tsm + raw_data_filename)
         shutil.rmtree(test_download + "/" + raw_data_filename)
-
+        logging.info("Finished to delete temp. directories: %s and %s", raw_data_tsm + raw_data_filename, test_download + "/" + raw_data_filename)
+        
         if config.DATABASE_LOG:
           self.collection.update({'_id' : self.run_doc['_id'],
                                   'data': {
@@ -716,7 +768,8 @@ class CopyBase(Task):
                                              'data.$.checksum': checksum_after,
                                              }
                                    })
-
+          logging.info("Update database")
+        
         return 0
 
     def copy_handshake(self, datum, destination, method, option_type, data_type):
