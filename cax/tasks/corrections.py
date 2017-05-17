@@ -1,16 +1,8 @@
 """Add electron lifetime
 """
-import datetime
-from collections import defaultdict
-
-import numpy as np
-import os
 import sympy
-import time
 import pytz
-import requests
 import hax
-from hax import slow_control
 from pax import configuration, units
 from sympy.parsing.sympy_parser import parse_expr
 
@@ -21,79 +13,96 @@ PAX_CONFIG = configuration.load_configuration('XENON1T')
 PAX_CONFIG_MV = configuration.load_configuration('XENON1T_MV')
 
 class CorrectionBase(Task):
-    "Derive correction"
+    """Base class for corrections.
 
-    collection_name = 'purity'
+    Child classes can set the following class attributes:
+        key:  run doc setting this correction will override (usually processor.XXX,
+                                                             you can leave off processor if you want)
+        collection_name: collection in the runs db where the correction values are stored.
+
+    We expect documents in the correction contain:
+      - calculation_time: timestamp, indicating when YOU made this correction setting
+    And optionally also:
+      - version: string indicating correction version. If not given, timestamp-based version will be used.
+      - function: sympy expression, passed to sympy.evaluate then stored in the 'function' instance attribute
+                  NOTE: if you can't express your correction as a sympy function you can add a custom handling
+                  by overriding the 'evaluate' method with whatever you need
+    We keep track of the correction versions in the run doc, in processor.correction_versions.
+    This is a subsection of processor, so the correction versions used in processing will be stored in the processor's
+    metadata.
+    """
+    key = 'not_set'
+    collection_name = 'not_set'
+    version = 'not_set'
 
     def __init__(self):
         self.correction_collection = config.mongo_collection(self.collection_name)
+        if self.key == 'not_set':
+            raise ValueError("You must set a correction key attribute")
+        if self.collection_name == 'not_set':
+            raise ValueError("You must set a correction collection_name attribute")
         Task.__init__(self)
 
-    def evaluate(self):
-        raise NotImplementedError()
-
     def each_run(self):
-        if self.key == 'slow_control' and 'slow_control' in self.run_doc:
-            return
-        else:
-            short_key = self.key.split('.')[-1]
-            if 'processor' in self.run_doc and \
-                  'DEFAULT' in self.run_doc['processor'] and \
-                   short_key in self.run_doc['processor']['DEFAULT']:
-                return
-
         if 'end' not in self.run_doc:
+            # Run is still in progress, don't compute the correction
             return
-
-        self.get_correction()
 
         if not config.DATABASE_LOG:
+            # This setting apparently means we should do nothing?
             return
 
-        # Update run database
+        # Fetch the latest correction settings.
+        # We can't do this in init: cax is a long-running application, and corrections may change while it is running.
+        self.correction_doc = cdoc = self.correction_collection.find_one(sort=(('calculation_time', -1), ))
+        self.version = cdoc.get('version', str(cdoc['calculation_time']))
+
+        # Get the correction sympy function, if one is set
+        if 'function' in cdoc:
+            self.function = parse_expr(cdoc['function'])
+
+        # Check if this correction's version correction has already been applied. If so, skip this run.
+        classname = self.__class__.__name__
+        this_run_version = self.run_doc.get('processor', {}).get('correction_versions', {}).get(classname, 'not_set')
+        if this_run_version == self.version:
+            # No change was made in the correction, nothing to do for this run.
+            return
+
+        # We have to (re)compute the correction setting value. This is done in the evaluate method.
+        # There used to be an extra check for self.key: {'$exists': False} in the query, but now that we allow
+        # automatic updates of correction values by cax this is no longer appropriate.
         try:
-            self.collection.find_and_modify({'_id'   : self.run_doc['_id'],
-                                             self.key: {'$exists': False}},
-                                            {'$set': {self.key: self.evaluate()}})
+            self.collection.find_one_and_update({'_id': self.run_doc['_id']},
+                                                {'$set': {self.key: self.evaluate(),
+                                                          'processor.correction_versions.' + classname: self.version}})
         except RuntimeError as e:
             self.log.exception(e)
 
-    def get_correction(self):
-        # Fetch the latest electron lifetime fit
-        doc = self.correction_collection.find_one(sort=(('calculation_time',
-                                                         -1),))
-        # Get fit function
-        self.function = parse_expr(doc['function'])
+    def evaluate(self):
+        raise NotImplementedError
 
-    def get_time_range(self):
-        if self.run_doc['end'] < datetime.datetime(2016, 7, 20):
-            dt = datetime.timedelta(minutes=30)
-        else:
-            dt = datetime.timedelta(minutes=3)
-
-        return (self.run_doc['start'] - dt,
-                self.run_doc['end'] + dt)
+    def evaluate_function(self, **kwargs):
+        """Evaluate the sympy function of this correction with the given kwargs"""
+        return self.function.evalf(subs=kwargs)
 
 
 class AddElectronLifetime(CorrectionBase):
+    """Insert the electron lifetime appropriate to each run"""
     key = 'processor.DEFAULT.electron_lifetime_liquid'
-    correction_units = units.us
+    collection_name = 'purity'
 
     def evaluate(self):
-        # Compute lifetime from this function on this dataset
-        subs = {"t": self.run_doc['start'].timestamp()}
-        lifetime = self.function.evalf(subs=subs)
-        lifetime = float(lifetime)  # Convert away from Sympy type.
+        t = sympy.symbols('t', integer=True)
+        lifetime = self.function.evalf(subs={t: self.run_doc['start'].timestamp()})
+        lifetime = float(lifetime)      # Convert away from Sympy type.
+        self.log.info("Run %d: calculated lifetime of %d us" % (self.run_doc['number'], lifetime))
 
-        run_number = self.run_doc['number']
-        self.log.info("Run %d: calculated lifetime of %d us" % (run_number,
-                                                                lifetime))
-        return lifetime * self.correction_units
+        return lifetime * units.us
 
 
 class AddDriftVelocity(CorrectionBase):
     key = 'processor.DEFAULT.drift_velocity_liquid'
-    correction_units = units.km / units.s
+    collection_name = 'drift_velocity'
 
     def evaluate(self):
         run_number = self.run_doc['number']
@@ -105,31 +114,16 @@ class AddDriftVelocity(CorrectionBase):
         cathode_kv = hax.slow_control.get('XE1T.GEN_HEINZVMON.PI', run_number).mean()
 
         # Get the drift velocity
-        value = self.vd(cathode_kv)
+        value = float(self.evaluate_function(v=cathode_kv))
 
         self.log.info("Run %d: calculated drift velocity of %0.3f km/sec" % (run_number, value))
-        return value * self.correction_units
-
-    @staticmethod
-    def vd(cathode_v):
-        """Return the drift velocity in XENON1T in km/sec for a given cathode voltage in kV
-        Power-law fit to the datapoints in xenon:xenon1t:aalbers:drift_and_diffusion
-
-        When we're well beyond the range of the fit, we will take the value to be constant (to avoid crazy things like
-        nan or negative values).
-        """
-        cathode_v = np.asarray(cathode_v).copy()
-        cathode_v = np.clip(cathode_v, 7, 20)
-        return (42.2266 * cathode_v - 268.6557)**0.067018
+        return value * units.km / units.s
 
 
 class AddGains(CorrectionBase):
-    """Copy data to here
-
-    If data exists at a reachable host but not here, pull it.
-    """
-    collection_name = 'gains'
+    """Add PMT gains to each run"""
     key = 'processor.DEFAULT.gains'
+    collection_name = 'gains'
     correction_units = units.V  # should be 1
 
     def evaluate(self):
@@ -159,24 +153,61 @@ class AddGains(CorrectionBase):
         # Minimal init of hax. It's ok if hax is inited again with different settings before or after this.
         hax.init(pax_version_policy='loose', main_data_paths=[])
 
-        # Grab voltages from SC
-        self.log.info("Getting voltages at %d" % timestamp)
-        voltages = hax.slow_control.get(['PMT %03d' % x for x in range(254)],
-                                         self.run_doc['number']).median().values
-
-        # Resize for acquisition monitor, where 0 voltage here
-        voltages.resize(len(PAX_CONFIG['DEFAULT']['pmts']))
-
         gains = []
-        for i, voltage in enumerate(voltages):
-            self.log.debug("Deriving HV for PMT %d" % i)
-            gain = self.function.evalf(subs={V  : float(voltage),
-                                             pmt: i,
-                                             t : self.run_doc['start'].timestamp(),
-                                             't0' : 0
-                                            })
+        for i in range(0, len(PAX_CONFIG['DEFAULT']['pmts'])):
+            gain = self.function.evalf(subs={pmt: i,
+                                             t: self.run_doc['start'].timestamp(),
+                                             't0': 0
+                                       })
             gains.append(float(gain) * self.correction_units)
 
         return gains
 
 
+class SetNeuralNetwork(CorrectionBase):
+    '''Set the proper neural network file according to run number'''
+    key = "processor.NeuralNet|PosRecNeuralNet.neural_net_file"
+    collection_name = 'neural_network'
+    
+    def evaluate(self):
+        number = self.run_doc['number']
+        for rdef in self.correction_doc['correction']:
+            if number >= rdef['min'] and number < rdef['max']:
+                return rdef['value']
+        return None
+
+class SetFieldDistortion(CorrectionBase):
+	'''Set the proper field distortion map according to run number'''
+	key = 'processor.WaveformSimulator.rz_position_distortion_map'
+	collection_name = 'field_distortion'
+
+	def evaluate(self):
+		number = self.run_doc['number']
+		for rdef in self.correction_doc['correction']:
+			if number >= rdef['min'] and number < rdef['max']:
+				return rdef['value']
+		return None
+
+class SetLightCollectionEfficiency(CorrectionBase):
+	'''Set the proper LCE map according to run number'''
+	key = 'processor.WaveformSimulator.s1_light_yield_map'
+	collection_name = 'light_collection_efficiency'
+
+	def evaluate(self):
+		number = self.run_doc['number']
+		for rdef in self.correction_doc['correction']:
+			if number >= rdef['min'] and number < rdef['max']:
+				return rdef['value']
+		return None
+
+class SetS2xyMap(CorrectionBase):
+    """Set the proper S2 x, y map according to run number"""
+    key = 'processor.WaveformSimulator.s2_light_yield_map'
+    collection_name = 's2_xy_map'
+    
+    def evaluate(self):
+        number = self.run_doc['number']
+        for rdef in self.correction_doc['correction']:
+            if number >= rdef['min'] and number < rdef['max']:
+                return rdef['value']
+        return None

@@ -3,7 +3,7 @@
 from setuptools import setup, find_packages
 
 PROJECT = 'cax'
-VERSION = '5.1.0'
+VERSION = '5.2.1'
 
 with open('README.rst') as readme_file:
     readme = readme_file.read()
@@ -13,11 +13,11 @@ with open('HISTORY.rst') as history_file:
 
 requirements = [
     'checksumdir', 'scp', 'pagerduty-api', 'pymongo', 'paramiko',
-    'numpy', 'sympy', 'pytz', 
+    'numpy', 'sympy', 'pytz',
 ]
 
 test_requirements = [
-    # TODO: put package test requirements here
+    'pytest', 'mongomock',
 ]
 
 setup(
@@ -49,6 +49,7 @@ setup(
     ],
     test_suite='tests',
     tests_require=test_requirements,
+    setup_requires=['pytest-runner'],
     entry_points={
         'console_scripts': [
             'cax = cax.main:main',
