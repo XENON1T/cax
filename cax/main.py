@@ -4,6 +4,7 @@ import os
 import datetime
 import time
 import subprocess
+import json
 
 from cax import __version__
 from cax import config, qsub
@@ -101,14 +102,10 @@ def main():
         corrections.AddElectronLifetime(),  # Add electron lifetime to run, which is just a function of calendar time
         corrections.AddGains(), #  Adds gains to a run, where this is computed using slow control information
         corrections.AddDriftVelocity(), #  Adds drift velocity to the run, also computed from slow control info
-        corrections.SetS2xyMap(),
-        corrections.SetLightCollectionEfficiency(),
-        corrections.SetFieldDistortion(),
-        corrections.SetNeuralNetwork(),
-        #corrections.AddSlowControlInformation(),
+        #corrections.AddSlowControlInformation(),  
         data_mover.CopyPush(),  # Upload data through e.g. scp or gridftp to this location where cax running
         #tsm_mover.AddTSMChecksum(), # Add forgotten Checksum for runDB for TSM client.
-        checksum.CompareChecksums(),  # See if local data corrupted
+	checksum.CompareChecksums(),  # See if local data corrupted
         clear.RetryStalledTransfer(),  # If data transferring e.g. 48 hours, probably cax crashed so delete then retry
         clear.RetryBadChecksumTransfer(),  # If bad checksum for local data and can fetch from somewhere else, delete our copy
 
@@ -258,17 +255,17 @@ def massive():
     while True: # yeah yeah
         query = {}
 
-        t1 = datetime.datetime.utcnow()
-        if t1 - t0 < dt:
-            logging.info("Iterative mode")
+        #t1 = datetime.datetime.utcnow()
+        #if t1 - t0 < dt:
+        #    logging.info("Iterative mode")
 
-            # See if there is something to do
-            query['start'] = {'$gt' : t0}
+        #    # See if there is something to do
+        #    query['start'] = {'$gt' : t0}
 
-            logging.info(query)
-        else:
-            logging.info("Full mode")
-            t0 = t1
+        #    logging.info(query)
+        #else:
+        #    logging.info("Full mode")
+        #    t0 = t1
 
 
         if args.run:
@@ -594,7 +591,10 @@ def massiveruciax():
                         help="Specify a certain logfile")
     parser.add_argument('--rucio-rule', type=str,
                         dest='config_rule',
-                        help="Load the a rule file") 
+                        help="Load the a rule file")
+    parser.add_argument('--skip-error', action='store_true',
+                        dest='skip_error',
+                        help="Skip all database entries with an error")
     
 
     args = parser.parse_args()
@@ -661,13 +661,18 @@ def massiveruciax():
     config.mongo_password()
     
     #Define additional file to define the rules:
+    #Check if massive ruciax is used to upload or to verify data sets:
+    verfication_only = False
     if args.config_rule:
       abs_config_rule = os.path.abspath( args.config_rule )
       logging.info("Rucio Rule File: %s", abs_config_rule)
       rucio_rule = "--rucio-rule {rulefile}".format( rulefile=abs_config_rule )
+      verfication_only = json.loads(open(abs_config_rule, 'r').read())[0]['verification_only']
     else:
       rucio_rule = ""
-      
+      verfication_only = False
+    
+
     # Establish mongo connection
     collection = config.mongo_collection()
     sort_key = (('start', -1),
@@ -703,8 +708,18 @@ def massiveruciax():
             #See if there is something to do
             query['start'] = {'$gt' : t0}
            
+        #Select specific data sets
+        selection = {"detector": True,
+                     "number" : True,
+                     "data" : True,
+                     "_id" : True,
+                     #"tags" : True,
+                     "name": True}
+
         docs = list(collection.find(query,
-                                    sort=sort_key))
+                                    selection,
+                                    sort=sort_key)
+                                    )
         
         for doc in docs:
             
@@ -718,13 +733,32 @@ def massiveruciax():
             if 'data' not in doc:
               continue
             
+            #Check now if the data field is larger then zero:
+            if len(doc['data']) == 0:
+              continue
+            
             #Double check that rucio uploads are only triggered when data exists at the host
             host_data = False
+            rucio_data = False
+            host_data_error = False
             for idoc in doc['data']:
-              if idoc['host'] == config.get_hostname():
+              if idoc['host'] == config.get_hostname() and idoc['status'] == "transferred":
                 host_data = True
-                break
+              if idoc['host'] == config.get_hostname() and idoc['status'] == "error":
+                host_data = True
+                host_data_error = True
+              if idoc['host'] == "rucio-catalogue":
+                rucio_data = True
+            
             if host_data == False and args.on_disk_only == True:
+              continue
+            
+            if host_data == True and host_data_error == True and args.skip_error == True:
+              continue
+            
+            #massive-ruciax does not care about data which are already
+            #in the rucio catalogue for upload
+            if rucio_data == True and verfication_only == False:
               continue
             
             #Get the local time:
@@ -945,6 +979,7 @@ def massive_tsmclient():
                 ('detector', -1),
                 ('_id', -1))
     
+    
     dt = datetime.timedelta(days=1)
     
     while True: # yeah yeah
@@ -969,8 +1004,18 @@ def massive_tsmclient():
             #See if there is something to do
             query['start'] = {'$gt' : t0}
 
+        #Select specific data sets
+        selection = {"detector": True,
+                     "number" : True,
+                     "data" : True,
+                     "_id" : True,
+                     #"tags" : True,
+                     "name": True}
+
         docs = list(collection.find(query,
-                                    sort=sort_key))
+                                    selection,
+                                    sort=sort_key)
+                                    )
 
         for doc in docs:
             
@@ -985,13 +1030,20 @@ def massive_tsmclient():
             
             #Double check that tsm uploads are only triggered when data exists at the host
             host_data = False
+            tsm_data = False
             for idoc in doc['data']:
-              if idoc['host'] == config.get_hostname():
+              if idoc['host'] == config.get_hostname() and idoc['status'] == "transferred":
                 host_data = True
-                break
+              if idoc['host'] == "tsm-server" and idoc['status'] == "transferred":
+                tsm_data = True  
+            
             if host_data == False:
               #Do not try upload data which are not registered in the runDB
               continue
+            #make sure now that only "new data" are uploaded
+            if tsm_data == True:
+              continue
+
 
             #Detector choice
             local_time = time.strftime("%Y%m%d_%H%M%S", time.localtime())
