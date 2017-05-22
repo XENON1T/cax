@@ -13,9 +13,10 @@ def make_runlist():
     collection = db['runs_new']
     
     query = {"detector" : "tpc",
-             "number" : {"$gt" : 6730},
+              "$and" : [{"number" : {"$gt" : 6730}}, {"number" : {"$lte" : 9635}}], 
              "processor.correction_versions" : {"$exists" : True},
-             "trigger.events_built" : {"$gt" : 0}
+             "trigger.events_built" : {"$gt" : 0},
+		"source.type"  : {'$ne' : 'Kr83m'}
              }
 
     version = 'v' + __version__
@@ -97,7 +98,7 @@ def make_runlist():
     print("BAD: %d" % len(bad))
 
     print("NOT IN RUCIO OR CHICAGO: %d" % len(not_rucio))
-    #print(not_rucio)
+    print(not_rucio)
 
     print("TO STAGE: %d" % len(stage_list))
     print(stage_list)
@@ -109,7 +110,7 @@ def make_runlist():
     #print(processing)
 
     print("PROCESSED: %d" % len(processed_list))
-    #print(processed_list)
+    print(processed_list)
 
     print("ERROR: %d" % len(error))
     #print(error)

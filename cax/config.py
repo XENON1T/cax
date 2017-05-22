@@ -32,6 +32,7 @@ PAX_DEPLOY_DIRS = {
 
 RUCIO_RULE = ''
 
+THIS_CAX = ''
 
 
 def mongo_password():
@@ -70,6 +71,12 @@ def set_database_log(config):
     global DATABASE_LOG
     DATABASE_LOG = config
 
+def set_cax_dir(dir):
+    """Sets global variable THIS_CAX"""
+    global THIS_CAX
+    THIS_CAX = dir.split("/cax/__init__.py")[0]
+    print("THIS CAX: %s" % THIS_CAX)
+    
 def load():
     # User-specified config file
     if CAX_CONFIGURE:

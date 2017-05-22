@@ -5,7 +5,7 @@ import datetime
 import time
 import subprocess
 
-from cax import __version__
+from cax import __version__, __file__
 from cax import config, qsub
 
 import pax
@@ -59,6 +59,10 @@ def main():
 
     # Set information to update the run database 
     config.set_database_log(database_log)
+
+    # Set path of the cax that is being run
+    config.set_cax_dir(__file__)
+    return
 
     # Check passwords and API keysspecified
     config.mongo_password()

@@ -5,12 +5,12 @@ from bson import json_util
 from cax import config
 
 class api():
-    def __init__(self):
+    def __init__(self, detector="tpc"):
 
         logging.getLogger('requests').setLevel(logging.ERROR)
 
         if ( config.API_URL is None or config.api_user() is None
-             or config.api_key() is None or config.DETECTOR is None ):
+             or config.api_key() is None or detector is None ):
             raise NameError("API connectivity options not found")
         
         # Runs DB Query Parameters
@@ -18,7 +18,7 @@ class api():
         self.get_params = {
             "username": config.api_user(),
             "api_key": config.api_key(),
-            "detector": config.DETECTOR
+            "detector": detector
         }
         self.next_run = "init"
 
