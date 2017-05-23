@@ -75,8 +75,7 @@ def set_cax_dir(dir):
     """Sets global variable THIS_CAX"""
     global THIS_CAX
     THIS_CAX = dir.split("/cax/__init__.py")[0]
-    print("THIS CAX: %s" % THIS_CAX)
-    
+
 def load():
     # User-specified config file
     if CAX_CONFIGURE:
