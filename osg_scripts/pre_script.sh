@@ -20,7 +20,7 @@ date >> $pre_log
 source activate pax_$2_OSG
 source /home/ershockley/setup_rucio.sh
 
-python /home/ershockley/cax/cax/dag_prescript.py $3 $2 >> $pre_log 2>&1
+python /home/ershockley/cax/cax/dag_prescript.py $1 $2 $3 $5>> $pre_log 2>&1
 
 ex=$?
 echo "exiting with status $ex" >> $pre_log

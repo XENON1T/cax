@@ -99,14 +99,15 @@ def rucio_AddRule(dataset):
     #time.sleep(20*60)
     return stdout_value, stderr_value
              
-def pre_script(run_id, pax_version, detector = 'tpc'):
+def pre_script(run_name, pax_version, run_number, detector = 'tpc'):
 
     # first clear any relevant errors
     if detector == 'tpc':
-        run_id = int(run_id)
+        run_id = run_number
         identifier = 'number'
 
     elif detector == 'muon_veto':
+        run_id = run_name
         identifier = 'name'
     else:
         raise ValueError("Detector %s does not exist" % detector)
