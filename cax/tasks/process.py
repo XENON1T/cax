@@ -196,7 +196,6 @@ class ProcessBatchQueue(Task):
         query = {"data" : {"$not" : {"$elemMatch" : {"type" : "processed",
                                                      "pax_version" : self.pax_version,
                                                      "host" : self.thishost,
-                                                     # commenting now so OSG does all processing
                                                      "$or" : [{"status" : "transferred"},
                                                               {"status" : "transferring"}
                                                              ]
@@ -219,6 +218,7 @@ class ProcessBatchQueue(Task):
                  'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess'}}}
                  }
 
+
         # if using OSG processing then need raw data in rucio catalog
         # will check later if on UC_OSG_USERDISK
         if self.thishost == 'login':
@@ -228,7 +228,7 @@ class ProcessBatchQueue(Task):
             query["data"]["$elemMatch"] = {"host" : self.thishost,
                                            "type" : "raw"}
 
-        #print(query)
+        print(query)
 
         Task.__init__(self, query = query)
     
@@ -332,7 +332,7 @@ class ProcessBatchQueue(Task):
 
             # now check how many dags are running
             self.log.debug("%d dags currently running" % len(qsub.get_queue()))
-            if len(qsub.get_queue()) > 49:
+            if len(qsub.get_queue()) > 29:
                 self.log.info("Too many dags in queue, waiting 10 minutes")
                 time.sleep(60*10)
                 return
@@ -400,17 +400,17 @@ class ProcessBatchQueue(Task):
                      'creation_time' : datetime.datetime.utcnow(),
                      'creation_place': 'OSG'}
 
-            self.submit(out_location, ncpus, disable_updates, json_file)
-
             if detector == 'tpc':
                 clear_errors(self.run_doc['number'], self.pax_version, detector)
             elif detector == 'muon_veto':
                 clear_errors(self.run_doc['name'], self.pax_version, detector)
 
-            if config.DATABASE_LOG == True:
-                self.API.add_location(self.run_doc['_id'], datum)
+            self.submit(out_location, ncpus, disable_updates, json_file)
 
-            time.sleep(5)
+            #if config.DATABASE_LOG == True:
+             #   self.API.add_location(self.run_doc['_id'], datum)
+
+            time.sleep(2)
 
     def local_data_finder(self):
         have_processed = False
