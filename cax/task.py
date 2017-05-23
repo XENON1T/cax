@@ -26,8 +26,8 @@ class Task():
         if specify_run is not None:
             if isinstance(specify_run,int):
                 self.query['number'] = specify_run
-                if 'data' in self.query:
-                    clear_errors(specify_run, self.query["data"]["$not"]["$elemMatch"]['pax_version'])
+                #if 'data' in self.query:
+                    #clear_errors(specify_run, self.query["data"]["$not"]["$elemMatch"]['pax_version'])
             elif isinstance(specify_run,str):
                 self.query['name'] = specify_run
 

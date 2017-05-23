@@ -28,14 +28,13 @@ def has_tag(doc, name):
 
 def clear_errors(id, pax_version, detector='tpc'):
 
-    if isinstance(id, int):
+    if detector == 'tpc':
         identifier = 'number'
-    elif isinstance(id, str):
-        if detector == 'tpc':
-            print("Warning: is %s the run name?" % id)
+        id = int(id)
+    elif detector == 'muon_veto':
         identifier = 'name'
     else:
-        raise ValueError("run id is not int or string")
+        raise ValueError("detector is neither tpc nor muon_veto")
 
     query = {'detector': detector,
              identifier   : id,
@@ -103,7 +102,7 @@ def pre_script(run_name, pax_version, run_number, detector = 'tpc'):
 
     # first clear any relevant errors
     if detector == 'tpc':
-        run_id = run_number
+        run_id = int(run_number)
         identifier = 'number'
 
     elif detector == 'muon_veto':
