@@ -3,7 +3,7 @@ from cax.dag_writer import dag_writer
 import numpy as np
 from make_runlist import make_runlist
 
-runlist = make_runlist()
+runlist = [9837, 9838, 9839]
 # from Zach 6378-6730
 #runlist = [6734]
 #with open("/home/ershockley/murra.csv") as f:
@@ -23,6 +23,6 @@ runlist = sorted(runlist)
 #list1 = runlist[:np.ceil(len(runlist)/2)]
 #list2 = runlist[np.ceil(len(runlist)/2):]
 
-logdir = "/xenon/ershockley/reprocessing"
+logdir = "/scratch/processing"
 dag = dag_writer(runlist, "v6.6.5", logdir, reprocessing = True, n_retries=9)
-dag.write_outer_dag(logdir + "/665_SR1.dag")
+dag.write_outer_dag(logdir + "/665_NG.dag")

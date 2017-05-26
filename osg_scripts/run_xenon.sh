@@ -108,8 +108,9 @@ if [[ ${10} == 'True' ]]; then
 	echo "rucio -T 18000 download $2 --no-subdir --dir ${rawdata_path} --rse UC_OSG_USERDISK"
 	download="rucio -T 18000 download $2 --no-subdir --dir ${rawdata_path} --rse UC_OSG_USERDISK"
 	#rucio -T 18000 download $2 --no-subdir --dir ${rawdata_path} --rse UC_OSG_USERDISK
+    fi
 
-    else 
+    if [[ -n ${11} ]]; then
 	echo "rucio -T 18000 download $2 --no-subdir --dir ${rawdata_path} --rse ${11}"
 	download="rucio -T 18000 download $2 --no-subdir --dir ${rawdata_path} --rse ${11}"
     fi
@@ -124,7 +125,7 @@ if [[ ${10} == 'False' ]]; then
 fi
 # perform the download
 echo "($download) || (sleep 60s && $download) || (sleep 120s && $download)"
-($download) || (sleep $[ ( $RANDOM % 60 )  + 1 ]s && $download) || (sleep $[ ( $RANDOM % 120 )  + 1 ]s && $download) || (sleep $[ ( $RANDOM % 180 )  + 1 ]s && $download) || (sleep $[ ( $RANDOM % 240 )  + 1 ]s && $download) || exit 1
+($download) || (sleep $[ ( $RANDOM % 60 )  + 1 ]s && $download) || (sleep $[ ( $RANDOM % 120 )  + 1 ]s && $download) || exit 1 #(sleep $[ ( $RANDOM % 180 )  + 1 ]s && $download) || (sleep $[ ( $RANDOM % 240 )  + 1 ]s && $download) || exit 1
 
 export PATH=/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/bin:$PATH
 cd /cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/envs/pax_$4_OSG/

@@ -51,9 +51,8 @@ def clear_errors(id, pax_version, detector='tpc'):
     API = api()
     doc = API.get_next_run(query)
 
-         # if query returns northing, there is no error
+    # if query returns northing, there is no error
     if doc is None:
-        #print("no errors need clearing")
         return
 
     # if there is an error, remove that entry from database

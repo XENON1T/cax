@@ -215,7 +215,8 @@ class ProcessBatchQueue(Task):
                  'processor.correction_versions': {'$exists': True},
                  'processor.WaveformSimulator': {'$exists': True},
                  'processor.NeuralNet|PosRecNeuralNet': {'$exists': True},
-                 'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess'}}}
+                 'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess'}}},
+                 'source.type' : 'neutron_generator'
                  }
 
 
@@ -227,8 +228,6 @@ class ProcessBatchQueue(Task):
         else:
             query["data"]["$elemMatch"] = {"host" : self.thishost,
                                            "type" : "raw"}
-
-        print(query)
 
         Task.__init__(self, query = query)
     
