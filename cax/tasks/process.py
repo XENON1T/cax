@@ -19,7 +19,6 @@ import re
 
 from cax import qsub, config
 from cax.task import Task
-from cax.api import api
 from cax.dag_prescript import clear_errors
 
 def verify():
@@ -187,9 +186,7 @@ def _process(name, in_location, host, pax_version,
 class ProcessBatchQueue(Task):
     "Create and submit job submission script."
 
-    def __init__(self):
-        self.API = api()
-
+    def __init__(self, use_api=False):
         self.thishost = config.get_hostname()
         self.pax_version = 'v%s' % pax.__version__
 
@@ -229,7 +226,7 @@ class ProcessBatchQueue(Task):
             query["data"]["$elemMatch"] = {"host" : self.thishost,
                                            "type" : "raw"}
 
-        Task.__init__(self, query = query)
+        Task.__init__(self, query=query, use_api=use_api)
     
     def verify(self):
         """Verify processing worked"""
@@ -405,9 +402,6 @@ class ProcessBatchQueue(Task):
                 clear_errors(self.run_doc['name'], self.pax_version, detector)
 
             self.submit(out_location, ncpus, disable_updates, json_file)
-
-            #if config.DATABASE_LOG == True:
-             #   self.API.add_location(self.run_doc['_id'], datum)
 
             time.sleep(2)
 

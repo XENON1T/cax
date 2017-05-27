@@ -15,7 +15,7 @@ class api():
         
         # Runs DB Query Parameters
         self.api_url = config.API_URL
-        self.api_schema = "https://xenon1t-daq.lngs.infn.it"
+        self.api_schema = "https://xenon1t-daq.lngs.infn.it" # needed for using self.next_run
         self.get_params = {
             "username": config.api_user(),
             "api_key": config.api_key(),
@@ -31,7 +31,7 @@ class api():
         
         self.logging = logging.getLogger(self.__class__.__name__)
 
-    def get_next_run(self, query):
+    def get_next_run(self, query, _id=None):
         ret = None
         if self.next_run == None:
             return ret
@@ -45,11 +45,13 @@ class api():
 
             params['limit']=1
             params['offset']=0
-            
+
+            url = self.api_url if _id is None else (self.api_url + str(_id) + "/")
+
             api_try = 1
             while api_try <= 3:
                 try:
-                    db_request = requests.get(self.api_url, params = params).text
+                    db_request = requests.get(url, params = params).text
                     break
                 except:
                     time.sleep(5)
@@ -65,12 +67,16 @@ class api():
 
         # Keep track of the next run so we can iterate. 
         if ret is not None:
-            self.next_run = ret['meta']['next']
-            if len(ret['objects'])==0:
-                return None
+            if _id is None:
+                self.next_run = ret['meta']['next']
+                if len(ret['objects'])==0:
+                    return None
             
-            return ret['objects'][0]['doc']
+                return ret['objects'][0]['doc']
 
+            else:
+                self.next_run = None
+                return ret['doc']
         return None
     
     def add_location(self, uuid, parameters):
@@ -132,12 +138,11 @@ class api():
                  (sitea['type'] == siteb['type']) and
                  (sitea['location'] == siteb['location']))
 
-    def get_all_runs(self, query, limit):
+    def get_all_runs(self, query, _id=None):
         # return list of rundocs for all runs satisfying query
         collection = []
-        counter = 0
-        while self.next_run is not None and counter < limit:
-            collection.append(self.get_next_run(query))
-            counter += 1
+        query = {'query' : dumps(query,default=json_util.default)}
+        while self.next_run is not None:
+            collection.append(self.get_next_run(query, _id))
 
         return collection

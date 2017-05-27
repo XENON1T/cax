@@ -18,6 +18,7 @@ import pax
 from cax import config
 from cax.task import Task
 from cax import qsub
+from cax.api import api
 
 from cax.tasks.tsm_mover import TSMclient
 from cax.tasks.rucio_mover import RucioBase, RucioRule
@@ -688,7 +689,6 @@ class CopyBase(Task):
             return
 
           if datum['type'] == 'processed':
-            self.log.info(datum)
             base_dir = os.path.join(base_dir, 'pax_%s' % datum['pax_version'])
 
           # Check directory existence on local host for download only
@@ -734,14 +734,19 @@ class CopyBase(Task):
             datum_new['location'] = "n/a"
 
         if config.DATABASE_LOG == True:
-            result = self.collection.update_one({'_id': self.run_doc['_id'],
-                                                 },
-                                   {'$push': {'data': datum_new}})
+            if not self.use_api:
+                result = self.collection.update_one({'_id': self.run_doc['_id'],
+                                                     },
+                                                     {'$push': {'data': datum_new}})
 
-            if result.matched_count == 0:
-                self.log.error("Race condition!  Could not copy because another "
-                               "process seemed to already start.")
-                return
+                if result.matched_count == 0:
+                    self.log.error("Race condition!  Could not copy because another "
+                                   "process seemed to already start.")
+                    return
+
+            else:
+                API = api()
+                API.add_location(self.run_doc['_id'], datum_new)
 
         self.log.info('Starting '+method)
 
@@ -772,35 +777,41 @@ class CopyBase(Task):
         self.log.debug(method+" done, telling run database")
 
         if config.DATABASE_LOG:
-          if method == "rucio":
-            logging.info("following entries are added to the runDB:")
-            logging.info("Status: %s", self.rucio.get_rucio_info()['status'] )
-            logging.info("Location: %s", self.rucio.get_rucio_info()['location'] )
-            logging.info("Checksum: %s", self.rucio.get_rucio_info()['checksum'] )
-            logging.info("RSE: %s", self.rucio.get_rucio_info()['rse'] )
-            
-            self.collection.update({'_id' : self.run_doc['_id'],
-                                    'data': {
-                                    '$elemMatch': datum_new}},
-                                 {'$set': {
-                                      'data.$.status': self.rucio.get_rucio_info()['status'],
-                                      'data.$.location': self.rucio.get_rucio_info()['location'],
-                                      'data.$.checksum': self.rucio.get_rucio_info()['checksum'],
-                                      'data.$.rse': self.rucio.get_rucio_info()['rse']
-                                          }
-                                })
-          
-          else:
-          #Fill the data if method is not rucio
-            if config.DATABASE_LOG:  
-              self.collection.update({'_id' : self.run_doc['_id'],
-                                    'data': {
+            if method == "rucio":
+                logging.info("following entries are added to the runDB:")
+                logging.info("Status: %s", self.rucio.get_rucio_info()['status'] )
+                logging.info("Location: %s", self.rucio.get_rucio_info()['location'] )
+                logging.info("Checksum: %s", self.rucio.get_rucio_info()['checksum'] )
+                logging.info("RSE: %s", self.rucio.get_rucio_info()['rse'] )
+
+                self.collection.update({'_id' : self.run_doc['_id'],
+                                        'data': {
                                         '$elemMatch': datum_new}},
-                                   {'$set': {
-                                        'data.$.status': status
-                                            }
-                                   })
-        
+                                     {'$set': {
+                                          'data.$.status': self.rucio.get_rucio_info()['status'],
+                                          'data.$.location': self.rucio.get_rucio_info()['location'],
+                                          'data.$.checksum': self.rucio.get_rucio_info()['checksum'],
+                                          'data.$.rse': self.rucio.get_rucio_info()['rse']
+                                              }
+                                    })
+
+            #Fill the data if method is not rucio
+            #if config.DATABASE_LOG:
+            else:
+                if not self.use_api:
+                    self.collection.update({'_id' : self.run_doc['_id'],
+                                            'data': {
+                                                '$elemMatch': datum_new}},
+                                           {'$set': {
+                                                'data.$.status': status
+                                                    }
+                                           })
+
+                else:
+                    API = api()
+                    updatum = datum_new.copy()
+                    updatum['status'] = 'transferred' #status
+                    API.update_location(self.run_doc['_id'], datum_new, updatum)
 
         if method == "rucio":
           #Rucio 'side load' to set the transfer rules directly after the file upload
