@@ -5,7 +5,7 @@ from bson import json_util
 from cax import config
 
 class api():
-    def __init__(self, detector='tpc'):
+    def __init__(self):
 
         logging.getLogger('requests').setLevel(logging.ERROR)
 
@@ -15,6 +15,7 @@ class api():
         
         # Runs DB Query Parameters
         self.api_url = config.API_URL
+        self.api_schema = "https://xenon1t-daq.lngs.infn.it"
         self.get_params = {
             "username": config.api_user(),
             "api_key": config.api_key(),
@@ -56,17 +57,11 @@ class api():
                 if api_try == 3:
                     print("Error: API call to database failed!")
                     return None
-            
-            #print("\nAPI call returns:")
-            #print(db_request)
-            #print("\n")
 
             ret = json_util.loads(db_request)
-
-            #ret = json_util.loads(requests.get(self.api_url, params = params).text)
             
         else:
-            ret = json_util.loads(requests.get(self.next_run).text)
+            ret = json_util.loads(requests.get(self.api_schema + self.next_run).text)
 
         # Keep track of the next run so we can iterate. 
         if ret is not None:
@@ -136,3 +131,13 @@ class api():
         return ( (sitea['host'] == siteb['host']) and
                  (sitea['type'] == siteb['type']) and
                  (sitea['location'] == siteb['location']))
+
+    def get_all_runs(self, query, limit):
+        # return list of rundocs for all runs satisfying query
+        collection = []
+        counter = 0
+        while self.next_run is not None and counter < limit:
+            collection.append(self.get_next_run(query))
+            counter += 1
+
+        return collection
