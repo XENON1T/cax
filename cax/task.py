@@ -7,14 +7,19 @@ from bson.json_util import dumps
 
 from cax import config
 from cax.dag_prescript import clear_errors
+from cax.api import api
 
 class Task():
-    def __init__(self, query = {}):
+    def __init__(self, query = {}, use_api = False):
         # Grab the Run DB so we can query it
-        self.collection = config.mongo_collection()
+
+        if not use_api:
+            self.collection = config.mongo_collection()
+
         self.log = logging.getLogger(self.__class__.__name__)
         self.run_doc = None
         self.untriggered_data = None
+        self.use_api = use_api
 
         self.query = query
 
@@ -26,8 +31,7 @@ class Task():
         if specify_run is not None:
             if isinstance(specify_run,int):
                 self.query['number'] = specify_run
-                #if 'data' in self.query:
-                    #clear_errors(specify_run, self.query["data"]["$not"]["$elemMatch"]['pax_version'])
+
             elif isinstance(specify_run,str):
                 self.query['name'] = specify_run
 
@@ -36,27 +40,28 @@ class Task():
 
         # Collect all run document ids.  This has to be turned into a list
         # to avoid timeouts if a task takes too long.
-        try:
-            ids = [doc['_id'] for doc in self.collection.find(self.query,
-                                                              projection=('_id'),
-                                                              sort=(('start', -1),))]
-        except pymongo.errors.CursorNotFound:
-            self.log.info("Curson not found exception.  Skipping")
+
+        ids = self.collect_ids()
+        if ids is None:
+            self.log.info("Can't get run ids for some reason. Skipping")
             return
+
 
         if len(ids) == 0:
             self.log.info("Query matches no entry. Skipping.")
             return
+
         # Iterate over each run
         for id in ids:
             # Make sure up to date
-            try:
-                self.run_doc = self.collection.find_one({'_id': id})
-            except pymongo.errors.AutoReconnect:
-                self.log.error("pymongo.errors.AutoReconnect, skipping...")
+            self.run_doc = self.get_rundoc(id)
+
+            if self.run_doc is None:
+                self.log.info("Problems getting rundoc for id %s. Skipping" % id)
                 continue
 
             if 'data' not in self.run_doc:
+                self.log.info('Data not in run_doc')
                 continue
 
             # Operate on only user-specified datasets
@@ -114,3 +119,38 @@ class Task():
         """Runs at end and can be overloaded by subclasses
         """
         pass
+
+    def collect_ids(self):
+        # if not using API interface, do normal pymongo query which is faster
+        if not self.use_api:
+            try:
+                ids = [doc['_id'] for doc in self.collection.find(self.query,
+                                                                  projection=('_id'),
+                                                                  sort=(('start', -1),))]
+            except pymongo.errors.CursorNotFound:
+                self.log.info("Cursor not found exception.  Skipping")
+                return
+
+        else: # slower but uses API which can be useful
+            # initialize api instance
+            API = api()
+            ids = [doc['_id'] for doc in API.get_all_runs(self.query)]
+
+        return ids
+
+
+    def get_rundoc(self, id):
+        if not self.use_api:
+            try:
+                rundoc = self.collection.find_one({'_id': id})
+            except pymongo.errors.AutoReconnect:
+                self.log.error("pymongo.errors.AutoReconnect, skipping...")
+                return
+
+        else:
+            # initialize api
+            API = api()
+            # only want the first result,  mimics collection.find_one
+            rundoc = API.get_all_runs({'_id' : id}, _id=id)[0]
+
+        return rundoc

@@ -63,7 +63,7 @@ sleep 2
             detector = 'muon_veto'
 
         query = {identifier  : run_id}
-        API = api(detector=detector)
+        API = api()
         doc = API.get_next_run(query)
         time.sleep(0.1)
         return doc

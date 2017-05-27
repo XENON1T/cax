@@ -38,6 +38,7 @@ def main():
                         help="Select a single run using the run name")
     parser.add_argument('--host', type=str,
                         help="Host to pretend to be")
+    parser.add_argument('--api', action='store_true', help='Uses API interface instead of pymongo')
 
     args = parser.parse_args()
 
@@ -92,12 +93,17 @@ def main():
                          args.config_file)
             config.set_json(args.config_file)
 
+    if args.api:
+        use_api = True
+    else:
+        use_api = False
+
     tasks = [
         corrections.AddElectronLifetime(),  # Add electron lifetime to run, which is just a function of calendar time
         corrections.AddGains(), #  Adds gains to a run, where this is computed using slow control information
         #corrections.AddSlowControlInformation(),
         data_mover.CopyPull(), # Download data through e.g. scp to this location
-        data_mover.CopyPush(),  # Upload data through e.g. scp or gridftp to this location where cax running
+        data_mover.CopyPush(use_api=use_api),  # Upload data through e.g. scp or gridftp to this location where cax running
         #tsm_mover.AddTSMChecksum(), # Add forgotten Checksum for runDB for TSM client.
         checksum.CompareChecksums(),  # See if local data corrupted
         checksum.AddChecksum(),  # Add checksum for data here so can know if corruption (useful for knowing when many good copies!)
@@ -109,7 +115,7 @@ def main():
 
         filesystem.SetPermission(),  # Set any permissions (primarily for Tegner) for new data to make sure analysts can access
         clear.BufferPurger(),  # Clear old data at some locations as specified in cax.json
-        process.ProcessBatchQueue(),  # Process the data with pax
+        process.ProcessBatchQueue(use_api=use_api),  # Process the data with pax
         process_hax.ProcessBatchQueueHax()  # Process the data with hax
     ]
 
