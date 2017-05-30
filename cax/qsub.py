@@ -99,7 +99,7 @@ def get_queue(host=config.get_hostname(), partition=''):
         args = {'partition': 'main',
                 'user' : 'bobau'}
     else:
-        raise ValueError()
+        return []
 
     if partition == '':
         command = 'squeue --user={user} -o "%.30j"'.format(**args)
