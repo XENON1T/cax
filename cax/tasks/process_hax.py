@@ -70,9 +70,6 @@ class ProcessBatchQueueHax(Task):
     def each_run(self):
 
         thishost = config.get_hostname()
-        
-        if thishost != 'midway-login1':
-            return
 
         version = 'v%s' % pax.__version__
         have_processed, have_raw = self.local_data_finder(thishost,
