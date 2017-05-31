@@ -119,7 +119,7 @@ def main():
         filesystem.SetPermission(),  # Set any permissions (primarily for Tegner) for new data to make sure analysts can access
         process.ProcessBatchQueue(),  # Process the data with pax
         process_hax.ProcessBatchQueueHax(),  # Process the data with hax
-	clear.PurgeProcessed(), #Clear the processed data for a given version		
+        clear.PurgeProcessed(), #Clear the processed data for a given version		
         clear.BufferPurger()  # Clear old data at some locations as specified in cax.json    
     ]
 
