@@ -419,7 +419,7 @@ Error = {logdir}/pax_$(pax_version)/$(dirname)/$(zip_name)_$(cluster).log
 Output  = {logdir}/pax_$(pax_version)/$(dirname)/$(zip_name)_$(cluster).log
 Log     = {logdir}/pax_$(pax_version)/$(dirname)/joblogs/$(zip_name)_$(cluster).joblog
 
-Requirements = (HAS_CVMFS_xenon_opensciencegrid_org) && (((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName1) || (RCC_Factory == "ciconnect")) && ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName2) || (RCC_Factory == "ciconnect")) && ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName3)  || (RCC_Factory == "ciconnect")) && ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName4) || (RCC_Factory == "ciconnect"))) && (OSGVO_OS_STRING == "RHEL 6" || RCC_Factory == "ciconnect") && (GLIDEIN_ResourceName =!= "Comet") && (GLIDEIN_Site =!= SU-OG)
+Requirements = (HAS_CVMFS_xenon_opensciencegrid_org) && (((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName1) || (RCC_Factory == "ciconnect")) && ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName2) || (RCC_Factory == "ciconnect")) && ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName3)  || (RCC_Factory == "ciconnect")) && ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName4) || (RCC_Factory == "ciconnect"))) && (OSGVO_OS_STRING == "RHEL 6" || RCC_Factory == "ciconnect") && (GLIDEIN_ResourceName =!= "Comet") && (GLIDEIN_Site =!= "SU-OG") && (GLIDEIN_ResourceName =!= "SU-OG-CE1") && (GLIDEIN_ResourceName =!= "SU-OG-CE")
 request_cpus = $(ncpus)
 request_memory = 1900MB
 request_disk = 3GB

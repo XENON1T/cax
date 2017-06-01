@@ -810,7 +810,7 @@ class CopyBase(Task):
                 else:
                     API = api()
                     updatum = datum_new.copy()
-                    updatum['status'] = 'transferred' #status
+                    updatum['status'] = status
                     API.update_location(self.run_doc['_id'], datum_new, updatum)
 
         if method == "rucio":
