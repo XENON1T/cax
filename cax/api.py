@@ -75,6 +75,7 @@ class api():
                 return ret['objects'][0]['doc']
 
             else:
+
                 self.next_run = None # otherwise self.get_all_runs would be an infinite loop
                 return ret['doc']
         return None
@@ -139,7 +140,7 @@ class api():
                  (sitea['location'] == siteb['location']))
 
     def get_all_runs(self, query, _id=None):
-        # return list of rundocs for all runs satisfying query
+        # returns list of rundocs for all runs satisfying query
         collection = []
         query = {'query' : dumps(query,default=json_util.default)}
         while self.next_run is not None:
