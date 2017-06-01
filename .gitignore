@@ -1,0 +1,10 @@
+# ignore these files / patterns
+
+build
+bin
+cax.log
+__pycache__
+dist
+lib
+*egg*
+*~
