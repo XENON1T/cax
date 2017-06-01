@@ -213,7 +213,6 @@ class ProcessBatchQueue(Task):
                  'processor.WaveformSimulator': {'$exists': True},
                  'processor.NeuralNet|PosRecNeuralNet': {'$exists': True},
                  'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess'}}},
-                 'source.type' : 'neutron_generator'
                  }
 
 
