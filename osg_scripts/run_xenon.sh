@@ -51,6 +51,12 @@ else
     fi
 fi
 
+if [[ $GLIDEIN_ResourceName = "IN2P3-CC" ]]
+then
+    source /cvmfs/oasis.opensciencegrid.org/osg-software/osg-wn-client/3.3/current/el6-x86_64/setup.sh
+    export GFAL_CONFIG_DIR=$OSG_LOCATION/etc/gfal2.d
+    export GFAL_PLUGIN_DIR=$OSG_LOCATION/usr/lib64/gfal2-plugins/
+fi
 
 start_dir=$PWD
 

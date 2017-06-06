@@ -39,7 +39,7 @@ def _process(name, in_location, host, pax_version,
         print("This pax version is %s, not %s. Abort processing." % ("v" + pax.__version__, pax_version))
         sys.exit(1)
     # Import pax so can process the data
-    from pax import core, parallel, configuration, fix_sections_from_mongo
+    from pax import core, parallel, configuration
 
     # Grab the Run DB if not passing json so we can query it
     if json_file == "":
@@ -123,9 +123,13 @@ def _process(name, in_location, host, pax_version,
                            'decoder_plugin' : decoder
                            }}
 
-    mongo_config = doc['processor']
-    config_dict = configuration.combine_configs(mongo_config,config_dict)
-    config_dict = fix_sections_from_mongo(config_dict)
+    # if processing tpc data, need to pass the corrections
+    # Only for tpc data since this overrides .ini configuration and screws up MV gains
+
+    if detector == 'tpc':
+        mongo_config = doc['processor']
+        config_dict = configuration.combine_configs(mongo_config, config_dict)
+        config_dict = fix_sections_from_mongo(config_dict)
 
     # Add run number and run name to the config_dict
     config_dict.setdefault('DEFAULT', {})
@@ -201,7 +205,7 @@ class ProcessBatchQueue(Task):
                            },
                  "$or" : [{'number' : {"$gte" : 6730}},
                           {"detector" : "muon_veto",
-                           "end" : {"$gt" : (datetime.datetime.now() - datetime.timedelta(days=20))}
+                           "end" : {"$gt" : (datetime.datetime.utcnow() - datetime.timedelta(days=20))}
                            }
                           ],
                  'reader.ini.write_mode' : 2,
@@ -249,15 +253,7 @@ class ProcessBatchQueue(Task):
                            json_file = json_file
                            )
 
-        processing_parameters = self.run_doc['processor']['DEFAULT']
-        if 'gains' not in processing_parameters or \
-            'drift_velocity_liquid' not in processing_parameters or \
-            'electron_lifetime_liquid' not in processing_parameters:
-            self.log.info("gains or e-lifetime not in run_doc, skip processing")
-            return
-
         script = config.processing_script(script_args)
-        #self.log.info(script)
 
         MVsuffix = ""
         # if MV, append string to name in dag dir

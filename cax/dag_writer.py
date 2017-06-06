@@ -426,6 +426,7 @@ request_disk = 3GB
 transfer_input_files = /home/ershockley/user_cert, $(json_file)
 transfer_output_files = ""
 +WANT_RCC_ciconnect = True
++ProjectName = "xenon1t" 
 when_to_transfer_output = ON_EXIT
 # on_exit_hold = (ExitBySignal == True) || (ExitCode != 0)
 transfer_executable = True
