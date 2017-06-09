@@ -62,7 +62,8 @@ sleep 2
             identifier = 'name'
             detector = 'muon_veto'
 
-        query = {identifier  : run_id}
+        query = {identifier  : run_id,
+                 'detector' : detector}
         API = api()
         doc = API.get_next_run(query)
         time.sleep(0.1)
@@ -419,7 +420,7 @@ Error = {logdir}/pax_$(pax_version)/$(dirname)/$(zip_name)_$(cluster).log
 Output  = {logdir}/pax_$(pax_version)/$(dirname)/$(zip_name)_$(cluster).log
 Log     = {logdir}/pax_$(pax_version)/$(dirname)/joblogs/$(zip_name)_$(cluster).joblog
 
-Requirements = (HAS_CVMFS_xenon_opensciencegrid_org) && (((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName1) || (RCC_Factory == "ciconnect")) && ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName2) || (RCC_Factory == "ciconnect")) && ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName3)  || (RCC_Factory == "ciconnect")) && ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName4) || (RCC_Factory == "ciconnect"))) && (OSGVO_OS_STRING == "RHEL 6" || RCC_Factory == "ciconnect") && (GLIDEIN_ResourceName =!= "Comet") && (GLIDEIN_Site =!= "SU-OG") && (GLIDEIN_ResourceName =!= "SU-OG-CE1") && (GLIDEIN_ResourceName =!= "SU-OG-CE")
+Requirements = (HAS_CVMFS_xenon_opensciencegrid_org) && (((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName1) || (RCC_Factory == "ciconnect")) && ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName2) || (RCC_Factory == "ciconnect")) && ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName3)  || (RCC_Factory == "ciconnect")) && ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName4) || (RCC_Factory == "ciconnect"))) && (OSGVO_OS_STRING == "RHEL 6" || RCC_Factory == "ciconnect") && (GLIDEIN_ResourceName =!= "Comet") 
 request_cpus = $(ncpus)
 request_memory = 1900MB
 request_disk = 3GB
@@ -427,6 +428,7 @@ transfer_input_files = /home/ershockley/user_cert, $(json_file)
 transfer_output_files = ""
 +WANT_RCC_ciconnect = True
 +ProjectName = "xenon1t" 
++AccountingGroup = "group_opportunistic.xenon1t.processing"
 when_to_transfer_output = ON_EXIT
 # on_exit_hold = (ExitBySignal == True) || (ExitCode != 0)
 transfer_executable = True
@@ -484,3 +486,6 @@ queue 1
             if '|' in key:
                 dictionary[key.replace('|', '.')] = dictionary.pop(key)
         return dictionary
+
+# for excluding syracuse
+# && (GLIDEIN_Site =!= "SU-OG") && (GLIDEIN_ResourceName =!= "SU-OG-CE1") && (GLIDEIN_ResourceName =!= "SU-OG-CE")
