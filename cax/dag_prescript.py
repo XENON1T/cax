@@ -113,25 +113,31 @@ def pre_script(run_name, pax_version, run_number, detector = 'tpc'):
     clear_errors(run_id, pax_version, detector)
     
     # query that checks if it's okay that we process this run
-    query = {'detector': detector,
-             identifier    : run_id,
-             "data" : {"$not" : {"$elemMatch" : {"host" : 'login',
-                                                 "type" : "processed",
-                                                 "pax_version" : pax_version
-                                                 }
-                                 }
-                      # "$elemMatch" : {"host" : 'login',
-                      #                 "type" : "raw"}
-                       },
-             'reader.ini.write_mode' : 2,
-             'trigger.events_built' : {"$gt" : 0},
-             'processor.DEFAULT.gains' : {'$exists' : True},
-             'processor.DEFAULT.electron_lifetime_liquid' : {'$exists' : True},
-             'processor.DEFAULT.drift_velocity_liquid' : {'$exists' : True},
-             'processor.correction_versions' : {'$exists' : True},
-             'processor.WaveformSimulator' : {'$exists' : True},
-             'processor.NeuralNet|PosRecNeuralNet': {'$exists': True},
-             'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess'}}}
+    query = {identifier: run_id,
+             'detector': detector,
+             "data": {"$not": {"$elemMatch": {"type": "processed",
+                                              "pax_version": pax_version,
+                                              "host": "login",
+                                              "$or": [{"status": "transferred"},
+                                                      {"status": "transferring"}
+                                                      ]
+                                              }
+                               }
+                      },
+             "$or": [{"$and": [{'number': {"$gte": 2000}},
+                               {'processor.DEFAULT.gains': {'$exists': True}},
+                               {'processor.DEFAULT.electron_lifetime_liquid': {'$exists': True}},
+                               {'processor.DEFAULT.drift_velocity_liquid': {'$exists': True}},
+                               {'processor.correction_versions': {'$exists': True}},
+                               {'processor.WaveformSimulator': {'$exists': True}},
+                               {'processor.NeuralNet|PosRecNeuralNet': {'$exists': True}},
+                               ]
+                      },
+                     {"detector": "muon_veto"}
+                     ],
+             'reader.ini.write_mode': 2,
+             'trigger.events_built': {"$gt": 0},
+             'tags': {"$not": {'$elemMatch': {'name': 'donotprocess'}}},
              }
     
     query = {'query' : json.dumps(query)}

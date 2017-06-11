@@ -63,6 +63,7 @@ start_dir=$PWD
 echo "start dir is $start_dir. Here's whats inside"
 ls -l *user_cert*
 ls -l  *.json
+ls -l *.py*
 
 json_file=$(ls *json)
 
@@ -99,7 +100,7 @@ echo ${10}
 
 if [[ ${10} == 'True' ]]; then
 
-    sleep $[ ( $RANDOM % 1200 )  + 1 ]s
+    #sleep $[ ( $RANDOM % 1200 )  + 1 ]s
     echo "Performing rucio download"
     unset X509_USER_KEY
     unset X509_USER_CERT
@@ -108,19 +109,18 @@ if [[ ${10} == 'True' ]]; then
     export RUCIO_ACCOUNT=ershockley
     export X509_USER_PROXY=${start_dir}/user_cert
 
-    env | grep X509
+    if [[ -e ${start_dir}/determine_rse.py ]]
+    then
+	rse=$(python ${start_dir}/determine_rse.py $2 $GLIDEIN_Country)
+	if [[ $? -ne 0 ]]; then exit 255; fi
 
-    if [[ -z ${11} ]]; then
-	echo "rucio -T 18000 download $2 --no-subdir --dir ${rawdata_path} --rse UC_OSG_USERDISK"
-	download="rucio -T 18000 download $2 --no-subdir --dir ${rawdata_path} --rse UC_OSG_USERDISK"
-	#rucio -T 18000 download $2 --no-subdir --dir ${rawdata_path} --rse UC_OSG_USERDISK
+    else
+	rse=UC_OSG_USERDISK
     fi
 
-    if [[ -n ${11} ]]; then
-	echo "rucio -T 18000 download $2 --no-subdir --dir ${rawdata_path} --rse ${11}"
-	download="rucio -T 18000 download $2 --no-subdir --dir ${rawdata_path} --rse ${11}"
-    fi
-    #rucio --certificate ${start_dir}/user_cert download $2 --no-subdir --dir ${rawdata_path}
+    echo "rucio -T 18000 download $2 --no-subdir --dir ${rawdata_path} --rse $rse"
+    download="rucio -T 18000 download $2 --no-subdir --dir ${rawdata_path} --rse $rse"
+
 fi
 
 if [[ ${10} == 'False' ]]; then 

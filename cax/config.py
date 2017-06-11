@@ -434,3 +434,12 @@ def set_rucio_rules( config_rule ):
     """Set the according config file to define the rules for transfer"""
     global RUCIO_RULE
     RUCIO_RULE = config_rule
+
+def load_dag_config():
+    # User-specified config file
+    c = get_config()
+    dag_config = c['dag_config']
+
+    logging.debug('Loading dag config file %s' % dag_config)
+
+    return json.loads(open(dag_config, 'r').read())

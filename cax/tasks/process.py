@@ -15,11 +15,12 @@ import checksumdir
 import json
 from bson import json_util
 import re
+import shlex
 #from pymongo import ReturnDocument
 
 from cax import qsub, config
 from cax.task import Task
-from cax.dag_prescript import clear_errors
+from cax.api import api
 
 def verify():
     """Verify the file
@@ -189,22 +190,24 @@ def _process(name, in_location, host, pax_version,
 class ProcessBatchQueue(Task):
     "Create and submit job submission script."
 
-    def __init__(self, use_api=False):
+    def __init__(self, use_api=False, hurry=False):
         self.thishost = config.get_hostname()
         self.pax_version = 'v%s' % pax.__version__
+        self.hurry = hurry
 
         query = {"data" : {"$not" : {"$elemMatch" : {"type" : "processed",
                                                      "pax_version" : self.pax_version,
                                                      "host" : self.thishost,
                                                      "$or" : [{"status" : "transferred"},
-                                                              {"status" : "transferring"}
+                                                              { "status" : "error"}
                                                              ]
+
                                                     }
                                      }
                            },
                  "$or" : [{'number' : {"$gte" : 6730}},
                           {"detector" : "muon_veto",
-                           "end" : {"$gt" : (datetime.datetime.utcnow() - datetime.timedelta(days=20))}
+                           "end" : {"$gt" : (datetime.datetime.utcnow() - datetime.timedelta(days=15))}
                            }
                           ],
                  'reader.ini.write_mode' : 2,
@@ -234,25 +237,13 @@ class ProcessBatchQueue(Task):
         """Verify processing worked"""
         return True  # yeah... TODO.
 
-    def submit(self, out_location, ncpus, disable_updates, json_file):
+    def submit(self):
         '''Submission Script
         '''
 
         name = self.run_doc['name']
         number = self.run_doc['number']
         detector = self.run_doc['detector']
-
-        script_args = dict(host=self.thishost,
-                           name=name,
-                           pax_version=self.pax_version,
-                           number=number,
-                           out_location = out_location,
-                           ncpus = ncpus,
-                           disable_updates = disable_updates,
-                           json_file = json_file
-                           )
-
-        script = config.processing_script(script_args)
 
         MVsuffix = ""
         # if MV, append string to name in dag dir
@@ -265,8 +256,14 @@ class ProcessBatchQueue(Task):
             raise ValueError("Detector is neither tpc nor MV")
 
         if self.thishost == 'login':
-            logdir = "/xenon/ershockley/cax"
-            outer_dag_dir = "{logdir}/pax_{pax_version}/{name}{MVsuffix}/dags".format(logdir=logdir,
+            # load in json for the dag_writer configuration
+            dag_config = config.load_dag_config()
+            dag_config['runlist'] = [identifier]
+            dag_config['pax_version'] = self.pax_version
+            dag_config['host'] = self.thishost
+            dag_config['rush'] = self.hurry
+
+            outer_dag_dir = "{logdir}/pax_{pax_version}/{name}{MVsuffix}/dags".format(logdir=dag_config['logdir'],
                                                                                       pax_version=self.pax_version,
                                                                                       name=name,
                                                                                       MVsuffix = MVsuffix
@@ -283,18 +280,30 @@ class ProcessBatchQueue(Task):
 
             if detector == 'tpc':
                 outer_dag_file = outer_dag_dir + "/{number}_outer.dag".format(number=number)
-                inner_dag_file = inner_dag_dir + "/{number}_inner.dag".format(number=number)
+
             elif detector == 'muon_veto':
                 outer_dag_file = outer_dag_dir + "/{name}_MV_outer.dag".format(name=name)
-                inner_dag_file = inner_dag_dir + "/{name}_MV_inner.dag".format(name=name)
 
             # if there are more than 10 rescue dags, there's clearly something wrong, so don't submit
             if self.count_rescues(outer_dag_dir) >= 10:
                 self.log.info("10 or more rescue dags exist for Run %d. Skipping." % number)
+
+                # register as an error to database if haven't already
+                for d in self.run_doc['data']:
+                    if d['host'] == self.thishost and d['type'] == 'processed' and d['pax_version'] == self.pax_version:
+                        error_set = (d['status'] == 'error')
+                        datum = d
+
+                if datum is not None and not error_set:
+                    updatum = datum.copy()
+                    updatum['status'] = 'error'
+
+                    API = api()
+                    API.update_location(self.run_doc['_id'], datum, updatum)
+
                 return
 
-            qsub.submit_dag_job(identifier, logdir, outer_dag_file, inner_dag_file, out_location,
-                                script, self.pax_version, json_file)
+            qsub.submit_dag_job(outer_dag_file, dag_config)
 
         else:
             qsub.submit_job(self.thishost, script, name + "_" + self.pax_version)
@@ -304,11 +313,15 @@ class ProcessBatchQueue(Task):
 
         # if OSG processing, check if raw data on stash
         # and check if too many dags running
+        transferring = False
+
         if self.thishost == 'login':
             rucio_name = None
             for d in self.run_doc['data']:
                 if d['host'] == 'rucio-catalogue':
                     rucio_name = d['location']
+                if d['host'] == self.thishost and d['type'] == 'processed' and d['pax_version'] == self.pax_version:
+                    transferring = (d['status']=='transferring')
 
             if rucio_name is None: # something wrong with query if this happens
                 self.log.info("Run %d not in rucio catalogue." % run_doc['number'])
@@ -316,8 +329,14 @@ class ProcessBatchQueue(Task):
             # if not on stash, skip this run. don't have logging here since I imagine this will happen
             # for quite a few runs
             else:
-                if not self.is_on_stash(rucio_name):
+                if not self.is_on_stash(rucio_name) and not self.hurry:
                     self.log.info("Run %d not on stash RSE" % self.run_doc['number'])
+                    return
+
+            # if status is 'transferring' then see if the run is in the queue
+            if transferring:
+                id = self.run_doc['number'] if detector == 'tpc' else self.run_doc['name']
+                if self.in_queue(id):
                     return
 
             # now check how many dags are running
@@ -370,32 +389,11 @@ class ProcessBatchQueue(Task):
 
         else:
             MV = ""
-            if detector == 'tpc':
-                json_file = "/xenon/ershockley/jsons/" + self.run_doc['name'] + ".json"
 
-            elif detector == 'muon_veto':
-                json_file = "/xenon/ershockley/jsons/" + self.run_doc['name'] + "_MV.json"
+            if detector == 'muon_veto':
                 MV = "_MV"
 
-            else:
-                raise ValueError("Detector is neither tpc nor MV")
-
-            # New data location
-            datum = {'host'          : self.thishost,
-                     'type'          : 'processed',
-                     'pax_version'   : self.pax_version,
-                     'status'        : 'transferring',
-                     'location'      : out_location + "/" + str(self.run_doc['name']) + MV,
-                     'checksum'      : None,
-                     'creation_time' : datetime.datetime.utcnow(),
-                     'creation_place': 'OSG'}
-
-            if detector == 'tpc':
-                clear_errors(self.run_doc['number'], self.pax_version, detector)
-            elif detector == 'muon_veto':
-                clear_errors(self.run_doc['name'], self.pax_version, detector)
-
-            self.submit(out_location, ncpus, disable_updates, json_file)
+            self.submit()
 
             time.sleep(2)
 
@@ -437,6 +435,16 @@ class ProcessBatchQueue(Task):
             if len(line) > 4 and line[4] == "UC_OSG_USERDISK" and line[3][:2] == "OK":
                 return True
         return False
+
+    def in_queue(self, id):
+        cmd = "condor_q -long -attributes DAGNodeName | grep xe1t_%s" % id
+        args = shlex.split(cmd)
+        out = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True).stdout.read()
+        out = out.decode('utf-8')
+        if out == "":
+            return False
+        else:
+            return True
 
 
 

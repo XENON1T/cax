@@ -18,8 +18,15 @@ date >> $post_log
 
 echo $@ >> $post_log
 
-if [[ -e /xenon/xenon1t_processed/pax_$2/$1.root ]]; then
-    echo "Processing done! Don't need to run post script. Exit 0."
+if [[ $6 == "muon_veto" ]]
+then
+    rootfile=/xenon/xenon1t_processed/pax_$2/$1_MV.root
+else
+    rootfile=/xenon/xenon1t_processed/pax_$2/$1.root
+fi
+
+if [[ -e $rootfile ]]; then
+    echo "Processing done! Don't need to run post script. Exit 0." >> $post_log
     exit 0
 fi
 
@@ -27,15 +34,11 @@ rawdir=$1
 
 source activate pax_$2_OSG
 
-#cd /home/ershockley/cax/
-#export PYTHONPATH=/home/ershockley/cax/lib/python3.4/site-packages/:$PYTHONPATH
-#python setup.py install --prefix ${PWD}
-
 # save exit status of pipe
 set -o pipefail
 
 #if [[ ! -e /xenon/xenon1t_processed/pax_$2/$1.root ]]; then
-echo "python /home/ershockley/cax/osg_scripts/upload.py $1 $5 $2 $6"
+echo "python /home/ershockley/cax/osg_scripts/upload.py $1 $5 $2 $6" >> $post_log 2>&1
 python /home/ershockley/cax/osg_scripts/upload.py $1 $5 $2 $6 >> $post_log 2>&1
 
 if [[ $? -ne 0 ]]; then

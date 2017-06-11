@@ -12,47 +12,29 @@ import re
 This class contains functions for writing inner and outer dag files. It takes a list of runs (integers) and pax_version as input.
 """
 
+ci_uri = "gsiftp://gridftp.grid.uchicago.edu:2811/cephfs/srm"
+midway_uri = "gsiftp://sdm06.rcc.uchicago.edu:2811"
+
+euro_sites = {"processing" : ["NIKHEF-ELPROD", "CCIN2P3", "WEIZMANN-LCG2"],
+              "rucio" : ["NIKHEF_USERDISK", "CCIN2P3_USERDISK"]
+              }
+
+default_run_config = {"exclude_sites" : [],
+                      "specify_sites" : []}
+
+
 class dag_writer():
 
-    def __init__(self, runlist, pax_version, logdir, reprocessing=False, n_retries=10, RCC_only=False, lyon_only=False):
-        self.runlist = runlist
-        self.pax_version = pax_version
-        self.logdir = logdir
-        self.reprocessing = reprocessing
-        self.ci_uri = "gsiftp://gridftp.grid.uchicago.edu:2811/cephfs/srm"
-        self.midway_uri = "gsiftp://sdm06.rcc.uchicago.edu:2811"
-        self.host = "login"
-        self.n_retries = n_retries
-        self.RCC_only = RCC_only
-        self.lyon_only = lyon_only
-        
-        self.outer_dag_template = """SPLICE {inner_dagname} {inner_dagfile}
-JOB {inner_dagname}_noop1 {inner_dagfile} NOOP
-JOB {inner_dagname}_noop2 {inner_dagfile} NOOP
-SCRIPT PRE {inner_dagname}_noop1 /home/ershockley/cax/osg_scripts/pre_script.sh {run_name} {pax_version} {number} {logdir} {detector}
-SCRIPT POST {inner_dagname}_noop2 /home/ershockley/cax/osg_scripts/hadd_and_upload.sh {run_name} {pax_version} {number} {logdir} {n_zips} {detector}
-PARENT {inner_dagname}_noop1 CHILD {inner_dagname}
-PARENT {inner_dagname} CHILD {inner_dagname}_noop2
-"""
+    def __init__(self, config):
+        self.config = config
+        self.outer_dag_template = self.outerdag_template()
+        self.inner_dag_template = self.innerdag_template()
 
-        self.inner_dag_template = """JOB {number}.{zip_i} {submit_file}
-VARS {number}.{zip_i} input_file="{infile}" out_location="{outfile_full}" name="{run_name}" ncpus="1" disable_updates="True" host="login" pax_version="{pax_version}" pax_hash="n/a" zip_name="{zip_name}" json_file="{json_file}" on_rucio="{on_rucio}" dirname="{dirname}"
-RETRY {number}.{zip_i} {n_retries}
-"""
+        if any(site in config['exclude_sites'] for site in config['specify_sites']):
+            raise ValueError("You can't both specify and exclude a site. Check config")
 
-        self.final_script_template = """/home/ershockley/cax/osg_scripts/hadd_and_upload.sh {run_name} {pax_version} {number} {logdir} {n_zips}
-if [[ ! $? -eq 0 || ! $ex -eq 0 ]]; then
-    ex=1
-fi
-sleep 2
-"""
-
-        if RCC_only and lyon_only:
-            raise ValueError("Trying to use RCC only and Lyon only")
-
-        if reprocessing:
-            self.submitfile = os.path.join(logdir, "process.submit")
-            self.write_submit_script(self.submitfile, self.logdir)
+        if config['rush'] and config['use_midway']:
+            raise ValueError("You can't rush and use midway. Change config and try again")
 
     def get_run_doc(self, run_id):
         if isinstance(run_id, int):
@@ -63,7 +45,33 @@ sleep 2
             detector = 'muon_veto'
 
         query = {identifier  : run_id,
-                 'detector' : detector}
+                 'detector' : detector,
+                 "data": {"$not": {"$elemMatch": {"type": "processed",
+                                                  "pax_version": self.config['pax_version'],
+                                                  "host": self.config['host'],
+                                                  "$or": [{"status": "transferred"},
+                                                          {"status": "transferring"}
+                                                          ]
+                                                  }
+                                   }
+                          },
+                 "$or": [{"$and" : [{'number': {"$gte": 2000}},
+                                    {'processor.DEFAULT.gains': {'$exists': True}},
+                                    {'processor.DEFAULT.electron_lifetime_liquid': {'$exists': True}},
+                                    {'processor.DEFAULT.drift_velocity_liquid': {'$exists': True}},
+                                    {'processor.correction_versions': {'$exists': True}},
+                                    {'processor.WaveformSimulator': {'$exists': True}},
+                                    {'processor.NeuralNet|PosRecNeuralNet': {'$exists': True}},
+                                    ]
+                          },
+                         {"detector": "muon_veto"}
+                         ],
+                 'reader.ini.write_mode': 2,
+                 'trigger.events_built': {"$gt": 0},
+                 'tags': {"$not": {'$elemMatch': {'name': 'donotprocess'}}},
+                 }
+
+        query = {'query': json.dumps(query)}
         API = api()
         doc = API.get_next_run(query)
         time.sleep(0.1)
@@ -75,10 +83,10 @@ sleep 2
         name = doc["name"]
 
         if doc['detector'] == 'muon_veto':
-            json_file = "/xenon/ershockley/jsons/" + name + "_MV.json"
+            json_file = self.config['logdir'] + '/pax_%s/'%self.config['pax_version'] + name + "_MV/" + name + "_MV.json"
 
         elif doc['detector'] == 'tpc':
-            json_file = "/xenon/ershockley/jsons/" + name + ".json"
+            json_file = self.config['logdir'] + '/pax_%s/'%self.config['pax_version'] + name + "/" + name + ".json"
 
         with open(json_file, "w") as f:
             # fix doc so that all '|' become '.' in json
@@ -92,168 +100,134 @@ sleep 2
         """
         Writes outer dag file that contains subdag for each run in runlist.
         """
-        final_script = outer_dag.replace(".dag", "_final.sh")
+        c = self.config
+
         with open(outer_dag, "w") as outer_dag_file:
-            with open(final_script, "w") as final_file:
-                final_file.write("#!/bin/bash \n")
-                # loop over runs in list, write an outer dag that contains subdags for each run
-                run_counter = 0
-                for run in self.runlist:
-                    # get run doc, various parameters needed to write dag
-                    doc = self.get_run_doc(run)
+            # loop over runs in list, write an outer dag that contains subdags for each run
+            run_counter = 0
+            for run in c['runlist']:
+                # get run doc, various parameters needed to write dag
+                doc = self.get_run_doc(run)
 
-                    if doc is None:
-                        print("Run %s does not exist" % run)
-                        continue
+                if doc is None:
+                    print("Run %s cannot be processed. Check DB." % run)
+                    continue
 
-                    # skip bad runs
-                    if "data" not in doc.keys():
-                        print("Skipping Run %s. No 'data' in run doc" % run)
-                        continue
+                # skip if LED run before 3632
+                if isinstance(run, int) and not doc['reader']['self_trigger'] and run<3632:
+                    print("Skipping run %s. LED run before 3632." % run)
+                    continue
 
-                    if "events_built" not in doc["trigger"] or doc["trigger"]["events_built"] < 1:
-                        print("Skipping Run %s. No events" % run)
-                        continue
-
-                    # skip if already processed with this pax version
-                    if any( [ entry["type"] == 'processed' and
-                              entry['pax_version'] == self.pax_version and
-                              entry['status'] == 'transferred' and
-                              entry['host'] == 'login'
-                              for entry in doc["data"] if 'pax_version' in entry.keys() ]):
-                        print("Skipping Run %s. Already processed with pax %s" %
-                              (run, self.pax_version))
-                        continue
-
-                    # check if raw data is in chicago (stash, rucio, or midway)
-                    on_rucio = False
-                    on_stash_local = False
-                    on_midway = False
-                    rucio_name = None
-                    
-                    if any( [entry['type'] == 'raw' and entry['status']=='transferred' and
-                             entry['host'] == 'midway-login1' for entry in doc['data'] ]):
-                        on_midway = True
-
-                    rawdir = self.get_raw_dir(doc)
-                    if rawdir is not None:
-                        if os.path.exists(rawdir):
-                            on_stash_local = True
+                if doc['detector'] == 'muon_veto':
+                    muon_veto = True
+                    MV = "_MV"
+                else:
+                    muon_veto = False
+                    MV = ""
 
 
-                    for d in doc['data']:
-                        if d['host'] == 'rucio-catalogue' and d['status'] == 'transferred':
-                            rucio_name = d['location']
-                            on_rucio = True
+                # check if raw data is in chicago (stash, rucio, or midway)
+                on_rucio = False
+                on_stash_local = False
+                on_midway = False
+                rucio_name = None
+                rses = None
 
-                    on_stash_rucio = False
-                    if rucio_name is not None:
-                        on_stash_rucio = self.is_on_stash(rucio_name)
+                if any( [entry['type'] == 'raw' and entry['status']=='transferred' and
+                         entry['host'] == 'midway-login1' for entry in doc['data'] ]):
+                    on_midway = True
 
-                    if not on_stash_local and not on_stash_rucio:
-                        print(rucio_name)
-                        print("Run %s not in Chicago. Skipping" % run)
-                        continue
-                            
+                rawdir = self.get_raw_dir(doc)
+                if rawdir is not None:
+                    if os.path.exists(rawdir):
+                        on_stash_local = True
 
-                    if on_stash_local:
-                        rawdata_loc = "login"
-                    else:
-                        if on_stash_rucio:
-                            rawdata_loc = "rucio-catalogue"
-                        elif on_midway:
-                            rawdata_loc = "midway-login1"
-                        elif on_rucio:
-                            rawdata_loc = "rucio-catalogue"
-                        else:
-                            print("Error: no rawdata loc defined for run %s. Skipping" % run)
-                            continue
-
-                    # skip if no gains in run doc
-                    if "gains" not in doc["processor"]["DEFAULT"]:
-                        print("Skipping Run %s. No gains in run doc" % run)
-                        continue
-
-                    # skip if no electron lifetime in run doc
-                    if "electron_lifetime_liquid" not in doc["processor"]["DEFAULT"]:
-                        print("Skipping Run %s. No e lifetime in run doc" % run)
-                        continue
-
-                    # skip if has donotprocess tag
-                    if self.has_tag(doc, 'donotprocess'):
-                        print("Skipping run %s. Has 'donotprocess' tag" % run)
-                        continue
-
-                    # skip if LED run before 3632
-                    if isinstance(run, int) and not doc['reader']['self_trigger'] and run<3632:
-                        print("Skipping run %s. LED run before 3632." % run)
-                        continue
-
-                    print("Adding run %s to dag" % run)
-                    run_counter += 1
-
-                    #with open("/home/ershockley/already_dagged_642.txt", "a") as book:
-                    #    book.write("%i\n" % run)
-                        
+                for d in doc['data']:
+                    if d['host'] == 'rucio-catalogue' and d['status'] == 'transferred':
+                        rucio_name = d['location']
+                        on_rucio = True
 
                     run_name = doc["name"]
                     run_number = doc['number']
 
-                    if doc['detector'] == 'muon_veto':
-                        muon_veto = True
-                        MV = "_MV"
+
+
+                # run config to be used in submit script below
+                run_config = default_run_config.copy()
+
+                # use rucio if possible, else download from stash or midway
+                if on_rucio:
+                    rawdata_loc = 'rucio-catalogue'
+                    rses = self.get_rses(rucio_name)
+
+                    if not any(site in rses for site in (euro_sites['rucio'] + ['UC_OSG_USERDISK'])):
+                        print("Raw data for run %s is not at a necessary rucio end point for processing" % run)
+                        continue
+
+                    if not any(site in rses for site in euro_sites['rucio']):
+                        run_config['exclude_sites'] = euro_sites['processing']
+
+                    elif 'UC_OSG_USERDISK' not in rses:
+                        if not c['rush']:
+                            print("Run %s not on UC_OSG_USERDISK" % run)
+                            continue
+                        else:
+                            run_config['specify_sites'] = euro_sites['processing']
+
+                else:
+                    if on_stash_local:
+                        rawdata_loc = "login"
+
+                    elif on_midway:
+                        rawdata_loc = "midway-login1"
+
                     else:
-                        muon_veto = False
-                        MV = ""
+                        print("Error: no rawdata loc defined for run %s. Skipping" % run)
+                        continue
 
-                    # write inner dag and json file for this run
-                    inner_dagname = "xe1t_" + str(run)
-                    inner_dagdir = outer_dag.replace(outer_dag.split("/")[-1], "inner_dags")
-                    inner_dagfile = inner_dagdir + "/" + str(run) + "_%s.dag" % self.pax_version
-                    if not os.path.exists(inner_dagdir):
-                        os.makedirs(inner_dagdir)
-                        os.chmod(inner_dagdir, 0o777)
+                # write inner dag and json file for this run
+                inner_dagname = "xe1t_" + str(run)
+                inner_dagdir = c['logdir'] + '/pax_%s/' % c['pax_version'] + run_name + MV + '/dags'
+                inner_dagfile = inner_dagdir + "/" + str(run) + "_%s.dag" % c['pax_version']
+                if not os.path.exists(inner_dagdir):
+                    os.makedirs(inner_dagdir)
+                    os.chmod(inner_dagdir, 0o777)
 
-                    outputdir = config.get_processing_dir('login',self.pax_version)
+                outputdir = config.get_processing_dir(c['host'], c['pax_version'])
 
-                    json_file = self.write_json_file(doc)
+                json_file = self.write_json_file(doc)
 
-                    os.makedirs(os.path.join(self.logdir, "pax_%s" % self.pax_version, run_name + MV, "joblogs"),
-                                exist_ok=True)
+                os.makedirs(os.path.join(c['logdir'], "pax_%s" % c['pax_version'], run_name + MV, "joblogs"),
+                            exist_ok=True)
 
+                dagdir = outer_dag.rsplit('/',1)[0]
+                submitfile = inner_dagdir + "/process.submit"
 
-                    if not self.reprocessing:
-                        dagdir = outer_dag.rsplit('/',1)[0]
-                        self.submitfile = dagdir + "/process.submit"
-                        self.write_submit_script(self.submitfile, self.logdir)
+                self.write_submit_script(submitfile, run_config)
 
-                    self.write_inner_dag(run, inner_dagfile, outputdir, self.submitfile, json_file, doc,
-                                         rawdata_loc, n_retries=self.n_retries, muonveto=muon_veto)
+                self.write_inner_dag(run, inner_dagfile, outputdir, submitfile, json_file, doc,
+                                     rawdata_loc, muonveto=muon_veto)
 
-                    # write inner dag info to outer dag
-                    outer_dag_file.write(self.outer_dag_template.format(inner_dagname = inner_dagname,
-                                                                        inner_dagfile = inner_dagfile,
-                                                                        run_name = run_name,
-                                                                        pax_version = self.pax_version,
-                                                                        number = run_number,
-                                                                        logdir = self.logdir,
-                                                                        n_zips = self.n_zips,
-                                                                        detector = doc['detector'])
-                                         )
+                if self.n_zips < 1:
+                    print("There are no zip files for run %s for some reason (looking at you MV group). Skipping" % run)
+                    continue
 
-                    final_file.write(self.final_script_template.format(run_name=run_name, pax_version=self.pax_version,
-                                                                       number = run, logdir = self.logdir, n_zips = self.n_zips))
+                print("Adding run %s to dag" % run)
+                run_counter += 1
 
-                final_file.write("exit $ex")
-            os.chmod(final_script, stat.S_IXUSR | stat.S_IRUSR )
-
-            # write final script, but don't execute in dag. only inside cax if more than 10 rescues.
-            # see cax/tasks/process.py
-            if not self.reprocessing:
-                outer_dag_file.write("FINAL final_node %s NOOP \n" % self.submitfile)
-                outer_dag_file.write("SCRIPT POST final_node %s \n" % final_script)
+                # write inner dag info to outer dag
+                outer_dag_file.write(self.outer_dag_template.format(inner_dagname = inner_dagname,
+                                                                    inner_dagfile = inner_dagfile,
+                                                                    run_name = run_name,
+                                                                    pax_version = c['pax_version'],
+                                                                    number = run_number,
+                                                                    logdir = c['logdir'],
+                                                                    n_zips = self.n_zips,
+                                                                    detector = doc['detector'])
+                                     )
 
         print("\n%d Run(s) written to %s" % (run_counter, outer_dag))
+        return run_counter
 
     def write_inner_dag(self, run_id, inner_dag, outputdir, submitfile, jsonfile, doc, rawdata_loc,
                         n_retries = 10, inputfilefilter = "XENON1T-", muonveto = False):
@@ -261,6 +235,8 @@ sleep 2
         """
         Writes inner dag file that contains jobs for each zip file in a run
         """
+
+        c = self.config
 
         # if raw data on stash, get zips directly from raw directory
         if rawdata_loc == "rucio-catalogue":
@@ -305,10 +281,10 @@ sleep 2
 
                         outfile = os.path.abspath(os.path.join(outputdir,
                                                                run_name + MV, outfile))
-                        outfile_full = self.ci_uri + outfile
+                        outfile_full = ci_uri + outfile
                         inner_dag.write(self.inner_dag_template.format(number=run_id, zip_i=i, submit_file = submitfile,
                                                                        infile=infile, outfile_full=outfile_full, run_name=run_name,
-                                                                       pax_version = self.pax_version, zip_name=zip_name,
+                                                                       pax_version = c['pax_version'], zip_name=zip_name,
                                                                        json_file=jsonfile, n_retries=n_retries, on_rucio=on_rucio,
                                                                        dirname = run_name + MV))
                         i += 1
@@ -328,7 +304,7 @@ sleep 2
                     print("Run not in rucio catalog. Check RunsDB")
                     return
 
-                if (self.runlist is not None and run_id not in self.runlist):
+                if (c['runlist'] is not None and run_id not in c['runlist']):
                     print("Run not in runlist")
                     return
 
@@ -347,11 +323,11 @@ sleep 2
 
                     outfile = os.path.abspath(os.path.join(outputdir,
                                                            run_name + MV, outfile))
-                    outfile_full = self.ci_uri + outfile
+                    outfile_full = ci_uri + outfile
                     inner_dag.write(self.inner_dag_template.format(number=run_id, zip_i=i, submit_file=submitfile,
                                                                    infile=infile, outfile_full=outfile_full,
                                                                    run_name=run_name,
-                                                                   pax_version=self.pax_version, zip_name=zip_name,
+                                                                   pax_version=c['pax_version'], zip_name=zip_name,
                                                                    json_file=jsonfile, n_retries=n_retries,
                                                                    on_rucio=on_rucio, dirname = run_name + MV))
                     i += 1
@@ -381,18 +357,18 @@ sleep 2
                     if file_extenstion != ".zip":
                         continue
                     outfile = zip_name + ".root"
-                    infile = self.midway_uri + midway_location + "/" + zip
+                    infile = midway_uri + midway_location + "/" + zip
                     if not os.path.exists(os.path.join(outputdir, run_name + MV)):
                         os.makedirs(os.path.join(outputdir, run_name + MV))
                         os.chmod(os.path.join(outputdir, run_name + MV), 0o777)
 
                     outfile = os.path.abspath(os.path.join(outputdir,
                                                            run_name, outfile))
-                    outfile_full = self.ci_uri + outfile
+                    outfile_full = ci_uri + outfile
                     inner_dag.write(self.inner_dag_template.format(number=run_id, zip_i=i, submit_file=submitfile,
                                                                    infile=infile, outfile_full=outfile_full,
                                                                    run_name=run_name,
-                                                                   pax_version=self.pax_version, zip_name=zip_name,
+                                                                   pax_version=c['pax_version'], zip_name=zip_name,
                                                                    json_file=jsonfile, n_retries=n_retries,
                                                                    on_rucio=on_rucio, dirname = run_name + MV))
                     i += 1
@@ -403,7 +379,7 @@ sleep 2
         # loop over data locations, find the path for this host
         path = None
         for entry in doc["data"]:
-            if entry["host"] == self.host and entry["type"] == "raw":
+            if entry["host"] == self.config['host'] and entry["type"] == "raw":
                 if entry["status"] != "transferred":
                     print("Run %s raw data is not transferred to %s yet!" % (doc['name'], self.host))
                     return None
@@ -411,7 +387,16 @@ sleep 2
         return path        
 
 
-    def write_submit_script(self, filename, logdir):
+    def write_submit_script(self, filename, run_config):
+        # merge configs
+        run_config['exclude_sites'] = list(set(run_config['exclude_sites'] + self.config['exclude_sites']))
+
+        run_config['specify_sites'] = [site for site in (run_config['specify_sites'] + self.config['specify_sites'])
+                                       if site not in run_config['exclude_sites']]
+
+        run_config['specify_sites'] = list(set(run_config['specify_sites']))
+
+
 
         template = """#!/bin/bash
 executable = /home/ershockley/cax/osg_scripts/run_xenon.sh
@@ -420,25 +405,55 @@ Error = {logdir}/pax_$(pax_version)/$(dirname)/$(zip_name)_$(cluster).log
 Output  = {logdir}/pax_$(pax_version)/$(dirname)/$(zip_name)_$(cluster).log
 Log     = {logdir}/pax_$(pax_version)/$(dirname)/joblogs/$(zip_name)_$(cluster).joblog
 
-Requirements = (HAS_CVMFS_xenon_opensciencegrid_org) && (((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName1) || (RCC_Factory == "ciconnect")) && ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName2) || (RCC_Factory == "ciconnect")) && ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName3)  || (RCC_Factory == "ciconnect")) && ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName4) || (RCC_Factory == "ciconnect"))) && (OSGVO_OS_STRING == "RHEL 6" || RCC_Factory == "ciconnect") && (GLIDEIN_ResourceName =!= "Comet") 
+Requirements = {requirements}
 request_cpus = $(ncpus)
 request_memory = 1900MB
 request_disk = 3GB
-transfer_input_files = /home/ershockley/user_cert, $(json_file)
+transfer_input_files = /home/ershockley/user_cert, $(json_file), /home/ershockley/cax/osg_scripts/determine_rse.py
 transfer_output_files = ""
 +WANT_RCC_ciconnect = True
 +ProjectName = "xenon1t" 
 +AccountingGroup = "group_opportunistic.xenon1t.processing"
 when_to_transfer_output = ON_EXIT
-# on_exit_hold = (ExitBySignal == True) || (ExitCode != 0)
 transfer_executable = True
 periodic_remove =  ((JobStatus == 2) && ((CurrentTime - EnteredCurrentStatus) > (60*60*12)))
-#periodic_release = (JobStatus == 5) && (HoldReason == 3) && (NumJobStarts < 5) && ( (CurrentTime - EnteredCurrentStatus) > $RANDOM_INTEGER(60, 1800, 30) )
-#periodic_remove = (NumJobStarts > 4)
 arguments = $(name) $(input_file) $(host) $(pax_version) $(pax_hash) $(out_location) $(ncpus) $(disable_updates) $(json_file) $(on_rucio)
 queue 1
 """
-        script = template.format(logdir = logdir)
+
+        if self.config['use_midway']:
+            requirements = '(HAS_CVMFS_xenon_opensciencegrid_org)' \
+                           '&& (OSGVO_OS_STRING == "RHEL 6" || RCC_Factory == "ciconnect") ' \
+                           '&& (VC3_GLIDEIN_VERSION == "0.9.4") \n' \
+                           '+MATCH_APF_QUEUE=XENON1T'
+
+        else:
+            requirements = "(HAS_CVMFS_xenon_opensciencegrid_org)" \
+                           "&& (((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName1) " \
+                                    "|| (RCC_Factory == \"ciconnect\")) " \
+                                "&& ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName2) " \
+                                    "|| (RCC_Factory == \"ciconnect\")) " \
+                                "&& ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName3)  " \
+                                    "|| (RCC_Factory == \"ciconnect\")) " \
+                               "&& ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName4) " \
+                                     "|| (RCC_Factory == \"ciconnect\"))) " \
+                           "&& (OSGVO_OS_STRING == \"RHEL 6\" || RCC_Factory == \"ciconnect\")"
+
+            for site in run_config['exclude_sites']:
+                requirements += " && (GLIDEIN_ResourceName =!= \"{site}\")".format(site=site)
+
+            if len(run_config['specify_sites']) > 0:
+                specify_string = " && ("
+                for i, site in enumerate(run_config['specify_sites']):
+                    if i==0:
+                        specify_string += "(GLIDEIN_ResourceName == \"{site}\")".format(site=site)
+                    else:
+                        specify_string += " || (GLIDEIN_ResourceName == \"{site}\")".format(site=site)
+                specify_string += ")"
+                requirements += specify_string
+
+        script = template.format(logdir = self.config['logdir'],
+                                 requirements = requirements)
 
         with open(filename, "w") as f:
             f.write(script)
@@ -469,15 +484,18 @@ queue 1
         zips = [l for l in out if l.startswith('XENON')]
         return zips
 
-    def is_on_stash(self, rucio_name):
+    def get_rses(self, rucio_name):
         # checks if run with rucio_name is on stash
         out = subprocess.Popen(["rucio", "list-rules", rucio_name], stdout=subprocess.PIPE).stdout.read()
         out = out.decode("utf-8").split("\n")
+        rses = []
         for line in out:
             line = re.sub(' +', ' ', line).split(" ")
-            if len(line) > 4 and line[4] == "UC_OSG_USERDISK" and line[3][:2] == "OK":
-                return True
-        return False
+            if len(line) > 4 and line[3][:2] == "OK":
+                rses.append(line[4])
+        if len(rses) < 1:
+            raise AssertionError("Problem finding rucio rses")
+        return rses
 
     def FixKeys(self, dictionary):
         for key, value in dictionary.items():
@@ -486,6 +504,24 @@ queue 1
             if '|' in key:
                 dictionary[key.replace('|', '.')] = dictionary.pop(key)
         return dictionary
+
+    def outerdag_template(self):
+        return """SPLICE {inner_dagname} {inner_dagfile}
+JOB {inner_dagname}_noop1 {inner_dagfile} NOOP
+JOB {inner_dagname}_noop2 {inner_dagfile} NOOP
+SCRIPT PRE {inner_dagname}_noop1 /home/ershockley/cax/osg_scripts/pre_script.sh {run_name} {pax_version} {number} {logdir} {detector}
+SCRIPT POST {inner_dagname}_noop2 /home/ershockley/cax/osg_scripts/hadd_and_upload.sh {run_name} {pax_version} {number} {logdir} {n_zips} {detector}
+PARENT {inner_dagname}_noop1 CHILD {inner_dagname}
+PARENT {inner_dagname} CHILD {inner_dagname}_noop2
+"""
+
+    def innerdag_template(self):
+        return """JOB {number}.{zip_i} {submit_file}
+VARS {number}.{zip_i} input_file="{infile}" out_location="{outfile_full}" name="{run_name}" ncpus="1" disable_updates="True" host="login" pax_version="{pax_version}" pax_hash="n/a" zip_name="{zip_name}" json_file="{json_file}" on_rucio="{on_rucio}" dirname="{dirname}"
+RETRY {number}.{zip_i} {n_retries}
+"""
+
+
 
 # for excluding syracuse
 # && (GLIDEIN_Site =!= "SU-OG") && (GLIDEIN_ResourceName =!= "SU-OG-CE1") && (GLIDEIN_ResourceName =!= "SU-OG-CE")

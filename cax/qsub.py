@@ -15,6 +15,7 @@ from cax import config
 import subprocess
 import tempfile
 from distutils.spawn import find_executable
+import shutil
 
 
 def which(program):
@@ -77,27 +78,27 @@ def submit_job(script, name='', extra=''):
 
     delete_script(fileobj)
 
-def submit_dag_job(run_id, logdir, outer_dag, inner_dag, outputdir, submitscript, paxversion, json_file):
+def submit_dag_job(outer_dag, dag_config):
 
     from cax.dag_writer import dag_writer
 
     which('condor_submit_dag')
 
-    # create submit file, which in turn is used by dag file.
-    #submitfileobj = create_script(submitscript)
-
-    # check if inner dag file exists already
-    #if not os.path.isfile(inner_dag):
-    #    print("No INNER dag file exists, writing one now")
-    #    # create inner dag file. In creation of instance, must put run number in a list
-    #    DAG = dag_writer([run_number], paxversion, logdir)
-    #    DAG.write_inner_dag(run_number, inner_dag, outputdir, submitfileobj.name, json_file)
-
-    # now check if outer dag exists
+    # check if outer dag exists
     if not os.path.isfile(outer_dag):
         print("No OUTER dag file exists, writing one now")
-        DAG = dag_writer([run_id], paxversion, logdir)
-        DAG.write_outer_dag(outer_dag)
+        DAG = dag_writer(dag_config)
+
+        # this next line writes the dag and returns the number of runs to
+        # make sure there wasn't an error (typically from buggy MV runs)
+        n_runs = DAG.write_outer_dag(outer_dag)
+
+        if n_runs < 1:
+            print("No runs written to dag, so removing")
+            os.remove(outer_dag)
+            return
+
+
 
     submit_command = ('condor_submit_dag -config /xenon/ershockley/reprocessing/dag_config {script}'.format(script=outer_dag))
 
@@ -112,6 +113,7 @@ def submit_dag_job(run_id, logdir, outer_dag, inner_dag, outputdir, submitscript
         logging.error("Process timeout")
     except Exception as e:
         logging.exception(e)
+
 
 def create_script(script):
     """Create script as temp file to be run on cluster"""

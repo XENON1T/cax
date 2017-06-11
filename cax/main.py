@@ -39,14 +39,14 @@ def main():
     parser.add_argument('--host', type=str,
                         help="Host to pretend to be")
     parser.add_argument('--api', action='store_true', help='Uses API interface instead of pymongo')
+    parser.add_argument('--hurry', action='store_true', help='Overrides condition that raw data must be on stash.'
+                                                             'Submits to EGI sites')
 
     args = parser.parse_args()
 
     if args.version:
         print(__version__)
         exit()
-
-    #print(args.run, config.get_hostname())
 
     if args.host:
         config.HOST = args.host
@@ -115,7 +115,7 @@ def main():
 
         filesystem.SetPermission(),  # Set any permissions (primarily for Tegner) for new data to make sure analysts can access
         clear.BufferPurger(),  # Clear old data at some locations as specified in cax.json
-        process.ProcessBatchQueue(use_api=use_api),  # Process the data with pax
+        process.ProcessBatchQueue(use_api=use_api, hurry=args.hurry),  # Process the data with pax
         process_hax.ProcessBatchQueueHax()  # Process the data with hax
     ]
 
