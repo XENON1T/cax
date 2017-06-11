@@ -2,7 +2,7 @@
 from __future__ import print_function
 import os
 from cax.api import api
-from cax import config
+from cax import config, __file__
 import json
 import time
 import stat
@@ -21,6 +21,15 @@ euro_sites = {"processing" : ["NIKHEF-ELPROD", "CCIN2P3", "WEIZMANN-LCG2"],
 
 default_run_config = {"exclude_sites" : [],
                       "specify_sites" : []}
+
+
+# get grid cert path from cax json
+GRID_CERT = config.get_config()['grid_cert']
+
+# one dir up from usual so that we can access the osg_scripts easily
+CAX_DIR = os.path.dirname(os.path.dirname(__file__))
+
+print("TEST")
 
 
 class dag_writer():
@@ -399,7 +408,7 @@ class dag_writer():
 
 
         template = """#!/bin/bash
-executable = /home/ershockley/cax/osg_scripts/run_xenon.sh
+executable = {cax_dir}/osg_scripts/run_xenon.sh
 universe = vanilla
 Error = {logdir}/pax_$(pax_version)/$(dirname)/$(zip_name)_$(cluster).log
 Output  = {logdir}/pax_$(pax_version)/$(dirname)/$(zip_name)_$(cluster).log
@@ -409,7 +418,7 @@ Requirements = {requirements}
 request_cpus = $(ncpus)
 request_memory = 1900MB
 request_disk = 3GB
-transfer_input_files = /home/ershockley/user_cert, $(json_file), /home/ershockley/cax/osg_scripts/determine_rse.py
+transfer_input_files = {cert}, $(json_file), {cax_dir}/osg_scripts/determine_rse.py
 transfer_output_files = ""
 +WANT_RCC_ciconnect = True
 +ProjectName = "xenon1t" 
@@ -453,7 +462,9 @@ queue 1
                 requirements += specify_string
 
         script = template.format(logdir = self.config['logdir'],
-                                 requirements = requirements)
+                                 requirements = requirements,
+                                 cax_dir = CAX_DIR,
+                                 cert = GRID_CERT)
 
         with open(filename, "w") as f:
             f.write(script)
@@ -470,7 +481,7 @@ queue 1
 
     def rucio_getzips(self, dataset):
         """returns list of zip files from rucio call"""
-        out = subprocess.Popen(["rucio", "-a", "ershockley", "list-file-replicas", dataset], stdout=subprocess.PIPE).stdout.read()
+        out = subprocess.Popen(["rucio", "list-file-replicas", dataset], stdout=subprocess.PIPE).stdout.read()
         out = str(out).split("\\n")
         files = set([l.split(" ")[3] for l in out if '---' not in l and 'x1t' in l])
         zip_files = sorted([f for f in files if f.startswith('XENON1T')])
@@ -479,7 +490,7 @@ queue 1
 
     def midway_getzips(self, midway_path):
         uri = self.midway_uri
-        out = subprocess.Popen(["gfal-ls","--cert", "/home/ershockley/user_cert", uri + midway_path], stdout=subprocess.PIPE).stdout.read()
+        out = subprocess.Popen(["gfal-ls","--cert", GRID_CERT, uri + midway_path], stdout=subprocess.PIPE).stdout.read()
         out = str(out.decode("utf-8")).split("\n")
         zips = [l for l in out if l.startswith('XENON')]
         return zips
@@ -509,19 +520,15 @@ queue 1
         return """SPLICE {inner_dagname} {inner_dagfile}
 JOB {inner_dagname}_noop1 {inner_dagfile} NOOP
 JOB {inner_dagname}_noop2 {inner_dagfile} NOOP
-SCRIPT PRE {inner_dagname}_noop1 /home/ershockley/cax/osg_scripts/pre_script.sh {run_name} {pax_version} {number} {logdir} {detector}
-SCRIPT POST {inner_dagname}_noop2 /home/ershockley/cax/osg_scripts/hadd_and_upload.sh {run_name} {pax_version} {number} {logdir} {n_zips} {detector}
+SCRIPT PRE {inner_dagname}_noop1 %s/osg_scripts/pre_script.sh {run_name} {pax_version} {number} {logdir} {detector}
+SCRIPT POST {inner_dagname}_noop2 %s/osg_scripts/hadd_and_upload.sh {run_name} {pax_version} {number} {logdir} {n_zips} {detector}
+
 PARENT {inner_dagname}_noop1 CHILD {inner_dagname}
 PARENT {inner_dagname} CHILD {inner_dagname}_noop2
-"""
+""" % (CAX_DIR, CAX_DIR)
 
     def innerdag_template(self):
         return """JOB {number}.{zip_i} {submit_file}
 VARS {number}.{zip_i} input_file="{infile}" out_location="{outfile_full}" name="{run_name}" ncpus="1" disable_updates="True" host="login" pax_version="{pax_version}" pax_hash="n/a" zip_name="{zip_name}" json_file="{json_file}" on_rucio="{on_rucio}" dirname="{dirname}"
 RETRY {number}.{zip_i} {n_retries}
 """
-
-
-
-# for excluding syracuse
-# && (GLIDEIN_Site =!= "SU-OG") && (GLIDEIN_ResourceName =!= "SU-OG-CE1") && (GLIDEIN_ResourceName =!= "SU-OG-CE")

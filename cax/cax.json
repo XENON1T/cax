@@ -37,7 +37,7 @@
     "download_options": [],
     "task_list": ["ProcessBatchQueue"],
     "nstreams": 2,
-    "grid_cert": "/stash2/project/@xenon1t/deployHQ/cax/user_cert",
-    "dag_config" : "/home/ershockley/cax/osg_scripts/dag_writer_config.json"
+    "grid_cert": "/home/ershockley/user_cert",
+    "dag_config" : "dag_writer_config.json"
   }
 ]
