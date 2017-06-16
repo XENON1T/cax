@@ -16,7 +16,7 @@ ci_uri = "gsiftp://gridftp.grid.uchicago.edu:2811/cephfs/srm"
 midway_uri = "gsiftp://sdm06.rcc.uchicago.edu:2811"
 
 euro_sites = {"processing" : ["NIKHEF-ELPROD", "CCIN2P3", "WEIZMANN-LCG2"],
-              "rucio" : ["NIKHEF_USERDISK", "CCIN2P3_USERDISK"]
+              "rucio" : ["NIKHEF_USERDISK", "CCIN2P3_USERDISK", "WEIZMANN_USERDISK"]
               }
 
 default_run_config = {"exclude_sites" : [],
@@ -28,8 +28,6 @@ GRID_CERT = config.get_config()['grid_cert']
 
 # one dir up from usual so that we can access the osg_scripts easily
 CAX_DIR = os.path.dirname(os.path.dirname(__file__))
-
-print("TEST")
 
 
 class dag_writer():
@@ -52,6 +50,9 @@ class dag_writer():
         elif isinstance(run_id, str):
             identifier = 'name'
             detector = 'muon_veto'
+
+        else:
+            raise ValueError("identifier is neither int nor string")
 
         query = {identifier  : run_id,
                  'detector' : detector,
@@ -170,8 +171,13 @@ class dag_writer():
                     rses = self.get_rses(rucio_name)
 
                     if not any(site in rses for site in (euro_sites['rucio'] + ['UC_OSG_USERDISK'])):
-                        print("Raw data for run %s is not at a necessary rucio end point for processing" % run)
-                        continue
+                        if on_stash_local:
+                            rawdata_loc = "login"
+                        elif on_midway:
+                            rawdata_loc = "midway"
+                        else:
+                            print("Raw data for run %s is not at a necessary rucio end point for processing" % run)
+                            continue
 
                     if not any(site in rses for site in euro_sites['rucio']):
                         run_config['exclude_sites'] = euro_sites['processing']
@@ -268,7 +274,7 @@ class dag_writer():
                 for dir_name, subdir_list, file_list in os.walk(rawdir):
                     if not muonveto and "MV" in dir_name:
                         continue
-                    if (self.runlist is not None and run_id not in self.runlist):
+                    if (c['runlist'] is not None and run_id not in c['runlist']):
                         continue
                     #run_name = rawdir.split('/')[-1]
                     zip_counter = 0
@@ -283,7 +289,7 @@ class dag_writer():
                         zip_name = filepath.split("/")[-1]
                         outfile = zip_name + ".root"
                         infile_local = os.path.abspath(os.path.join(dir_name, infile))
-                        infile = self.ci_uri + infile_local
+                        infile = ci_uri + infile_local
                         if not os.path.exists(os.path.join(outputdir, run_name + MV)):
                             os.makedirs(os.path.join(outputdir, run_name + MV))
                             os.chmod(os.path.join(outputdir, run_name + MV), 0o777)
@@ -354,7 +360,7 @@ class dag_writer():
                     print("Run not on midway. Check RunsDB")
                     return
 
-                if (self.runlist is not None and run_id not in self.runlist):
+                if (c['runlist'] is not None and run_id not in c['runlist']):
                     print("Run not in runlist")
                     return
 
@@ -439,13 +445,13 @@ queue 1
         else:
             requirements = "(HAS_CVMFS_xenon_opensciencegrid_org)" \
                            "&& (((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName1) " \
-                                    "|| (RCC_Factory == \"ciconnect\")) " \
+                                    "|| (RCC_Factory == \"ciconnect\") || (GLIDEIN_Site == \"MWT2-COREOS\")) " \
                                 "&& ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName2) " \
-                                    "|| (RCC_Factory == \"ciconnect\")) " \
+                                    "|| (RCC_Factory == \"ciconnect\") || (GLIDEIN_Site == \"MWT2-COREOS\")) " \
                                 "&& ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName3)  " \
-                                    "|| (RCC_Factory == \"ciconnect\")) " \
+                                    "|| (RCC_Factory == \"ciconnect\") || (GLIDEIN_Site == \"MWT2-COREOS\")) " \
                                "&& ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName4) " \
-                                     "|| (RCC_Factory == \"ciconnect\"))) " \
+                                     "|| (RCC_Factory == \"ciconnect\") || (GLIDEIN_Site == \"MWT2-COREOS\"))) " \
                            "&& (OSGVO_OS_STRING == \"RHEL 6\" || RCC_Factory == \"ciconnect\")"
 
             for site in run_config['exclude_sites']:
@@ -522,7 +528,6 @@ JOB {inner_dagname}_noop1 {inner_dagfile} NOOP
 JOB {inner_dagname}_noop2 {inner_dagfile} NOOP
 SCRIPT PRE {inner_dagname}_noop1 %s/osg_scripts/pre_script.sh {run_name} {pax_version} {number} {logdir} {detector}
 SCRIPT POST {inner_dagname}_noop2 %s/osg_scripts/hadd_and_upload.sh {run_name} {pax_version} {number} {logdir} {n_zips} {detector}
-
 PARENT {inner_dagname}_noop1 CHILD {inner_dagname}
 PARENT {inner_dagname} CHILD {inner_dagname}_noop2
 """ % (CAX_DIR, CAX_DIR)

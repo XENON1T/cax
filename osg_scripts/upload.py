@@ -14,7 +14,7 @@ import checksumdir
 import json
 #from pymongo import ReturnDocument
 
-from cax import qsub, config
+from cax import qsub, config, __file__
 from cax.task import Task
 from cax.api import api
 
@@ -55,7 +55,7 @@ def get_ziplist(name):
 
     # if not, must go through rucio
     elif on_rucio:
-        out = subprocess.Popen(["rucio", "-a", "ershockley", "list-file-replicas", rucio_scope],
+        out = subprocess.Popen(["rucio", "-a", "xenon-analysis", "list-file-replicas", rucio_scope],
                            stdout=subprocess.PIPE).stdout.read()
         out = str(out).split("\\n")
         files = set([l.split(" ")[3] for l in out if '---' not in l and 'x1t' in l])
@@ -120,7 +120,8 @@ def _upload(name, n_zips, pax_version, detector = "tpc", update_database=True):
     # if all root files present, then perform hadd, checksum, and register to database
     else:
         print("merging %s" % name)
-        subprocess.Popen("/home/ershockley/cax/osg_scripts/merge_roots.sh " + procdir, 
+        cax_dir = os.path.dirname(os.path.dirname(__file__))
+        subprocess.Popen(cax_dir + "/osg_scripts/merge_roots.sh " + procdir, 
                          shell = True).wait()
 
         # final location of processed root file

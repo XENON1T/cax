@@ -37,9 +37,10 @@ source activate pax_$2_OSG
 # save exit status of pipe
 set -o pipefail
 
-#if [[ ! -e /xenon/xenon1t_processed/pax_$2/$1.root ]]; then
-echo "python /home/ershockley/cax/osg_scripts/upload.py $1 $5 $2 $6" >> $post_log 2>&1
-python /home/ershockley/cax/osg_scripts/upload.py $1 $5 $2 $6 >> $post_log 2>&1
+cax_dir=$(python -c "import cax; import os; print(os.path.dirname(os.path.dirname(cax.__file__)))")
+
+echo "python ${cax_dir}/osg_scripts/upload.py $1 $5 $2 $6" >> $post_log 2>&1
+python ${cax_dir}/osg_scripts/upload.py $1 $5 $2 $6 >> $post_log 2>&1
 
 if [[ $? -ne 0 ]]; then
     echo "hadd or DB stuff failed, exiting"
@@ -49,14 +50,13 @@ fi
 # transfer to midway
 
 echo "Beginning cax transfer to midway" >> $post_log
-#cax --once --run $3 --config /home/ershockley/cax/cax/cax_transfer.json >> $post_log 2>&1
 
 if [[ $6 == 'tpc' ]]; then
-    cax --once --run $3 --api --config /home/ershockley/cax/cax/cax_transfer.json >> $post_log 2>&1
+    cax --once --run $3 --api --config ${cax_dir}/cax/cax_transfer.json >> $post_log 2>&1
 fi
 
 if [[ $6 == 'muon_veto' ]]; then
-    cax --once --name $1 --api  --config /home/ershockley/cax/cax/cax_transfer.json >> $post_log 2>&1
+    cax --once --name $1 --api  --config ${cax_dir}/cax/cax_transfer.json >> $post_log 2>&1
 fi
 
 if [[ $? -ne 0 ]]; then
@@ -64,7 +64,7 @@ if [[ $? -ne 0 ]]; then
 fi
 
 # need to get the rucio did for this run
-did=$(/home/ershockley/cax/osg_scripts/get_rucio_did.py $3)
+did=$(${cax_dir}/osg_scripts/get_rucio_did.py $3)
 
 if [[ $? -ne 0 ]]; then
     echo "Error finding rucio did"

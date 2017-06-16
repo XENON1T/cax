@@ -106,7 +106,7 @@ if [[ ${10} == 'True' ]]; then
     unset X509_USER_CERT
     source /cvmfs/xenon.opensciencegrid.org/software/rucio-py26/setup_rucio_1_8_3.sh
     export RUCIO_HOME=/cvmfs/xenon.opensciencegrid.org/software/rucio-py26/1.8.3/rucio/
-    export RUCIO_ACCOUNT=ershockley
+    export RUCIO_ACCOUNT=xenon-analysis
     export X509_USER_PROXY=${start_dir}/user_cert
 
     if [[ -e ${start_dir}/determine_rse.py ]]

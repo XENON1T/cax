@@ -4,7 +4,7 @@ import sys
 import re
 
 
-EURO_SITES = ["CCIN2P3_USERDISK", "NIKHEF_USERDISK", "WEIZMANN-LCG2" ]
+EURO_SITES = ["CCIN2P3_USERDISK", "NIKHEF_USERDISK", "WEIZMANN_USERDISK" ]
 
 US_SITES = ["UC_OSG_USERDISK"]
 
@@ -49,7 +49,10 @@ def determine_rse(rse_list, glidein_country):
             if site in rse_list:
                 return site
 
-    return US_SITES[0]
+    if US_SITES[0] in rses:
+        return US_SITES[0]
+    else:
+        raise AttributeError("cannot download data")
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
