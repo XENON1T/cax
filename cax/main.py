@@ -187,6 +187,9 @@ def massive():
                         help="Select the cluster partition")
     parser.add_argument('--reservation', type=str,
                         help="Select the reservation")
+    parser.add_argument('--addcorrections', action='store_true',
+                        help="Enable AddCorrections to apply corrections only without processing")
+
 
     args = parser.parse_args()
 
@@ -195,6 +198,7 @@ def massive():
         exit()
 
     run_once = args.once
+    add_corrections = args.addcorrections
 
     config_arg = ''
     if args.config_file:
@@ -288,10 +292,45 @@ def massive():
         docs = list(collection.find(query,
                                     sort=sort_key,
                                     projection=['start', 'number','name',
-                                                'detector', '_id']))
+                                                'detector', '_id', 'processor']))
 
         for doc in docs:
+            
+            #Run only the corrections (if requested by terminal input --addcorrections)
+            if add_corrections == True:
+                #ask if data field processor/correction_versions exists
+                #if not start to apply corrections
+                if 'processor' in doc:
+                    if 'correction_versions' not in doc['processor']:
+                
+                        command="""
+cax --once {config} --name {name}
+""".format(config=config_arg,
+           name=doc['name'])
 
+                        logging.info(command)
+            
+                        #Submit the command
+                        sc = qsub.create_script(command)
+                        execute = subprocess.Popen( ['sh', sc.name] , 
+                                                    stdin=subprocess.PIPE,
+                                                    stdout=subprocess.PIPE,
+                                                    stderr=subprocess.STDOUT, shell=False )
+                        stdout_value, stderr_value = execute.communicate()
+                        stdout_value = stdout_value.decode("utf-8")
+                        stdout_value = stdout_value.split("\n")
+                        
+                        #Return command output:
+                        for i in stdout_value:
+                        logging.info('addcorrections: %s', i)
+            
+            
+                        #delete script:
+                        qsub.delete_script( sc )                                      
+                
+                continue
+
+            #Start with processing via batch (if no 'add corrections' was requested)
             job_name = ''
             
             if doc['detector'] == 'tpc':
@@ -336,10 +375,10 @@ def massive():
 
         if run_once:
             break
-        #else:
-        #    pace = 5
-        #    logging.info("Done, waiting %d minutes" % pace)
-        #    time.sleep(60*pace) # Pace 5 minutes
+        else:
+           pace = 5
+           logging.info("Done, waiting %d minutes" % pace)
+           time.sleep(60*pace) # Pace 5 minutes
 
 
 def move():
