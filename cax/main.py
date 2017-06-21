@@ -322,7 +322,7 @@ cax --once {config} --name {name}
                         
                         #Return command output:
                         for i in stdout_value:
-                        logging.info('addcorrections: %s', i)
+                            logging.info('addcorrections: %s', i)
             
             
                         #delete script:
