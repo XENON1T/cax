@@ -1,4 +1,5 @@
 [
+
   {
     "name": "lena",
     "method": "scp",
@@ -37,7 +38,7 @@
     "download_options": [],
     "task_list": ["ProcessBatchQueue"],
     "nstreams": 2,
-    "grid_cert": "/home/ershockley/user_cert",
+    "grid_cert": "/home/rizzoa/user_cert",
     "dag_config" : "dag_writer_config.json"
   }
 ]
