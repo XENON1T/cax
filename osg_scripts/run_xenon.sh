@@ -109,13 +109,21 @@ if [[ ${10} == 'True' ]]; then
     export RUCIO_ACCOUNT=xenon-analysis
     export X509_USER_PROXY=${start_dir}/user_cert
 
+    # set GLIDEIN_Country variable if not already
+    if [[ -z "$GLIDEIN_Country" ]]
+    then
+	export GLIDEIN_Country="US"
+    fi
+
     if [[ -e ${start_dir}/determine_rse.py ]]
     then
+	echo "python ${start_dir}/determine_rse.py $2 $GLIDEIN_Country" 
 	rse=$(python ${start_dir}/determine_rse.py $2 $GLIDEIN_Country)
 	if [[ $? -ne 0 ]]; then exit 255; fi
 
     else
-	rse=UC_OSG_USERDISK
+	echo "Can't find determine_rse.py script" 
+	exit 255
     fi
 
     echo "rucio -T 18000 download $2 --no-subdir --dir ${rawdata_path} --rse $rse"
