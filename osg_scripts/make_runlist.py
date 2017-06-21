@@ -13,8 +13,8 @@ def make_runlist():
     collection = db['runs_new']
     
     query = {"detector" : "tpc",
-             "$and" : [{"number" : {"$gt" : 6730}},
-                       {"number" : {"$lt" : 10000}}
+             "$and" : [{"number" : {"$gt" : 4933}},
+                       {"number" : {"$lt" : 4935}}
                        ], 
              "processor.correction_versions" : {"$exists" : True},
              "trigger.events_built" : {"$gt" : 0}
