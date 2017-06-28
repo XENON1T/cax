@@ -187,8 +187,8 @@ def massive():
                         help="Select the cluster partition")
     parser.add_argument('--reservation', type=str,
                         help="Select the reservation")
-    parser.add_argument('--addcorrections', action='store_true',
-                        help="Enable AddCorrections to apply corrections only without processing")
+    parser.add_argument('--local', action='store_true',
+                        help="Select only raw datasets which are stored locally at a host")
 
 
     args = parser.parse_args()
@@ -198,7 +198,7 @@ def massive():
         exit()
 
     run_once = args.once
-    add_corrections = args.addcorrections
+    only_local = args.local
 
     config_arg = ''
     if args.config_file:
@@ -296,8 +296,9 @@ def massive():
 
         for doc in docs:
             
-            #Run only the corrections (if requested by terminal input --addcorrections)
-            if add_corrections == True:
+            #Run certains actions only on local file.
+            #If only_local is chosen, no jobs will submitted to batch queues
+            if only_local == True:
                 #ask if data field processor/correction_versions exists
                 #if not start to apply corrections
                 if 'processor' in doc:
@@ -322,12 +323,13 @@ cax --once {config} --name {name}
                         
                         #Return command output:
                         for i in stdout_value:
-                        logging.info('addcorrections: %s', i)
+                            logging.info('addcorrections: %s', i)
             
             
                         #delete script:
                         qsub.delete_script( sc )                                      
                 
+                #Nothing else
                 continue
 
             #Start with processing via batch (if no 'add corrections' was requested)
