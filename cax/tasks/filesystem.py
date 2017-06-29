@@ -167,11 +167,11 @@ class RemoveSingle(Task):
 class AddSize(Task):
 
     """ Evaluate the file size of a raw data and check if
-        the number of files in the raw data directory match 
+        the number of files in the raw data directory match
         with the number of events recorded
     """
     def __init__(self):
-        Task.__init__(self) 
+        Task.__init__(self)
 
     def each_run(self):
 
@@ -181,24 +181,24 @@ class AddSize(Task):
            return
 
         # Check of Trigger info
-        if 'trigger' not in self.run_doc: 
+        if 'trigger' not in self.run_doc:
            self.log.debug("Trigger not found Name: %s " %(self.run_doc['name']) )
            return
 
         run_number = self.run_doc['number']
-        run_name = self.run_doc['name'] 
+        run_name = self.run_doc['name']
 
 
         trigger = self.run_doc['trigger']
         nevents = trigger['events_built']
 
-        for data_doc in self.run_doc['data']:        
-            
-            _host = data_doc['host']  
-            _location = data_doc['location'] 
-            _type = data_doc['type']  
+        for data_doc in self.run_doc['data']:
 
-            if _host == config.get_hostname():  
+            _host = data_doc['host']
+            _location = data_doc['location']
+            _type = data_doc['type']
+
+            if _host == config.get_hostname():
 
                if _type ==  "raw":
                    self.log.debug("host: %s  location: %s  type: %s" %(_host,_location,_type ) )
@@ -246,7 +246,7 @@ class AddSize(Task):
                       else:
                           self.log.debug("Run: %i  Name: %s  Not on %s "%(run_number,run_name,_location))
                       
-                      return      
+                      return
    
 
 class RemoveTSMEntry(Task):
