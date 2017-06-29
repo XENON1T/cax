@@ -209,8 +209,7 @@ class AddSize(Task):
                          nfiles = len(os.listdir(_location))-4
 
                          ents = int(nevents)/1000.
-                         res = int((ents-int(ents))*1000.)
-
+                         
                          # The Muon Veto data have one file less respect to the TPC run
                          if ( (nfiles) == (int(ents)) or (nfiles) == (int(ents)+1) ) :
                             self.log.debug("nevnt: %i  nfile: %i" %(nfiles,int(ents) ) )
