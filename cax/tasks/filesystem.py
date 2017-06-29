@@ -177,12 +177,12 @@ class AddSize(Task):
 
         # Check of data info
         if 'data' not in self.run_doc:
-           self.log.debug("Data not found Name: %s " %(run_name) )
+           self.log.debug("Data not found Name: %s " %(self.run_doc['name']) )
            return
 
         # Check of Trigger info
         if 'trigger' not in self.run_doc: 
-           self.log.debug("Trigger not found Name: %s " %(run_name) )
+           self.log.debug("Trigger not found Name: %s " %(self.run_doc['name']) )
            return
 
         run_number = self.run_doc['number']
@@ -243,9 +243,9 @@ class AddSize(Task):
 
                    except FileNotFoundError:
                       if run_number == 0:
-                          self.log.debug("Run name: %s  Not on mwy"%(run_name,_location))
+                          self.log.debug("Run name: %s  Not on %s "%(run_name,_location))
                       else:
-                          self.log.debug("Run: %i  Name: %s  Not on mwy"%(run_number,run_name,_location))
+                          self.log.debug("Run: %i  Name: %s  Not on %s "%(run_number,run_name,_location))
                       
                       return      
    
