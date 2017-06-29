@@ -163,6 +163,93 @@ class RemoveSingle(Task):
 
             break
 
+
+class AddSize(Task):
+
+    """ Evaluate the file size of a raw data and check if
+        the number of files in the raw data directory match 
+        with the number of events recorded
+    """
+    def __init__(self):
+        Task.__init__(self) 
+
+    def each_run(self):
+
+        # Check of data info
+        if 'data' not in self.run_doc:
+           self.log.debug("Data not found Name: %s " %(run_name) )
+           return
+
+        # Check of Trigger info
+        if 'trigger' not in self.run_doc: 
+           self.log.debug("Trigger not found Name: %s " %(run_name) )
+           return
+
+        run_number = self.run_doc['number']
+        run_name = self.run_doc['name'] 
+
+
+        trigger = self.run_doc['trigger']
+        nevents = trigger['events_built']
+
+        for data_doc in self.run_doc['data']:        
+            
+            _host = data_doc['host']  
+            _location = data_doc['location'] 
+            _type = data_doc['type']  
+
+            if _host == config.get_hostname():  
+
+               if _type ==  "raw":
+                   self.log.debug("host: %s  location: %s  type: %s" %(_host,_location,_type ) )
+                   try:
+                         # Check if the number of files match with the number of events
+                         completeness = False
+                         raw_size = 0
+                         nfiles = len(os.listdir(_location))-4
+
+                         ents = int(nevents)/1000.
+                         res = int((ents-int(ents))*1000.)
+
+                         # The Muon Veto data have one file less respect to the TPC run
+                         if ( (nfiles) == (int(ents)) or (nfiles) == (int(ents)+1) ) :
+                            self.log.debug("nevnt: %i  nfile: %i" %(nfiles,int(ents) ) )
+                            self.log.debug("Run Name: %s  Number: %d  is on midway: %s" % 
+                                          (run_name,run_number , _location))
+                            completeness = True
+                         else:
+                            self.log.debug("!!! Corrupted !!! Expected %d files found %d  Name: %s " %((int(ents)+1), number_files, name) )
+                            completeness = False
+
+                         # If the raw files are complete calculate the size summing the size of
+                         # each file contained in the directory of the raw data
+
+                         if (completeness):
+
+                             for i in os.listdir(_location):
+                                 #self.log.info(_location+"/"+i)
+                                 rfile=_location+"/"+i
+                                 byt= os.stat(rfile)
+                                 raw_size += byt.st_size 
+                             self.log.debug("Raw size: %d Byte  %.2f GByte nEvents: %d Size per evnt: %.1f" %
+                                            (raw_size,raw_size/1024/1024/1024, nevents,float(raw_size/nevents) ))
+
+                             self.collection.update({'_id' : self.run_doc['_id'],
+                                                     'data': {'$elemMatch': data_doc}},
+                                                     {'$set': {'data.$.size_byte' : raw_size} } )
+
+     
+                       #print("Path: %s nevnt: %i  nfile: %i" %(path, number_files,
+
+                   except FileNotFoundError:
+                      if run_number == 0:
+                          self.log.debug("Run name: %s  Not on mwy"%(run_name,_location))
+                      else:
+                          self.log.debug("Run: %i  Name: %s  Not on mwy"%(run_number,run_name,_location))
+                      
+                      return      
+   
+
 class RemoveTSMEntry(Task):
     """Remove a single file or directory
 
