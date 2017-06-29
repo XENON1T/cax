@@ -213,7 +213,7 @@ class AddSize(Task):
                          # The Muon Veto data have one file less respect to the TPC run
                          if ( (nfiles) == (int(ents)) or (nfiles) == (int(ents)+1) ) :
                             self.log.debug("nevnt: %i  nfile: %i" %(nfiles,int(ents) ) )
-                            self.log.debug("Run Name: %s  Number: %d  is on midway: %s" % 
+                            self.log.debug("Run Name: %s  Number: %d  is on midway: %s" %
                                           (run_name,run_number , _location))
                             completeness = True
                          else:
@@ -229,7 +229,7 @@ class AddSize(Task):
                                  #self.log.info(_location+"/"+i)
                                  rfile=_location+"/"+i
                                  byt= os.stat(rfile)
-                                 raw_size += byt.st_size 
+                                 raw_size += byt.st_size
                              self.log.debug("Raw size: %d Byte  %.2f GByte nEvents: %d Size per evnt: %.1f" %
                                             (raw_size,raw_size/1024/1024/1024, nevents,float(raw_size/nevents) ))
 
