@@ -51,7 +51,7 @@ def _process_hax(name, in_location, host, pax_version,
     try:
         print ('creating hax minitrees', name, in_location)
         init_hax(in_location, pax_version, out_location)   # may initialize once only
-        hax.minitrees.load_single_dataset(name, ['Basics', 'Fundamentals',
+        hax.minitrees.load_single_dataset(name, ['Corrections', 'Basics', 'Fundamentals',
                                   'DoubleScatter', 'LargestPeakProperties',
                                   'TotalProperties',  'Extended', 'Proximity', 
                                   'TailCut'])
