@@ -187,8 +187,8 @@ def massive():
                         help="Select the cluster partition")
     parser.add_argument('--reservation', type=str,
                         help="Select the reservation")
-    parser.add_argument('--local', action='store_true',
-                        help="Select only raw datasets which are stored locally at a host")
+    parser.add_argument('--no-batch-mode', dest='no_batch_mode', action='store_true',
+                        help="Use massive-cax without batch queue submission.")
 
 
     args = parser.parse_args()
@@ -198,7 +198,7 @@ def massive():
         exit()
 
     run_once = args.once
-    only_local = args.local
+    no_batch_mode = args.no_batch_mode
 
     config_arg = ''
     if args.config_file:
@@ -296,38 +296,39 @@ def massive():
 
         for doc in docs:
             
-            #Run certains actions only on local file.
-            #If only_local is chosen, no jobs will submitted to batch queues
-            if only_local == True:
-                #ask if data field processor/correction_versions exists
-                #if not start to apply corrections
-                if 'processor' in doc:
-                    if 'correction_versions' not in doc['processor']:
+            #If no_batch_mode is chosen, no jobs will submitted to batch queues
+            if no_batch_mode == True:
                 
-                        command="""
+                #Define basic command:
+                basic_command = """#!/bin/bash
 cax --once {config} --name {name}
-""".format(config=config_arg,
-           name=doc['name'])
-
+"""
+                
+                print("no-batch-mode")
+                
+                #Pre-read the config file for the no-batch-mode modus:
+                config.set_json(os.path.abspath(args.config_file))
+                task_list = config.get_config(config.get_hostname())['task_list']
+                
+                #This is a list of tasks which refer to apply corrections to a run:
+                task_list_correction = ['AddElectronLifetime', 'AddGains', 'AddDriftVelocity', 'SetS2xyMap', 'SetLightCollectionEfficiency', 'SetFieldDistortion', 'SetNeuralNetwork']
+                
+                #--------------------
+                #Start with single activities: Apply corrections only to data sets which do not have any correction yet:
+                if bool(set(task_list) & set(task_list_correction)) or task_list_correction == task_list:
+                    
+                    this_run_version = doc.get('processor', {}).get('correction_versions', {})
+                    if len(this_run_version) == 0:
+                        command = basic_command.format(config=config_arg, name=doc['name'])
                         logging.info(command)
-            
-                        #Submit the command
-                        sc = qsub.create_script(command)
-                        execute = subprocess.Popen( ['sh', sc.name] , 
-                                                    stdin=subprocess.PIPE,
-                                                    stdout=subprocess.PIPE,
-                                                    stderr=subprocess.STDOUT, shell=False )
-                        stdout_value, stderr_value = execute.communicate()
-                        stdout_value = stdout_value.decode("utf-8")
-                        stdout_value = stdout_value.split("\n")
+                        stdout_value = qsub.command_submission( command )
                         
                         #Return command output:
                         for i in stdout_value:
-                            logging.info('addcorrections: %s', i)
-            
-            
-                        #delete script:
-                        qsub.delete_script( sc )                                      
+                           logging.info('AddCorrections: %s', i)
+                
+                #--------------------
+                #Start with single activities: Add another activity:
                 
                 #Nothing else
                 continue

@@ -124,3 +124,21 @@ def get_queue(host=config.get_hostname(), partition=''):
     if len(queue_list) > 1:
         return queue_list[1:]
     return []
+
+
+def command_submission(command):
+    
+    #Submit the command
+    sc = create_script(command)
+    execute = subprocess.Popen( ['sh', sc.name] , 
+                                stdin=subprocess.PIPE,
+                                stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT, shell=False )
+    stdout_value, stderr_value = execute.communicate()
+    stdout_value = stdout_value.decode("utf-8")
+    stdout_value = stdout_value.split("\n")                  
+    #delete script:
+    delete_script( sc )    
+    
+    return stdout_value
+    
