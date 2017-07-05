@@ -136,9 +136,9 @@ def command_submission(command):
                                 stderr=subprocess.STDOUT, shell=False )
     stdout_value, stderr_value = execute.communicate()
     stdout_value = stdout_value.decode("utf-8")
-    stdout_value = stdout_value.split("\n")                  
+    stdout_value = stdout_value.split("\n")
     #delete script:
-    delete_script( sc )    
+    delete_script( sc )
     
     return stdout_value
     
