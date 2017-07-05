@@ -14,9 +14,13 @@ import checksumdir
 import json
 #from pymongo import ReturnDocument
 
+os.environ["PYTHONPATH"]="/xenon/cax:"+os.environ["PYTHONPATH"]
+
 from cax import qsub, config, __file__
 from cax.task import Task
 from cax.api import api
+
+
 
 def verify():
     """Verify the file
@@ -121,8 +125,8 @@ def _upload(name, n_zips, pax_version, detector = "tpc", update_database=True):
     else:
         print("merging %s" % name)
         cax_dir = os.path.dirname(os.path.dirname(__file__))
-        subprocess.Popen(cax_dir + "/osg_scripts/merge_roots.sh " + procdir, 
-                         shell = True).wait()
+        print (cax_dir)
+        subprocess.Popen(cax_dir + "/osg_scripts/merge_roots.sh " + procdir, shell = True).wait()
 
         # final location of processed root file
         final_location = procdir + ".root"   
@@ -151,3 +155,4 @@ def main():
     _upload(*sys.argv[1:])
 
 main()
+

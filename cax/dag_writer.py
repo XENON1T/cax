@@ -202,19 +202,16 @@ class dag_writer():
 
                 # write inner dag and json file for this run
                 inner_dagname = "xe1t_" + str(run)
-                inner_dagdir = c['logdir'] + '/pax_%s/' % c['pax_version'] + run_name + MV + '/dags'
+                
+                basedir = c['logdir'] + '/pax_%s/' % c['pax_version'] + run_name + MV
+                inner_dagdir = basedir + '/dags'
                 inner_dagfile = inner_dagdir + "/" + str(run) + "_%s.dag" % c['pax_version']
-                if not os.path.exists(inner_dagdir):
-                    os.makedirs(inner_dagdir)
-                    os.chmod(inner_dagdir, 0o777)
+                os.makedirs(inner_dagdir, exist_ok=True )
+                os.chmod(inner_dagdir, 0o777)
 
                 outputdir = config.get_processing_dir(c['host'], c['pax_version'])
-
                 json_file = self.write_json_file(doc)
-
-                os.makedirs(os.path.join(c['logdir'], "pax_%s" % c['pax_version'], run_name + MV, "joblogs"),
-                            exist_ok=True)
-
+                os.makedirs(os.path.join(basedir, "joblogs"), exist_ok=True)
                 dagdir = outer_dag.rsplit('/',1)[0]
                 submitfile = inner_dagdir + "/process.submit"
 
@@ -240,6 +237,16 @@ class dag_writer():
                                                                     n_zips = self.n_zips,
                                                                     detector = doc['detector'])
                                      )
+
+
+                # change permissions for this run
+                os.chmod(basedir, 0o777)
+                print("changing permissions for %s" % basedir)
+                for root, subdirs, files in os.walk(basedir):
+                    for d in subdirs:
+                        os.chmod(os.path.join(root, d), 0o777)
+                    for f in files:
+                        os.chmod(os.path.join(root, f), 0o777)
 
         print("\n%d Run(s) written to %s" % (run_counter, outer_dag))
         return run_counter

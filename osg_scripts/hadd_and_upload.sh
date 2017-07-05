@@ -7,6 +7,9 @@
 # 5: number of zips
 # 6: detector
 
+
+
+
 run="${1##*/}"
 post_log=$4/pax_$2/$run/POST_LOG
 if [[ $6 == 'muon_veto' ]]; then
@@ -25,28 +28,26 @@ else
     rootfile=/xenon/xenon1t_processed/pax_$2/$1.root
 fi
 
-if [[ -e $rootfile ]]; then
-    echo "Processing done! Don't need to run post script. Exit 0." >> $post_log
-    exit 0
-fi
-
-rawdir=$1
-
 source activate pax_$2_OSG
 
-# save exit status of pipe
-set -o pipefail
+export PYTHONPATH=/xenon/cax:$PYTHONPATH
 
-cax_dir=$(python -c "import cax; import os; print(os.path.dirname(os.path.dirname(cax.__file__)))")
+cax_dir=/xenon/cax
 
-echo "python ${cax_dir}/osg_scripts/upload.py $1 $5 $2 $6" >> $post_log 2>&1
-python ${cax_dir}/osg_scripts/upload.py $1 $5 $2 $6 >> $post_log 2>&1
+if [[ ! -e $rootfile ]]; then
+	rawdir=$1
 
-if [[ $? -ne 0 ]]; then
-    echo "hadd or DB stuff failed, exiting"
-    exit 1
-fi  
-#fi
+	# save exit status of pipe
+	set -o pipefail
+
+	#echo "python ${cax_dir}/osg_scripts/upload.py $1 $5 $2 $6" >> $post_log 2>&1	
+	python ${cax_dir}/osg_scripts/upload.py $1 $5 $2 $6 >> $post_log 2>&1
+	if [[ $? -ne 0 ]]; then
+    		echo "hadd or DB stuff failed, exiting"
+    		exit 1
+	fi
+fi	  
+
 # transfer to midway
 
 echo "Beginning cax transfer to midway" >> $post_log
@@ -75,16 +76,16 @@ fi
 # submit massive-cax job to verify transfer
 if [[ $6 == 'tpc' ]]; then
     echo "Submitting massive cax job on midway for tpc run $3" >> $post_log 
-    echo "ssh mklinton@midway2-login1.rcc.uchicago.edu '/project/lgrandi/general_scripts/verify_stash_transfers.sh $3 $2 $did $6'" >> $post_log 2>&1
-    ssh mklinton@midway2-login1.rcc.uchicago.edu "/project/lgrandi/general_scripts/verify_stash_transfers.sh $3 $2 $did $6" >> $post_log 2>&1
+    echo "ssh mklinton@midway2-login1.rcc.uchicago.edu -o StrictHostKeyChecking=no '/project/lgrandi/general_scripts/verify_stash_transfers.sh $3 $2 $did $6'" >> $post_log 2>&1
+    ssh mklinton@midway2-login1.rcc.uchicago.edu -o StrictHostKeyChecking=no "/project/lgrandi/general_scripts/verify_stash_transfers.sh $3 $2 $did $6" >> $post_log 2>&1
 
     ex=$?
 fi
 
 if [[ $6 == 'muon_veto' ]]; then
     echo "Submitting massive cax job on midway for MV run $1" >> $post_log
-    echo "ssh mklinton@midway2-login1.rcc.uchicago.edu '/project/lgrandi/general_scripts/verify_stash_transfers.sh $1 $2 $did $6'" >> $post_log 2>&1
-    ssh mklinton@midway2-login1.rcc.uchicago.edu "/project/lgrandi/general_scripts/verify_stash_transfers.sh $1 $2 $did $6" >> $post_log 2>&1
+    echo "ssh mklinton@midway2-login1.rcc.uchicago.edu -o StrictHostKeyChecking=no '/project/lgrandi/general_scripts/verify_stash_transfers.sh $1 $2 $did $6'" >> $post_log 2>&1
+    ssh mklinton@midway2-login1.rcc.uchicago.edu -o StrictHostKeyChecking=no "/project/lgrandi/general_scripts/verify_stash_transfers.sh $0 $2 $did $6" >> $post_log 2>&1
 
     ex=$?
 fi

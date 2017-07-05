@@ -61,9 +61,10 @@ fi
 start_dir=$PWD
 
 echo "start dir is $start_dir. Here's whats inside"
-ls -l *user_cert*
-ls -l  *.json
-ls -l *.py*
+ls -l 
+
+if [ -n $(ls *cert*) ]; then export X509_USER_PROXY=${start_dir}/$(ls *cert*); fi
+if [ -n $(ls *proxy*) ]; then export X509_USER_PROXY=${start_dir}/$(ls *proxy*); fi
 
 json_file=$(ls *json)
 
@@ -107,7 +108,7 @@ if [[ ${10} == 'True' ]]; then
     source /cvmfs/xenon.opensciencegrid.org/software/rucio-py26/setup_rucio_1_8_3.sh
     export RUCIO_HOME=/cvmfs/xenon.opensciencegrid.org/software/rucio-py26/1.8.3/rucio/
     export RUCIO_ACCOUNT=xenon-analysis
-    export X509_USER_PROXY=${start_dir}/user_cert
+    #export X509_USER_PROXY=${start_dir}/user_cert
 
     # set GLIDEIN_Country variable if not already
     if [[ -z "$GLIDEIN_Country" ]]
@@ -201,7 +202,7 @@ outfile=$(ls ${start_dir}/output/)
 echo "outfile: $outfile"
 echo "Arg 6: $6"
 echo "time gfal-copy --cert ${outfile} -T 36000 -t 36000 -f -p --checksum md5 file://${out_file} ${stash_loc}"
-time gfal-copy --cert ${start_dir}/user_cert -T 36000 -t 36000 -f -p --checksum md5 file://${start_dir}/output/${outfile} ${stash_loc} 
+time gfal-copy --cert $X509_USER_PROXY -T 36000 -t 36000 -f -p --checksum md5 file://${start_dir}/output/${outfile} ${stash_loc} 
 
 if [[ $? -ne 0 ]];
 then 

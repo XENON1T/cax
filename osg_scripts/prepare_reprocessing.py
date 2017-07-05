@@ -3,13 +3,14 @@ from cax.dag_writer import dag_writer
 import numpy as np
 from make_runlist import make_runlist
 from pax import __version__
+import os
 
 
+os.environ["PYTHONPATH"]="/xenon/cax:"+os.environ["PYTHONPATH"]
 
-runlist = list(np.arange(2633, 2655)) + list(np.arange(3144, 3169)) + list(np.arange(3472, 3496)) + list(np.arange(4545, 4569))
-
-runlist = [int(run) for run in runlist ]
-runlist = sorted(runlist)
+runlist = [4940]
+#runlist = make_runlist()
+#runlist = sorted(runlist)
 
 config = { 'runlist' : runlist,
            'pax_version' :'v' +  __version__,
@@ -24,5 +25,7 @@ config = { 'runlist' : runlist,
 
 
 dag = dag_writer(config)
-dag.write_outer_dag('/scratch/processing/665_murra_4dates.dag')
+
+#this name has to be changed in case one wants to do reprocessing
+dag.write_outer_dag('/scratch/processing/evan_test.dag')
 
