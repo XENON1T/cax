@@ -197,56 +197,70 @@ class AddSize(Task):
             _host = data_doc['host']
             _location = data_doc['location']
             _type = data_doc['type']
+            _status = data_doc['status']
 
-            if _host == config.get_hostname():
+            if _type ==  "raw" and _status == "transferred":
+                self.log.debug("host: %s  location: %s  type: %s" %(_host,_location,_type ) )
+                try:
+                      # Check if the number of files match with the number of events
+                      completeness = False
+                      raw_size = 0
+                      nfiles = len(os.listdir(_location))-4
 
-               if _type ==  "raw":
-                   self.log.debug("host: %s  location: %s  type: %s" %(_host,_location,_type ) )
-                   try:
-                         # Check if the number of files match with the number of events
-                         completeness = False
-                         raw_size = 0
-                         nfiles = len(os.listdir(_location))-4
-
-                         ents = int(nevents)/1000.
-                         
-                         # The Muon Veto data have one file less respect to the TPC run
-                         if ( (nfiles) == (int(ents)) or (nfiles) == (int(ents)+1) ) :
-                            self.log.debug("nevnt: %i  nfile: %i" %(nfiles,int(ents) ) )
-                            self.log.debug("Run Name: %s  Number: %d  is on midway: %s" %
-                                          (run_name,run_number , _location))
-                            completeness = True
-                         else:
-                            self.log.debug("!!! Corrupted !!! Expected %d files found %d  Name: %s " %((int(ents)+1), number_files, name) )
-                            completeness = False
-
-                         # If the raw files are complete calculate the size summing the size of
-                         # each file contained in the directory of the raw data
-
-                         if (completeness):
-
-                             for i in os.listdir(_location):
-                                 #self.log.info(_location+"/"+i)
-                                 rfile=_location+"/"+i
-                                 byt= os.stat(rfile)
-                                 raw_size += byt.st_size
-                             self.log.debug("Raw size: %d Byte  %.2f GByte nEvents: %d Size per evnt: %.1f" %
-                                            (raw_size,raw_size/1024/1024/1024, nevents,float(raw_size/nevents) ))
-
-                             self.collection.update({'_id' : self.run_doc['_id'],
-                                                     'data': {'$elemMatch': data_doc}},
-                                                     {'$set': {'data.$.size_byte' : raw_size} } )
-
-     
-                       #print("Path: %s nevnt: %i  nfile: %i" %(path, number_files,
-
-                   except FileNotFoundError:
-                      if run_number == 0:
-                          self.log.debug("Run name: %s  Not on %s "%(run_name,_location))
-                      else:
-                          self.log.debug("Run: %i  Name: %s  Not on %s "%(run_number,run_name,_location))
+                      ents = int(nevents)/1000.
+                      if 'raw_size_byte' not in self.run_doc:
                       
-                      return
+                          # The Muon Veto data have one file less respect to the TPC run
+                          if ( (nfiles) == (int(ents)) or (nfiles) == (int(ents)+1) ) :
+                             self.log.debug("nevnt: %i  nfile: %i" %(nfiles,int(ents) ) )
+                             self.log.debug("Run Name: %s  Number: %d  is on midway: %s" %
+                                           (run_name,run_number , _location))
+                             completeness = True
+                          else:
+                             self.log.debug("!!! Corrupted !!! Expected %d files found %d  Name: %s " %((int(ents)+1), number_files, name) )
+                             completeness = False
+                         
+                          # If the raw files are complete calculate the size summing the size of
+                          # each file contained in the directory of the raw data
+                          if (completeness):
+                         
+                              for i in os.listdir(_location):
+                                  #self.log.info(_location+"/"+i)
+                                  rfile=_location+"/"+i
+                                  byt= os.stat(rfile)
+                                  raw_size += byt.st_size
+                         
+                              self.log.debug("Raw size: %d Byte  %.2f GByte nEvents: %d Size per evnt: %.1f" %
+                                             (raw_size,raw_size*10e-9, nevents,float(raw_size/nevents) ))
+                         
+                         
+                              self.collection.update( {'_id' : self.run_doc['_id'] },
+                                                      {'$set': {'raw_size_byte' : raw_size } } )
+                      else:
+                          self.log.debug("Size Raw data: %.2f GB" % (float(self.run_doc['raw_size_byte']/1.e9)))
+                         
+#                              In the case I want to remove a entry:
+#                              self.collection.update({'_id' : self.run_doc['_id'],
+#                                                      'data': {'$elemMatch': data_doc}},
+#                                                      {'$pull': {'data': { 'raw_size_byte': 413378248} } }, )
+                         
+                           #   else:
+                           #      self.log.info("Raw size already present: %d " % (data_doc['raw_size_byte']) )
+     
+
+
+ 
+                      if ( _type ==  "processed" and _status == "transferred" ):
+                         print("Print Location: %s " % (_location) )
+            
+                  
+                except FileNotFoundError:
+                   if run_number == 0:
+                       self.log.debug("Run name: %s  Not on %s "%(run_name,_location))
+                   else:
+                       self.log.debug("Run: %i  Name: %s  Not on %s "%(run_number,run_name,_location))
+                   
+                   continue
    
 
 class RemoveTSMEntry(Task):
