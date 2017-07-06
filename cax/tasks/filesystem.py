@@ -250,7 +250,7 @@ class AddSize(Task):
                                           % (_location, byt.st_size, byt.st_size/1024/1024/1024 ) )
                            self.collection.update({'_id' : self.run_doc['_id'],
                                                'data': {'$elemMatch': data_doc}},
-                                              {'$set': {'data.$.size_byte': byt.st_size } } )
+                                              {'$set': {'data.$.size': byt.st_size } } )
                    else:
                        if os.path.isfile(_location):
                            byt= os.stat(_location)
