@@ -241,8 +241,7 @@ class AddSize(Task):
                         self.log.debug("Size Raw data: %.2f GB" % (float(self.run_doc['raw_size_byte']/1.e9)))
 
 
-                """Adds the size of the processed files if are present in the local disk """
-
+                #This adds the size of the processed files if are present in the local disk.
                 if ( _type ==  "processed" and _status == "transferred" ):
                    if 'size_byte' not in data_doc:
                        if os.path.isfile(_location):
