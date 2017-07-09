@@ -230,7 +230,7 @@ class ProcessBatchQueue(Task):
         else:
             query["data"]["$elemMatch"] = {"host" : self.thishost,
                                            "type" : "raw"}
-
+            
         Task.__init__(self, query=query, use_api=use_api)
     
     def verify(self):
