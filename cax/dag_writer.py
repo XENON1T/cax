@@ -2,7 +2,7 @@
 from __future__ import print_function
 import os
 from cax.api import api
-from cax import config
+from cax import config, __file__
 import json
 import time
 import stat
@@ -16,11 +16,18 @@ ci_uri = "gsiftp://gridftp.grid.uchicago.edu:2811/cephfs/srm"
 midway_uri = "gsiftp://sdm06.rcc.uchicago.edu:2811"
 
 euro_sites = {"processing" : ["NIKHEF-ELPROD", "CCIN2P3", "WEIZMANN-LCG2"],
-              "rucio" : ["NIKHEF_USERDISK", "CCIN2P3_USERDISK"]
+              "rucio" : ["NIKHEF_USERDISK", "CCIN2P3_USERDISK", "WEIZMANN_USERDISK"]
               }
 
 default_run_config = {"exclude_sites" : [],
                       "specify_sites" : []}
+
+
+# get grid cert path from cax json
+GRID_CERT = config.get_config()['grid_cert']
+
+# one dir up from usual so that we can access the osg_scripts easily
+CAX_DIR = os.path.dirname(os.path.dirname(__file__))
 
 
 class dag_writer():
@@ -43,6 +50,9 @@ class dag_writer():
         elif isinstance(run_id, str):
             identifier = 'name'
             detector = 'muon_veto'
+
+        else:
+            raise ValueError("identifier is neither int nor string")
 
         query = {identifier  : run_id,
                  'detector' : detector,
@@ -161,8 +171,13 @@ class dag_writer():
                     rses = self.get_rses(rucio_name)
 
                     if not any(site in rses for site in (euro_sites['rucio'] + ['UC_OSG_USERDISK'])):
-                        print("Raw data for run %s is not at a necessary rucio end point for processing" % run)
-                        continue
+                        if on_stash_local:
+                            rawdata_loc = "login"
+                        elif on_midway:
+                            rawdata_loc = "midway"
+                        else:
+                            print("Raw data for run %s is not at a necessary rucio end point for processing" % run)
+                            continue
 
                     if not any(site in rses for site in euro_sites['rucio']):
                         run_config['exclude_sites'] = euro_sites['processing']
@@ -187,19 +202,16 @@ class dag_writer():
 
                 # write inner dag and json file for this run
                 inner_dagname = "xe1t_" + str(run)
-                inner_dagdir = c['logdir'] + '/pax_%s/' % c['pax_version'] + run_name + MV + '/dags'
+                
+                basedir = c['logdir'] + '/pax_%s/' % c['pax_version'] + run_name + MV
+                inner_dagdir = basedir + '/dags'
                 inner_dagfile = inner_dagdir + "/" + str(run) + "_%s.dag" % c['pax_version']
-                if not os.path.exists(inner_dagdir):
-                    os.makedirs(inner_dagdir)
-                    os.chmod(inner_dagdir, 0o777)
+                os.makedirs(inner_dagdir, exist_ok=True )
+                os.chmod(inner_dagdir, 0o777)
 
                 outputdir = config.get_processing_dir(c['host'], c['pax_version'])
-
                 json_file = self.write_json_file(doc)
-
-                os.makedirs(os.path.join(c['logdir'], "pax_%s" % c['pax_version'], run_name + MV, "joblogs"),
-                            exist_ok=True)
-
+                os.makedirs(os.path.join(basedir, "joblogs"), exist_ok=True)
                 dagdir = outer_dag.rsplit('/',1)[0]
                 submitfile = inner_dagdir + "/process.submit"
 
@@ -225,6 +237,16 @@ class dag_writer():
                                                                     n_zips = self.n_zips,
                                                                     detector = doc['detector'])
                                      )
+
+
+                # change permissions for this run
+                os.chmod(basedir, 0o777)
+                print("changing permissions for %s" % basedir)
+                for root, subdirs, files in os.walk(basedir):
+                    for d in subdirs:
+                        os.chmod(os.path.join(root, d), 0o777)
+                    for f in files:
+                        os.chmod(os.path.join(root, f), 0o777)
 
         print("\n%d Run(s) written to %s" % (run_counter, outer_dag))
         return run_counter
@@ -259,7 +281,7 @@ class dag_writer():
                 for dir_name, subdir_list, file_list in os.walk(rawdir):
                     if not muonveto and "MV" in dir_name:
                         continue
-                    if (self.runlist is not None and run_id not in self.runlist):
+                    if (c['runlist'] is not None and run_id not in c['runlist']):
                         continue
                     #run_name = rawdir.split('/')[-1]
                     zip_counter = 0
@@ -274,7 +296,7 @@ class dag_writer():
                         zip_name = filepath.split("/")[-1]
                         outfile = zip_name + ".root"
                         infile_local = os.path.abspath(os.path.join(dir_name, infile))
-                        infile = self.ci_uri + infile_local
+                        infile = ci_uri + infile_local
                         if not os.path.exists(os.path.join(outputdir, run_name + MV)):
                             os.makedirs(os.path.join(outputdir, run_name + MV))
                             os.chmod(os.path.join(outputdir, run_name + MV), 0o777)
@@ -345,7 +367,7 @@ class dag_writer():
                     print("Run not on midway. Check RunsDB")
                     return
 
-                if (self.runlist is not None and run_id not in self.runlist):
+                if (c['runlist'] is not None and run_id not in c['runlist']):
                     print("Run not in runlist")
                     return
 
@@ -399,7 +421,7 @@ class dag_writer():
 
 
         template = """#!/bin/bash
-executable = /home/ershockley/cax/osg_scripts/run_xenon.sh
+executable = {cax_dir}/osg_scripts/run_xenon.sh
 universe = vanilla
 Error = {logdir}/pax_$(pax_version)/$(dirname)/$(zip_name)_$(cluster).log
 Output  = {logdir}/pax_$(pax_version)/$(dirname)/$(zip_name)_$(cluster).log
@@ -409,7 +431,7 @@ Requirements = {requirements}
 request_cpus = $(ncpus)
 request_memory = 1900MB
 request_disk = 3GB
-transfer_input_files = /home/ershockley/user_cert, $(json_file), /home/ershockley/cax/osg_scripts/determine_rse.py
+transfer_input_files = {cert}, $(json_file), {cax_dir}/osg_scripts/determine_rse.py
 transfer_output_files = ""
 +WANT_RCC_ciconnect = True
 +ProjectName = "xenon1t" 
@@ -430,13 +452,13 @@ queue 1
         else:
             requirements = "(HAS_CVMFS_xenon_opensciencegrid_org)" \
                            "&& (((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName1) " \
-                                    "|| (RCC_Factory == \"ciconnect\")) " \
+                                    "|| (RCC_Factory == \"ciconnect\") || (GLIDEIN_Site == \"MWT2-COREOS\")) " \
                                 "&& ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName2) " \
-                                    "|| (RCC_Factory == \"ciconnect\")) " \
+                                    "|| (RCC_Factory == \"ciconnect\") || (GLIDEIN_Site == \"MWT2-COREOS\")) " \
                                 "&& ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName3)  " \
-                                    "|| (RCC_Factory == \"ciconnect\")) " \
+                                    "|| (RCC_Factory == \"ciconnect\") || (GLIDEIN_Site == \"MWT2-COREOS\")) " \
                                "&& ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName4) " \
-                                     "|| (RCC_Factory == \"ciconnect\"))) " \
+                                     "|| (RCC_Factory == \"ciconnect\") || (GLIDEIN_Site == \"MWT2-COREOS\"))) " \
                            "&& (OSGVO_OS_STRING == \"RHEL 6\" || RCC_Factory == \"ciconnect\")"
 
             for site in run_config['exclude_sites']:
@@ -453,7 +475,9 @@ queue 1
                 requirements += specify_string
 
         script = template.format(logdir = self.config['logdir'],
-                                 requirements = requirements)
+                                 requirements = requirements,
+                                 cax_dir = CAX_DIR,
+                                 cert = GRID_CERT)
 
         with open(filename, "w") as f:
             f.write(script)
@@ -470,7 +494,7 @@ queue 1
 
     def rucio_getzips(self, dataset):
         """returns list of zip files from rucio call"""
-        out = subprocess.Popen(["rucio", "-a", "ershockley", "list-file-replicas", dataset], stdout=subprocess.PIPE).stdout.read()
+        out = subprocess.Popen(["rucio", "list-file-replicas", dataset], stdout=subprocess.PIPE).stdout.read()
         out = str(out).split("\\n")
         files = set([l.split(" ")[3] for l in out if '---' not in l and 'x1t' in l])
         zip_files = sorted([f for f in files if f.startswith('XENON1T')])
@@ -479,7 +503,7 @@ queue 1
 
     def midway_getzips(self, midway_path):
         uri = self.midway_uri
-        out = subprocess.Popen(["gfal-ls","--cert", "/home/ershockley/user_cert", uri + midway_path], stdout=subprocess.PIPE).stdout.read()
+        out = subprocess.Popen(["gfal-ls","--cert", GRID_CERT, uri + midway_path], stdout=subprocess.PIPE).stdout.read()
         out = str(out.decode("utf-8")).split("\n")
         zips = [l for l in out if l.startswith('XENON')]
         return zips
@@ -509,19 +533,14 @@ queue 1
         return """SPLICE {inner_dagname} {inner_dagfile}
 JOB {inner_dagname}_noop1 {inner_dagfile} NOOP
 JOB {inner_dagname}_noop2 {inner_dagfile} NOOP
-SCRIPT PRE {inner_dagname}_noop1 /home/ershockley/cax/osg_scripts/pre_script.sh {run_name} {pax_version} {number} {logdir} {detector}
-SCRIPT POST {inner_dagname}_noop2 /home/ershockley/cax/osg_scripts/hadd_and_upload.sh {run_name} {pax_version} {number} {logdir} {n_zips} {detector}
+SCRIPT PRE {inner_dagname}_noop1 %s/osg_scripts/pre_script.sh {run_name} {pax_version} {number} {logdir} {detector}
+SCRIPT POST {inner_dagname}_noop2 %s/osg_scripts/hadd_and_upload.sh {run_name} {pax_version} {number} {logdir} {n_zips} {detector}
 PARENT {inner_dagname}_noop1 CHILD {inner_dagname}
 PARENT {inner_dagname} CHILD {inner_dagname}_noop2
-"""
+""" % (CAX_DIR, CAX_DIR)
 
     def innerdag_template(self):
         return """JOB {number}.{zip_i} {submit_file}
 VARS {number}.{zip_i} input_file="{infile}" out_location="{outfile_full}" name="{run_name}" ncpus="1" disable_updates="True" host="login" pax_version="{pax_version}" pax_hash="n/a" zip_name="{zip_name}" json_file="{json_file}" on_rucio="{on_rucio}" dirname="{dirname}"
 RETRY {number}.{zip_i} {n_retries}
 """
-
-
-
-# for excluding syracuse
-# && (GLIDEIN_Site =!= "SU-OG") && (GLIDEIN_ResourceName =!= "SU-OG-CE1") && (GLIDEIN_ResourceName =!= "SU-OG-CE")

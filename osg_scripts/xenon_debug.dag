@@ -1,2 +1,0 @@
-JOB XENON.0 xenon_debug.submit
-VARS XENON.0 input_file="gsiftp://gridftp.grid.uchicago.edu:2811/cephfs/srm/xenon/briedel_transfers/raw/161025_0501/XENON1T-4036-000026000-000026999-000001000.zip" host="login" pax_version="5.5.1" pax_hash="n/a" out_location="gsiftp://gridftp.grid.uchicago.edu:2811/cephfs/srm/xenon/briedel_transfers/output/XENON1T-4036-000026000-000026999-000001000.root" ncpus="1" disable_updates="True" name="161025_0501"

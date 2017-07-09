@@ -205,7 +205,7 @@ class ProcessBatchQueue(Task):
                                                     }
                                      }
                            },
-                 "$or" : [{'number' : {"$gte" : 6730}},
+                 "$or" : [{'number' : {"$gte" : 6731}},
                           {"detector" : "muon_veto",
                            "end" : {"$gt" : (datetime.datetime.utcnow() - datetime.timedelta(days=15))}
                            }
@@ -324,7 +324,7 @@ class ProcessBatchQueue(Task):
                     transferring = (d['status']=='transferring')
 
             if rucio_name is None: # something wrong with query if this happens
-                self.log.info("Run %d not in rucio catalogue." % run_doc['number'])
+                self.log.info("Run %d not in rucio catalogue." % self.run_doc['number'])
                 return
             # if not on stash, skip this run. don't have logging here since I imagine this will happen
             # for quite a few runs
@@ -341,7 +341,7 @@ class ProcessBatchQueue(Task):
 
             # now check how many dags are running
             self.log.debug("%d dags currently running" % len(qsub.get_queue()))
-            if len(qsub.get_queue()) > 29:
+            if len(qsub.get_queue()) > 39:
                 self.log.info("Too many dags in queue, waiting 10 minutes")
                 time.sleep(60*10)
                 return

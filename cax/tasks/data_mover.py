@@ -15,6 +15,8 @@ import subprocess
 
 import pax
 
+os.environ["PYTHONPATH"]="/xenon/cax:"+os.environ["PYTHONPATH"]
+
 from cax import config
 from cax.task import Task
 from cax import qsub
@@ -23,7 +25,10 @@ from cax.api import api
 from cax.tasks.tsm_mover import TSMclient
 from cax.tasks.rucio_mover import RucioBase, RucioRule
 
-import pax
+#import pax
+
+
+
 
 class CopyBase(Task):
 
@@ -68,7 +73,7 @@ class CopyBase(Task):
         else:
             print (method+" not implemented")
             raise NotImplementedError()
-
+        
     def copyLCGCP(self, datum_original, datum_destination, server, option_type, nstreams):
         """Copy data via GFAL function
         WARNING: Only SRM<->Local implemented (not yet SRM<->SRM)
@@ -205,31 +210,34 @@ class CopyBase(Task):
         """Copy data via rsync function
         """
 
-        command = "time rsync -r --stats "
-
+        full_command = "rsync -av --stats --rsh=\'ssh -o StrictHostKeyChecking=no\'"
         status = -1
-
+        
+        print (option_type)
         if option_type == 'upload':
             logging.info(option_type+": %s to %s" % (datum_original['location'],
                                             server+datum_destination['location']))
 
-            full_command = command+ \
-                       datum_original['location']+" "+ \
-                       username+"@"+server+":"+os.path.dirname(datum_destination['location'])
+           
+            full_command += " " + datum_original['location']
+            full_command += " " + username+"@"+server+":"+os.path.dirname(datum_destination['location'])+"/"
+   
+
 
         else: # download
             logging.info(option_type+": %s to %s" % (server+datum_original['location'],
                                                      datum_destination['location']))
 
-            full_command = command+ \
-                           username+"@"+server+":"+datum_original['location']+" "+ \
-                           os.path.dirname(datum_destination['location'])
-
+            full_command += " "+username+"@"+server+":"+datum_original['location']
+            full_command += " "+os.path.dirname(datum_destination['location'])
+            
+         
+               
         self.log.info(full_command)
-
-        try:
+        
+        
+        try:	
             rsync_out = subprocess.check_output(full_command, stderr=subprocess.STDOUT, shell=True)
-
         except subprocess.CalledProcessError as rsync_exec:
             self.log.error(rsync_exec.output.rstrip().decode('ascii'))
             self.log.error("Error: rsync status = %d\n" % rsync_exec.returncode)
@@ -394,8 +402,8 @@ class CopyBase(Task):
 
                 # if uploading and data is there, make note in logs
                 if option_type == 'upload':
-                    logging.info("Data is already at %s. Upload aborted" % remote_host)
-
+       	            logging.info("Data is already at %s. Upload aborted" % remote_host)
+                    
                 if datum['type'] == 'processed' and not version == datum['pax_version']:
                     continue
 

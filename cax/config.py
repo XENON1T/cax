@@ -438,7 +438,7 @@ def set_rucio_rules( config_rule ):
 def load_dag_config():
     # User-specified config file
     c = get_config()
-    dag_config = c['dag_config']
+    dag_config = os.path.join(os.path.dirname(__file__), c['dag_config'])
 
     logging.debug('Loading dag config file %s' % dag_config)
 
