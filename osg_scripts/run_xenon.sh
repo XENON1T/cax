@@ -70,9 +70,10 @@ fi
 start_dir=$PWD
 
 echo "start dir is $start_dir. Here's whats inside"
-ls -l *user_cert*
-ls -l  *.json
-ls -l *.py*
+ls -l 
+
+if [ -n $(ls *cert*) ]; then export X509_USER_PROXY=${start_dir}/$(ls *cert*); fi
+if [ -n $(ls *proxy*) ]; then export X509_USER_PROXY=${start_dir}/$(ls *proxy*); fi
 
 json_file=$(ls *json)
 
