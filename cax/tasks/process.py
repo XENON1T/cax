@@ -205,7 +205,8 @@ class ProcessBatchQueue(Task):
                                                     }
                                      }
                            },
-                 "$or" : [{'number' : {"$gte" : 6731}},
+                 "$or" : [{'number' : {"$gte" : 10994}},    #REMOVE ME PLEASE
+#                 "$or" : [{'number' : {"$gte" : 6731}},   #UNCOMMENT ME TO GET BACK TO SR1 full list of runs
                           {"detector" : "muon_veto",
                            "end" : {"$gt" : (datetime.datetime.utcnow() - datetime.timedelta(days=15))}
                            }
