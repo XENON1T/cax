@@ -1,6 +1,7 @@
 import pymongo
 import os
 import sys
+import datetime
 from pax import __version__
 
 def make_runlist():
@@ -12,48 +13,62 @@ def make_runlist():
     db = c['run']
     collection = db['runs_new']
     
-    query = {"detector" : "tpc",
-             "$and" : [{"number" : {"$gt" : 4933}},
-                       {"number" : {"$lt" : 4935}}
-                       ], 
-             "processor.correction_versions" : {"$exists" : True},
-             "trigger.events_built" : {"$gt" : 0}
+    query = {"$or" : [{"detector" : "tpc",
+                       "$and" : [{"number" : {"$gt" : 6731}},
+                                 #{"number" : {"$lt" : 11000}} # to specify range of run numbers
+                                 ],
+                       },
+                      {"detector" : "muon_veto",  # UNCOMMENT TO INCLUDE MV AFTER DATETIME BELOW
+                       "end" : {"$gt" : (datetime.datetime(2017, 2, 1, 00, 00, 00))} # Feb 1 2017 at midnight
+                       }
+                      ], 
+#            'tags.name' : '_sciencerun1', # if you want to specify a tag
+#            'source.type' : 'none',  # if you want to specify a source
+
+             'reader.ini.write_mode' : 2,
+             'trigger.events_built' : {"$gt" : 0},
+             'processor.DEFAULT.gains' : {'$exists' : True},
+             'processor.DEFAULT.electron_lifetime_liquid' : {'$exists' : True},
+             'processor.DEFAULT.drift_velocity_liquid' : {'$exists' : True},
+             'processor.correction_versions': {'$exists': True},
+             'processor.WaveformSimulator': {'$exists': True},
+             'processor.NeuralNet|PosRecNeuralNet': {'$exists': True},
+             'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess'}}},
              }
 
     version = 'v' + __version__
 
     cursor = collection.find(query, {"number" : True,
+                                     "name" : True,
                                      "data" : True,
-                                     "trigger.events_built" : True,
+                                     "detector" : True,
                                      "_id" : False})
     
     cursor = list(cursor)
     
     print("Total runs: %d" % len(cursor))
     bad = []
-    stashlist = []
     processed_list = []
     processing = []
-    stage_list = []
-    not_rucio = []
     error = []
-
-    
+    can_process = []
+    cant_process = []
     
     for run in cursor:
+        on_rucio = False
+        processed = False
         on_stash = False
         on_midway = False
-        on_rucio = False
 
-        processed = False
 
-        if 'data' not in run or 'trigger' not in run or 'events_built' not in run['trigger']:
-            bad.append(run['number'])
+        if 'data' not in run:
+            bad.append(run[_id])
             continue
 
-#        if run["trigger"]["events_built"] < 1:
-#            bad.append(run['number'])
-#            continue
+        if run['detector'] == 'tpc':
+            _id = 'number'
+        else:
+            _id = 'name'
 
         for d in run['data']:
             if d['type'] == 'processed' and 'pax_version' in d:
@@ -62,15 +77,13 @@ def make_runlist():
                     #continue
 
                 elif d['pax_version'] == version and d['status'] == 'transferring' and d['host'] == 'login':
-                    processing.append(run['number'])
+                    processing.append(run[_id])
                     #continue
                 
                 elif d['pax_version'] == version and d['status'] == 'error' and d['host'] == 'login':
-                    error.append(run['number'])
+                    error.append(run[_id])
 
             if d['host'] == 'rucio-catalogue' and d['type']=='raw' and d['status'] == 'transferred':
-                if 'UC_OSG_USERDISK' in d['rse']:
-                    on_stash = True
                 on_rucio = True
 
             elif d['host'] == 'login' and d['type']=='raw' and d['status'] == 'transferred':
@@ -81,45 +94,28 @@ def make_runlist():
                 on_midway = True
 
         if processed:
-            processed_list.append(run["number"])
+            processed_list.append(run[_id])
             continue
-        if run["number"] in processing:
+        if run[_id] in processing:
             continue
-        if on_stash or on_midway:
-            stashlist.append(run["number"])
 
+        if (on_rucio or on_stash or on_midway):
+            can_process.append(run[_id])
         else:
-            if on_rucio:
-                stage_list.append(run["number"])
-            else:
-                not_rucio.append(run["number"])
-
+            cant_process.append(run[_id])
+                
+                
 
     #return stashlist
     print("BAD: %d" % len(bad))
-
-    print("NOT IN RUCIO OR CHICAGO: %d" % len(not_rucio))
-    #print(not_rucio)
-
-    print("TO STAGE: %d" % len(stage_list))
-    print(stage_list)
-
-    print("ON STASH OR MIDWAY: %d" % len(stashlist))
-    print(stashlist)
-
-    print("PROCESSING: %d" % len(processing))
-    #print(processing)
-
-    print("PROCESSED: %d" % len(processed_list))
-    #print(processed_list)
-
+    print("PROCESSED ALREADY: %d" % len(processed_list))
+    print("PROCESSING NOW: %d" % len(processing))
     print("ERROR: %d" % len(error))
-    #print(error)
+    print("CAN PROCESS: %d" % len(can_process))
+    print("CANNOT PROCESS: %d" % len(cant_process))
+    print(cant_process)
 
-   # stashlist = [r for r in stashlist if r not in error and r not in processing]
-    
-    #print(stashlist[:100])
-    return stashlist
+    return can_process
 
 if __name__ == '__main__':
     make_runlist()

@@ -32,8 +32,8 @@ curl_moni () {
 if [[ -z $GLIDEIN_ClusterId ]]; then 
     GLIDEIN_ClusterId=$(cat $_CONDOR_SCRATCH_DIR/.job.ad | awk '$1=="ClusterId" {print $3}')
 fi
-
-curl -H "Content-Type: application/json" -X POST -d "{\"job_id\" : $GLIDEIN_ClusterId, \"type\" : \"x1t-job\", \"job_progress\" : \"$1\", \"job_filename\" : \"run_xenon.sh\", \"computing_center\" : \"$OSG_SITE_NAME\"}" http://xenon-logstash.mwt2.org:8080/
+echo "Moni step $1 with ID $GLIDEIN_ClusterId"
+curl -H "Content-Type: application/json" -X POST -d "{\"job_id\" : $GLIDEIN_ClusterId, \"type\" : \"x1t-job\", \"job_progress\" : \"$1\", \"job_filename\" : \"run_xenon.sh\", \"computing_center\" : \"$OSG_SITE_NAME\", \"timestamp\" : $(date +%s%3N)}" http://xenon-logstash.mwt2.org:8080/
 }
 
 which gfal-copy > /dev/null 2>&1
@@ -60,7 +60,7 @@ else
     fi
 fi
 
-if [[ $GLIDEIN_ResourceName = "IN2P3-CC" ]]
+if [[ $GLIDEIN_ResourceName = "IN2P3-CC" ]] || [[ $GLIDEIN_ResourcesName = "INFN-T1" ]]
 then
     source /cvmfs/oasis.opensciencegrid.org/osg-software/osg-wn-client/3.3/current/el6-x86_64/setup.sh
     export GFAL_CONFIG_DIR=$OSG_LOCATION/etc/gfal2.d
@@ -75,6 +75,7 @@ ls -l
 if [ -n $(ls *cert*) ]; then export X509_USER_PROXY=${start_dir}/$(ls *cert*); fi
 if [ -n $(ls *proxy*) ]; then export X509_USER_PROXY=${start_dir}/$(ls *proxy*); fi
 
+echo "Using this proxy: $X509_USER_PROXY"
 json_file=$(ls *json)
 
 echo ""
@@ -119,7 +120,6 @@ if [[ ${10} == 'True' ]]; then
     source /cvmfs/xenon.opensciencegrid.org/software/rucio-py26/setup_rucio_1_8_3.sh
     export RUCIO_HOME=/cvmfs/xenon.opensciencegrid.org/software/rucio-py26/1.8.3/rucio/
     export RUCIO_ACCOUNT=xenon-analysis
-    export X509_USER_PROXY=${start_dir}/user_cert
 
     # set GLIDEIN_Country variable if not already
     if [[ -z "$GLIDEIN_Country" ]]
