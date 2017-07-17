@@ -241,7 +241,6 @@ class dag_writer():
 
                 # change permissions for this run
                 os.chmod(basedir, 0o777)
-                print("changing permissions for %s" % basedir)
                 for root, subdirs, files in os.walk(basedir):
                     for d in subdirs:
                         os.chmod(os.path.join(root, d), 0o777)

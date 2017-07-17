@@ -27,6 +27,15 @@ echo
 env | grep -i glidein 
 echo
 
+curl_moni () {
+
+if [[ -z $GLIDEIN_ClusterId ]]; then 
+    GLIDEIN_ClusterId=$(cat $_CONDOR_SCRATCH_DIR/.job.ad | awk '$1=="ClusterId" {print $3}')
+fi
+echo "Moni step $1 with ID $GLIDEIN_ClusterId"
+curl -H "Content-Type: application/json" -X POST -d "{\"job_id\" : $GLIDEIN_ClusterId, \"type\" : \"x1t-job\", \"job_progress\" : \"$1\", \"job_filename\" : \"run_xenon.sh\", \"computing_center\" : \"$OSG_SITE_NAME\", \"timestamp\" : $(date +%s%3N)}" http://xenon-logstash.mwt2.org:8080/
+}
+
 which gfal-copy > /dev/null 2>&1
 if [[ $? -eq 1 ]];
 then
@@ -61,10 +70,12 @@ fi
 start_dir=$PWD
 
 echo "start dir is $start_dir. Here's whats inside"
-ls -l *user_cert*
-ls -l  *.json
-ls -l *.py*
+ls -l 
 
+if [ -n $(ls *cert*) ]; then export X509_USER_PROXY=${start_dir}/$(ls *cert*); fi
+if [ -n $(ls *proxy*) ]; then export X509_USER_PROXY=${start_dir}/$(ls *proxy*); fi
+
+echo "Using this proxy: $X509_USER_PROXY"
 json_file=$(ls *json)
 
 echo ""
@@ -98,6 +109,8 @@ cd ${work_dir}
 
 echo ${10}
 
+(curl_moni "start downloading") || (curl_moni "start downloading")
+
 if [[ ${10} == 'True' ]]; then
 
     #sleep $[ ( $RANDOM % 1200 )  + 1 ]s
@@ -107,7 +120,6 @@ if [[ ${10} == 'True' ]]; then
     source /cvmfs/xenon.opensciencegrid.org/software/rucio-py26/setup_rucio_1_8_3.sh
     export RUCIO_HOME=/cvmfs/xenon.opensciencegrid.org/software/rucio-py26/1.8.3/rucio/
     export RUCIO_ACCOUNT=xenon-analysis
-    export X509_USER_PROXY=${start_dir}/user_cert
 
     # set GLIDEIN_Country variable if not already
     if [[ -z "$GLIDEIN_Country" ]]
@@ -143,17 +155,19 @@ echo "($download) || (sleep 60s && $download) || (sleep 120s && $download)"
 
 export PATH=/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/bin:$PATH
 cd /cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/envs/pax_$4_OSG/
-#cd /cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/envs/evan-testing/
+
 if [[ $? -ne 0 ]];
 then 
     exit 255
 fi 
 source activate pax_$4_OSG
 echo $PYTHONPATH
-#export LD_LIBRARY_PATH=/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/envs/evan-testing/lib:$LD_LIBRARY_PATH
+
 export LD_LIBRARY_PATH=/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/envs/pax_$4_OSG/lib:$LD_LIBRARY_PATH
 export API_USER='ci-connect'
 export API_KEY=5ac3ed84c1ed8210c84f4d70f194161a64758e29
+
+(curl_moni "end downloading") || (curl_moni "end downloading")
 
 mkdir $start_dir/output/
 echo "output directory: ${start_dir}/output"
@@ -161,6 +175,8 @@ cd $start_dir
 echo 'Processing...'
 
 stash_loc=$6
+
+(curl_moni "start processing") || (curl_moni "start processing")
 
 echo "cax-process $1 $rawdata_path $3 $4 output $7 $8 $start_dir/${json_file}" 
 cax-process $1 $rawdata_path $3 $4 output $7 $8 ${start_dir}/${json_file}
@@ -170,11 +186,14 @@ then
     echo "exiting with status 255"
     exit 255
 fi
-# mv ${rawdata_path}/*.root $start_dir/output/
+
+(curl_moni "end processing") || (curl_moni "end processing")
+
+
 pwd
 ls output
 echo ${start_dir}/output/$1.root
-#out_file=${start_dir}/output/$1.root
+
 source deactivate
 
 source /cvmfs/oasis.opensciencegrid.org/osg-software/osg-wn-client/3.3/current/el6-x86_64/setup.sh
@@ -194,6 +213,7 @@ then
 fi
 # fi
 
+(curl_moni "start uploading") || (curl_moni "start uploading")
 
 echo "---- Test line ----"
 echo "Processing done, here's what's inside the output directory:"
@@ -207,3 +227,6 @@ upload="time gfal-copy --cert ${start_dir}/user_cert -T 36000 -t 36000 -f -p --c
 
 rm -rf $work_dir
 rm -rf ${start_dir}/output
+
+(curl_moni "end uploading") || (curl_moni "end uploading")
+
