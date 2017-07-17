@@ -8,8 +8,8 @@ import os
 
 #os.environ["PYTHONPATH"]="/xenon/cax:"+os.environ["PYTHONPATH"]
 
-runlist = [10950]
-#runlist = make_runlist()
+#runlist = [4940]
+runlist = make_runlist()
 #runlist = sorted(runlist)
 
 config = { 'runlist' : runlist,
@@ -27,5 +27,7 @@ config = { 'runlist' : runlist,
 dag = dag_writer(config)
 
 #this name has to be changed in case one wants to do reprocessing
-dag.write_outer_dag('/scratch/processing/newscript2.dag')
+
+dag.write_outer_dag('/scratch/processing/ale_test.dag')
+
 

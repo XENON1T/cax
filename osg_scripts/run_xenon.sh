@@ -60,7 +60,7 @@ else
     fi
 fi
 
-if [[ $GLIDEIN_ResourceName = "IN2P3-CC" ]]
+if [[ $GLIDEIN_ResourceName = "IN2P3-CC" ]] || [[ $GLIDEIN_ResourcesName = "INFN-T1" ]]
 then
     source /cvmfs/oasis.opensciencegrid.org/osg-software/osg-wn-client/3.3/current/el6-x86_64/setup.sh
     export GFAL_CONFIG_DIR=$OSG_LOCATION/etc/gfal2.d
