@@ -5,7 +5,6 @@ from cax.api import api
 from cax import config, __file__
 import json
 import time
-import stat
 import subprocess
 import re
 """
@@ -15,12 +14,13 @@ This class contains functions for writing inner and outer dag files. It takes a 
 ci_uri = "gsiftp://gridftp.grid.uchicago.edu:2811/cephfs/srm"
 midway_uri = "gsiftp://sdm06.rcc.uchicago.edu:2811"
 
-euro_sites = {"processing" : ["NIKHEF-ELPROD", "CCIN2P3", "WEIZMANN-LCG2"],
-              "rucio" : ["NIKHEF_USERDISK", "CCIN2P3_USERDISK", "WEIZMANN_USERDISK"]
-              }
+euro_sites = {"processing": ["NIKHEF-ELPROD", "CCIN2P3",
+                             "WEIZMANN-LCG2", "INFN-T1"],
+              "rucio": ["NIKHEF_USERDISK", "CCIN2P3_USERDISK",
+                        "WEIZMANN_USERDISK", "CNAF_USERDISK"]}
 
-default_run_config = {"exclude_sites" : [],
-                      "specify_sites" : []}
+default_run_config = {"exclude_sites": [],
+                      "specify_sites": []}
 
 
 # get grid cert path from cax json
@@ -430,13 +430,15 @@ Requirements = {requirements}
 request_cpus = $(ncpus)
 request_memory = 1900MB
 request_disk = 3GB
-transfer_input_files = {cert}, $(json_file), {cax_dir}/osg_scripts/determine_rse.py
+transfer_input_files = $(json_file), {cax_dir}/osg_scripts/determine_rse.py
 transfer_output_files = ""
+x509userproxy = {cert}
 +WANT_RCC_ciconnect = True
 +ProjectName = "xenon1t" 
 +AccountingGroup = "group_opportunistic.xenon1t.processing"
 when_to_transfer_output = ON_EXIT
 transfer_executable = True
+
 periodic_remove =  ((JobStatus == 2) && ((CurrentTime - EnteredCurrentStatus) > (60*60*12)))
 arguments = $(name) $(input_file) $(host) $(pax_version) $(pax_hash) $(out_location) $(ncpus) $(disable_updates) $(json_file) $(on_rucio)
 queue 1
