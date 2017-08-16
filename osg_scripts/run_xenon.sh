@@ -32,48 +32,51 @@ echo "RUCIO SOURCE SCRIPT"
 cat /cvmfs/xenon.opensciencegrid.org/software/rucio-py26/setup_rucio_1_8_3.sh
 echo
 
-osg_software="/cvmfs/oasis.opensciencegrid.org/osg-software/osg-wn-client/3.3/3.3.26/el6-x86_64/"
+osg_software=/cvmfs/oasis.opensciencegrid.org/osg-software/osg-wn-client/3.3/3.3.26/el6-x86_64/
+anaconda_env=/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/bin
 start_dir=$PWD
 
 export input_file=$2
 export pax_version=$4
 jobuuid=`uuidgen`
 
-get_rse () {
-	echo "start dir is $start_dir. Here's whats inside"
-	ls -l 
-	if ls ${start_dir}/*cert* &> /dev/null; then export X509_USER_PROXY=$(ls ${start_dir}/*cert*); fi
-	if ls ${start_dir}/*proxy* &> /dev/null; then export X509_USER_PROXY=$(ls ${start_dir}/*proxy*); fi
+echo "start dir is $start_dir. Here's whats inside"
+ls -l 
+# if ls ${start_dir}/*cert* &> /dev/null; then export X509_USER_PROXY=$(ls ${start_dir}/*cert*); fi
+# if ls ${start_dir}/*proxy* &> /dev/null; then export X509_USER_PROXY=$(ls ${start_dir}/*proxy*); fi
+export TEMP_X509_USER_PROXY=$X509_USER_PROXY
+echo "Using this proxy: $X509_USER_PROXY"
+unset X509_USER_KEY
+unset X509_USER_CERT
+source /cvmfs/xenon.opensciencegrid.org/software/rucio-py26/setup_rucio_1_8_3.sh
+source $osg_software/setup.sh					
+export GFAL_CONFIG_DIR=$OSG_LOCATION/etc/gfal2.d
+export GFAL_PLUGIN_DIR=$OSG_LOCATION/usr/lib64/gfal2-plugins/
+export RUCIO_HOME=/cvmfs/xenon.opensciencegrid.org/software/rucio-py26/1.8.3/rucio/
+export RUCIO_ACCOUNT=xenon-analysis
 
-	echo "Using this proxy: $X509_USER_PROXY"
-	unset X509_USER_KEY
-	unset X509_USER_CERT
-	source /cvmfs/xenon.opensciencegrid.org/software/rucio-py26/setup_rucio_1_8_3.sh
-	# source $osg_software/setup.sh					#ALE: remove this line and uncomment above to restore.
-	# export GFAL_CONFIG_DIR=$OSG_LOCATION/etc/gfal2.d
-	# export GFAL_PLUGIN_DIR=$OSG_LOCATION/usr/lib64/gfal2-plugins/
-	export RUCIO_HOME=/cvmfs/xenon.opensciencegrid.org/software/rucio-py26/1.8.3/rucio/
-	export RUCIO_ACCOUNT=xenon-analysis
-
+if [[ ${10} == 'True' ]]; then
 	# set GLIDEIN_Country variable if not already
-	if [[ -z "$GLIDEIN_Country" ]]
-	then
+	if [[ -z "$GLIDEIN_Country" ]]; then
 		export GLIDEIN_Country="US"
 	fi
 
-	if [[ -e ${start_dir}/determine_rse.py ]]
-	then
+	if [[ -e ${start_dir}/determine_rse.py ]]; then
 		echo "python ${start_dir}/determine_rse.py $input_file $GLIDEIN_Country" 
 		rse=$(python ${start_dir}/determine_rse.py $input_file $GLIDEIN_Country)
-	if [[ $? -ne 0 ]]; then exit 255; fi
-
+		if [[ $? -ne 0 ]]; then 
+			exit 255; 
+		fi
 	else
 		echo "Can't find determine_rse.py script" 
 		exit 255
 	fi
-	export filesize=$(rucio stat $input_file | grep "bytes" | awk '{print $2}')
 
-}
+	export filesize=$(rucio stat $input_file | grep "bytes" | awk '{print $2}')
+else
+	rse=$2
+	export filesize=0
+fi
 
 curl_moni () {
 
@@ -98,7 +101,6 @@ curl_moni () {
 		fi
 		# export OSG_SITE_NAME=$HOSTNAME
 	fi
-	get_rse
 	echo "Moni step $1 with ID $GLIDEIN_ClusterId"
 	echo "Moni step $1 at $OSG_SITE_NAME"
 	message="{\"job_id\" : \"${GLIDEIN_ClusterId}_${GLIDEIN_ProcessId}_${jobuuid}\", \"type\" : \"x1t-event\",
@@ -112,49 +114,9 @@ curl_moni () {
 	curl -v -s --retry 5 --retry-delay 0 --retry-max-time 20 --connect-timeout 5 -H "Content-Type: application/json" -X POST -d "$message" http://192.170.227.205:8080/
 }
 
-#source $osg_software/el6-x86_64/setup.sh			#ALE: maybe this is an error so I canged as below, please uncomment to restore
-source $osg_software/setup.sh					#ALE: remove this line and uncomment above to restore.
-export GFAL_CONFIG_DIR=$OSG_LOCATION/etc/gfal2.d
-export GFAL_PLUGIN_DIR=$OSG_LOCATION/usr/lib64/gfal2-plugins/
-
-# which gfal-copy > /dev/null 2>&1
-# if [[ $? -eq 1 ]];
-# then
-#     source /cvmfs/oasis.opensciencegrid.org/osg-software/osg-wn-client/current/el6-x86_64/setup.sh
-#     export GFAL_CONFIG_DIR=$OSG_LOCATION/etc/gfal2.d
-#     export GFAL_PLUGIN_DIR=$OSG_LOCATION/usr/lib64/gfal2-plugins/
-# else
-#     # Not ideal but some sites don't have the gfal config and plug directories =(                                                                                          
-#     if [[ ! -d /etc/gfal2.d ]];
-#     then
-#         if [[ -z $OSG_LOCATION ]]; then
-#           OSG_LOCATION=`source /cvmfs/oasis.opensciencegrid.org/osg-software/osg-wn-client/current/el6-x86_64/setup.sh; env | grep OSG_LOCATION | cut -f 2 -d=`
-#         fi
-#         export GFAL_CONFIG_DIR=$OSG_LOCATION/etc/gfal2.d
-#     fi
-#     if [[ ! -d /usr/lib64/gfal2-plugins/ ]];
-#     then
-#         if [[ -z $OSG_LOCATION ]]; then
-#           OSG_LOCATION=`source /cvmfs/oasis.opensciencegrid.org/osg-software/osg-wn-client/current/el6-x86_64/setup.sh; env | grep OSG_LOCATION | cut -f 2 -d=`
-#         fi
-#         export GFAL_PLUGIN_DIR=$OSG_LOCATION/usr/lib64/gfal2-plugins/
-#     fi
-# fi
-
-# if [[ $GLIDEIN_ResourceName = "IN2P3-CC" ]] || [[ $GLIDEIN_ResourcesName = "INFN-T1" ]]
-# then
-#     source /cvmfs/oasis.opensciencegrid.org/osg-software/osg-wn-client/current/el6-x86_64/setup.sh
-#     export GFAL_CONFIG_DIR=$OSG_LOCATION/etc/gfal2.d
-#     export GFAL_PLUGIN_DIR=$OSG_LOCATION/usr/lib64/gfal2-plugins/
-# fi
-
 echo "start dir is $start_dir. Here's whats inside"
 ls -l 
 
-if ls ${start_dir}/*cert* &> /dev/null; then export X509_USER_PROXY=${start_dir}/$(ls *cert*); fi
-if ls ${start_dir}/*proxy* &> /dev/null; then export X509_USER_PROXY=${start_dir}/$(ls *proxy*); fi
-
-echo "Using this proxy: $X509_USER_PROXY"
 json_file=$(ls *json)
 
 echo ""
@@ -162,7 +124,6 @@ if [ "${OSG_WN_TMP}" == "" ];
 then
 	OSG_WN_TMP=$PWD
 fi
-#/bin/env 
 mkdir $PWD/tmp/
 work_dir=`mktemp -d --tmpdir=$PWD/tmp/`
 echo $work_dir
@@ -181,8 +142,6 @@ cd ${rawdata_path}
 pwd
 cd ${work_dir}
 
-# setup rucio commands
-
 echo ${10}
 
 (curl_moni "start downloading") || (curl_moni "start downloading")
@@ -191,29 +150,6 @@ if [[ ${10} == 'True' ]]; then
 
 	#sleep $[ ( $RANDOM % 1200 )  + 1 ]s
 	echo "Performing rucio download"
-	unset X509_USER_KEY
-	unset X509_USER_CERT
-	source /cvmfs/xenon.opensciencegrid.org/software/rucio-py26/setup_rucio_1_8_3.sh
-	export RUCIO_HOME=/cvmfs/xenon.opensciencegrid.org/software/rucio-py26/1.8.3/rucio/
-	export RUCIO_ACCOUNT=xenon-analysis
-
-	# set GLIDEIN_Country variable if not already
-	if [[ -z "$GLIDEIN_Country" ]]
-	then
-		export GLIDEIN_Country="US"
-	fi
-
-	if [[ -e ${start_dir}/determine_rse.py ]]
-	then
-		echo "python ${start_dir}/determine_rse.py $2 $GLIDEIN_Country" 
-		rse=$(python ${start_dir}/determine_rse.py $2 $GLIDEIN_Country)
-	if [[ $? -ne 0 ]]; then exit 255; fi
-
-	else
-		echo "Can't find determine_rse.py script" 
-		exit 255
-	fi
-
 	echo "rucio -T 18000 download $2 --no-subdir --dir ${rawdata_path} --rse $rse"
 	download="rucio -v -T 18000 download $2 --no-subdir --dir ${rawdata_path} --rse $rse"
 
@@ -222,22 +158,21 @@ fi
 if [[ ${10} == 'False' ]]; then 
 	#sleep $[ ( $RANDOM % 600 )  + 1 ]s
 	echo "Performing gfal copy"
-	download="gfal-copy -v -f -p -t 3600 -T 3600 -K md5 --cert ${start_dir}/user_cert $2 file://${rawdata_path}"
+	download="gfal-copy -v -f -p -t 3600 -T 3600 -K md5 $2 file://${rawdata_path}"
 
 fi
+
 # perform the download
 echo "($download) || (sleep 60s && $download) || (sleep 120s && $download)"
-($download) || (sleep $[ ( $RANDOM % 60 )  + 1 ]s && $download) || (sleep $[ ( $RANDOM % 120 )  + 1 ]s && $download) || exit 1 #(sleep $[ ( $RANDOM % 180 )  + 1 ]s && $download) || (sleep $[ ( $RANDOM % 240 )  + 1 ]s && $download) || exit 1
-
-export PATH=/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/bin:$PATH
-cd /cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/envs/pax_$4_OSG/
+($download) || (sleep $[ ( $RANDOM % 60 )  + 1 ]s && $download) || (sleep $[ ( $RANDOM % 120 )  + 1 ]s && $download) || exit 1 
+#(sleep $[ ( $RANDOM % 180 )  + 1 ]s && $download) || (sleep $[ ( $RANDOM % 240 )  + 1 ]s && $download) || exit 1
 
 if [[ $? -ne 0 ]];
 then 
 	exit 255
 fi 
-
-source activate pax_$4_OSG
+old_ld_library_path=$LD_LIBRARY_PATH
+source $anaconda_env/activate pax_$4_OSG
 echo $PYTHONPATH
 
 export LD_LIBRARY_PATH=/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/envs/pax_$4_OSG/lib:$LD_LIBRARY_PATH
@@ -269,29 +204,9 @@ ls output
 echo ${start_dir}/output/$1.root
 
 source deactivate
-
-
-#source $osg_software/el6-x86_64/setup.sh  		#ALE: this seems an error uncomment this to restore.
-source $osg_software/setup.sh  				#ALE: remove this line to restore.
-export GFAL_CONFIG_DIR=$OSG_LOCATION/etc/gfal2.d
-# export GFAL_CONFIG_DIR=/cvmfs/xenon.opensciencegrid.org/software/etc/gfal2.d/
-export GFAL_PLUGIN_DIR=$OSG_LOCATION/usr/lib64/gfal2-plugins/
+export LD_LIBRARY_PATH=$old_ld_library_path
 
 (curl_moni "end processing") || (curl_moni "end processing")
-
-# else
-	# Not ideal but some sites don't have the gfal config and plug directories =(                                                                                          
-# if [[ ! -d /etc/gfal2.d ]];
-# then
-#     OSG_LOCATION=`source /cvmfs/oasis.opensciencegrid.org/osg-software/osg-wn-client/3.3/3.3.25/el6-x86_64/setup.sh; env | grep OSG_LOCATION | cut -f 2 -d=`
-#     export GFAL_CONFIG_DIR=$OSG_LOCATION/etc/gfal2.d
-# fi
-# if [[ ! -d /usr/lib64/gfal2-plugins/ ]];
-# then
-#     OSG_LOCATION=`source /cvmfs/oasis.opensciencegrid.org/osg-software/osg-wn-client/3.3/3.3.25/el6-x86_64/setup.sh; env | grep OSG_LOCATION | cut -f 2 -d=`
-#     export GFAL_PLUGIN_DIR=$OSG_LOCATION/usr/lib64/gfal2-plugins/
-# fi
-# fi
 
 echo "---- Test line ----"
 echo "Processing done, here's what's inside the output directory:"
@@ -301,24 +216,13 @@ ls ${start_dir}/output/*.root
 echo "-----"
 echo "outfile: $outfile"
 echo "Arg 6: $stash_loc"
-echo $GFAL_CONFIG_DIR
-echo $GFAL_PLUGIN_DIR
-export GFAL2_GRIDFTP_CHECKSUM_CALC_TIMEOUT=36000
-export GFAL2_GRIDFTP_TIMEOUT=36000
-export GFAL2_GRIDFTP_OPERATION_TIMEOUT=400
-echo $(which gfal-copy)
-
-if ls ${start_dir}/*cert* &> /dev/null; then export X509_USER_PROXY=${start_dir}/$(ls *cert*); fi
-if ls ${start_dir}/*proxy* &> /dev/null; then export X509_USER_PROXY=${start_dir}/$(ls *proxy*); fi
-
-echo "Using this proxy: $X509_USER_PROXY"
-
-echo $X509_USER_PROXY
-unset X509_USER_KEY
-unset X509_USER_CERT
 # echo "time gfal-copy --cert ${outfile} -T 36000 -t 36000 -f -p --checksum md5 file://${out_file} ${stash_loc}"
 upload_cmd="gfal-copy -v -T 36000 -t 36000 -f -p --checksum md5 file://${start_dir}/output/${outfile} ${stash_loc}" 
-
+export X509_USER_PROXY=$TEMP_X509_USER_PROXY
+echo "Using this proxy: $X509_USER_PROXY"
+source $osg_software/setup.sh
+export GFAL_CONFIG_DIR=$OSG_LOCATION/etc/gfal2.d
+export GFAL_PLUGIN_DIR=$OSG_LOCATION/usr/lib64/gfal2-plugins/
 upload ()
 {
   gfal-copy -v -T 36000 -t 36000 -f -p --checksum md5 file://${start_dir}/output/${outfile} ${stash_loc}
@@ -339,5 +243,3 @@ fi
 
 rm -rf $work_dir
 rm -rf ${start_dir}/output
-
-

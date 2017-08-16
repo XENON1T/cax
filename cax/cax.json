@@ -38,7 +38,7 @@
     "download_options": [],
     "task_list": ["ProcessBatchQueue"],
     "nstreams": 2,
-    "grid_cert": "/xenon/grid_proxy/xenon_service_proxy",
+    "grid_cert": "/home/ershockley/user_cert",
     "dag_config" : "dag_writer_config.json"
   }
 ]
