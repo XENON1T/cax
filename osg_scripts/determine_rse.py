@@ -49,6 +49,11 @@ def determine_rse(rse_list, glidein_country):
             if site in rse_list:
                 return site
 
+    elif glidein_country == "IT":
+        for site in EURO_SITES:
+            if site in rse_list:
+                return site
+
     if US_SITES[0] in rses:
         return US_SITES[0]
     else:

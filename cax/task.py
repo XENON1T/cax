@@ -127,6 +127,7 @@ class Task():
                 ids = [doc['_id'] for doc in self.collection.find(self.query,
                                                                   projection=('_id'),
                                                                   sort=(('start', -1),))]
+
             except pymongo.errors.CursorNotFound:
                 self.log.info("Cursor not found exception.  Skipping")
                 return

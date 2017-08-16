@@ -1,6 +1,6 @@
 {"specify_sites": [],
  "retries": 9, 
  "logdir": "/scratch/processing", 
- "exclude_sites": ["Comet", "WEIZMANN-LCG2", "CCIN2P3"], 
+ "exclude_sites": ["Comet","WEIZMANN-LCG2","IN2P3-CC"], 
  "rush": true,
  "use_midway": false}

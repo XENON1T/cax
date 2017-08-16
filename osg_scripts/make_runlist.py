@@ -14,12 +14,14 @@ def make_runlist():
     collection = db['runs_new']
     
     query = {"$or" : [{"detector" : "tpc",
-                       "$and" : [{"number" : {"$gt" : 6731}},
+                       "$and" : [{"number" : {"$gt" : 11646}}, #ALE
+                       #"$and" : [{"number" : {"$gt" : 6731}},
                                  #{"number" : {"$lt" : 11000}} # to specify range of run numbers
                                  ],
                        },
                       {"detector" : "muon_veto",  # UNCOMMENT TO INCLUDE MV AFTER DATETIME BELOW
-                       "end" : {"$gt" : (datetime.datetime(2017, 2, 1, 00, 00, 00))} # Feb 1 2017 at midnight
+                       "end" : {"$gt" : (datetime.datetime(2017, 7, 29, 00, 00, 00))} # ALE 
+                       #"end" : {"$gt" : (datetime.datetime(2017, 2, 1, 00, 00, 00))} # Feb 1 2017 at midnight
                        }
                       ], 
 #            'tags.name' : '_sciencerun1', # if you want to specify a tag
