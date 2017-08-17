@@ -8,9 +8,9 @@ import sys
 
 #from cax.tasks.process import get_pax_hash
 from cax import config
+from pax import __version__
 
 def update_path(number, data_type, detector):
-
     thishost = socket.gethostname()
 
     # Connect to database                                                                                                                                 
@@ -44,8 +44,6 @@ def update_path(number, data_type, detector):
     if data_docs == 0:
         return
 
-    print (run_doc['name'])
-
     events = run_doc.get('trigger',{}).get('events_built', 0)
 
     for data_doc in data_docs:
@@ -56,13 +54,13 @@ def update_path(number, data_type, detector):
         if data_doc['type'] != data_type:
             continue
 
-        if data_doc['host'] != "midway-login1":
+        if data_doc['host'] != "login":
             continue
         
-        if data_doc['pax_version'] != "v6.6.5":
+        if data_doc['pax_version'] != 'v' +__version__:
             continue
 
-        if data_doc['status'] != 'error':
+        if data_doc['status'] != 'transferring':
             continue
 
         datum = data_doc
@@ -70,11 +68,6 @@ def update_path(number, data_type, detector):
         print( "\nRun ", number)
         pprint.pprint( datum )
 
-        #return 1
-
-        #config_destination = config.get_config(data_doc['host'])
-        #server = config_destination['hostname']
-        #print ("\n")
 
         collection.update({'_id': run_doc['_id']}, {'$pull': {'data' : data_doc}})
 
