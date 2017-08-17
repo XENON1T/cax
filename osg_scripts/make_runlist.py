@@ -14,15 +14,15 @@ def make_runlist():
     collection = db['runs_new']
     
     query = {"$or" : [{"detector" : "tpc",
-                       "$and" : [{"number" : {"$gt" : 11646}}, #ALE
+                       "$and" : [{"number" : {"$gt" : 6731}, "source" :{"type" : "Rn220"}, #ALE
                        #"$and" : [{"number" : {"$gt" : 6731}},
                                  #{"number" : {"$lt" : 11000}} # to specify range of run numbers
-                                 ],
+                                 }],
                        },
-                      {"detector" : "muon_veto",  # UNCOMMENT TO INCLUDE MV AFTER DATETIME BELOW
-                       "end" : {"$gt" : (datetime.datetime(2017, 7, 29, 00, 00, 00))} # ALE 
+                      #{"detector" : "muon_veto",  # UNCOMMENT TO INCLUDE MV AFTER DATETIME BELOW
+                       #"end" : {"$gt" : (datetime.datetime(2017, 7, 29, 00, 00, 00))} # ALE 
                        #"end" : {"$gt" : (datetime.datetime(2017, 2, 1, 00, 00, 00))} # Feb 1 2017 at midnight
-                       }
+                      # }
                       ], 
 #            'tags.name' : '_sciencerun1', # if you want to specify a tag
 #            'source.type' : 'none',  # if you want to specify a source
@@ -35,7 +35,9 @@ def make_runlist():
              'processor.correction_versions': {'$exists': True},
              'processor.WaveformSimulator': {'$exists': True},
              'processor.NeuralNet|PosRecNeuralNet': {'$exists': True},
-             'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess'}}},
+             #'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess'}}},
+             'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess', 'name':'messy', 'name':'test','name':'bad'}}},
+             'tags' : {'$elemMatch' : {'name' : '_sciencerun1'}},
              }
 
     version = 'v' + __version__
