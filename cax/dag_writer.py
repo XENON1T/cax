@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 from __future__ import print_function
 import os
+import stat
 from cax.api import api
 from cax import config, __file__
 import json
 import time
 import subprocess
 import re
+import pwd
 """
 This class contains functions for writing inner and outer dag files. It takes a list of runs (integers) and pax_version as input.
 """
@@ -117,6 +119,7 @@ class dag_writer():
             run_counter = 0
             for run in c['runlist']:
                 # get run doc, various parameters needed to write dag
+
                 doc = self.get_run_doc(run)
 
                 if doc is None:
@@ -239,13 +242,16 @@ class dag_writer():
                                      )
 
 
-                # change permissions for this run
-                os.chmod(basedir, 0o777)
-                for root, subdirs, files in os.walk(basedir):
-                    for d in subdirs:
-                        os.chmod(os.path.join(root, d), 0o777)
+                # change permissions for this run if it is owned by me                
+                if os.stat(basedir).st_uid == os.getuid():
+                    os.chmod(basedir, 0o777)
+                    for root, subdirs, files in os.walk(basedir):
+                        for d in subdirs:
+                            path = os.path.join(root, d)
+                            os.chmod(path, 0o777)
                     for f in files:
-                        os.chmod(os.path.join(root, f), 0o777)
+                        path = os.path.join(root, f)
+                        os.chmod(path, 0o777)
 
         print("\n%d Run(s) written to %s" % (run_counter, outer_dag))
         return run_counter

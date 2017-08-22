@@ -11,7 +11,7 @@
 """
 import logging
 import os
-from cax import config
+from cax import config, __file__
 import subprocess
 import tempfile
 from distutils.spawn import find_executable
@@ -99,8 +99,8 @@ def submit_dag_job(outer_dag, dag_config):
             return
 
 
-
-    submit_command = ('condor_submit_dag -config /xenon/ershockley/reprocessing/dag_config {script}'.format(script=outer_dag))
+    caxdir = os.path.dirname(os.path.dirname(__file__)) 
+    submit_command = ('condor_submit_dag -config {caxdir}/osg_scripts/dag_config {script}'.format(caxdir=caxdir, script=outer_dag))
 
     logging.info("submit job:\n %s" % submit_command)
 
@@ -113,7 +113,6 @@ def submit_dag_job(outer_dag, dag_config):
         logging.error("Process timeout")
     except Exception as e:
         logging.exception(e)
-
 
 def create_script(script):
     """Create script as temp file to be run on cluster"""

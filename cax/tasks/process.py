@@ -290,6 +290,7 @@ class ProcessBatchQueue(Task):
                 self.log.info("10 or more rescue dags exist for Run %d. Skipping." % number)
 
                 # register as an error to database if haven't already
+                datum = None
                 for d in self.run_doc['data']:
                     if d['host'] == self.thishost and d['type'] == 'processed' and d['pax_version'] == self.pax_version:
                         error_set = (d['status'] == 'error')
@@ -342,7 +343,7 @@ class ProcessBatchQueue(Task):
 
             # now check how many dags are running
             self.log.debug("%d dags currently running" % len(qsub.get_queue()))
-            if len(qsub.get_queue()) > 39:
+            if len(qsub.get_queue()) > 19:
                 self.log.info("Too many dags in queue, waiting 10 minutes")
                 time.sleep(60*10)
                 return
