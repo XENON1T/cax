@@ -159,7 +159,7 @@ def get_queue(host=config.get_hostname(), partition=''):
 
 
     else:
-        command = "condor_q ershockley | grep dagman | awk '{print $1}'"
+        command = "condor_q %s | grep dagman | awk '{print $1}'" % os.environ['USER']
 
     try:
         queue = subprocess.check_output(command,

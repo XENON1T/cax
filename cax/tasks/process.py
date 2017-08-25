@@ -292,6 +292,7 @@ class ProcessBatchQueue(Task):
                 # register as an error to database if haven't already
                 datum = None
                 for d in self.run_doc['data']:
+                    print(d['host'], d['type'], d['pax_version'])
                     if d['host'] == self.thishost and d['type'] == 'processed' and d['pax_version'] == self.pax_version:
                         error_set = (d['status'] == 'error')
                         datum = d
@@ -332,7 +333,8 @@ class ProcessBatchQueue(Task):
             # for quite a few runs
             else:
                 if not self.is_on_stash(rucio_name) and not self.hurry:
-                    self.log.info("Run %d not on stash RSE" % self.run_doc['number'])
+                    id = self.run_doc['number'] if detector == 'tpc' else self.run_doc['name']
+                    self.log.info("Run %s not on stash RSE" % id)
                     return
 
             # if status is 'transferring' then see if the run is in the queue
