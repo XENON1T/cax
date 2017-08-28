@@ -595,7 +595,7 @@ class CopyBase(Task):
         if len(list_files) == 0 or len(list_folders) > 0:
           logging.info("ERROR: There are %s files in %s", len(list_files), raw_data_path+raw_data_filename)
           if len(list_folders) > 0:
-            looging.info("ERROR: These folders are found in %s:", raw_data_path+raw_data_filename)
+            logging.info("ERROR: These folders are found in %s:", raw_data_path+raw_data_filename)
             for i_folders in list_folders:
               logging.info("  <> %s", i_folders)
             logging.info("Check the error(s) and start again")
