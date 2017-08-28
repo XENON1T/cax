@@ -745,6 +745,7 @@ def massiveruciax():
             #Double check that rucio uploads are only triggered when data exists at the host
             host_data = False
             rucio_data = False
+            rucio_data_upload = None
             host_data_error = False
             for idoc in doc['data']:
               if idoc['host'] == config.get_hostname() and idoc['status'] == "transferred":
@@ -754,12 +755,19 @@ def massiveruciax():
                 host_data_error = True
               if idoc['host'] == "rucio-catalogue":
                 rucio_data = True
+                rucio_data_upload = idoc['status']
             
             if host_data == False and args.on_disk_only == True:
               continue
             
             if host_data == True and host_data_error == True and args.skip_error == True:
               continue
+            
+            #Trigger rucio uploads:
+            #If rucio data exists which are in status transferring or error let us skip them.
+            #RSEreupload is still executed
+            if rucio_data == True and (rucio_data_upload == "transferring" or rucio_data_upload == "error"):
+                continue
             
             #massive-ruciax does not care about data which are already
             #in the rucio catalogue for upload

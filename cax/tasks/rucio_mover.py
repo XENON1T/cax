@@ -1061,6 +1061,15 @@ class RucioBase(Task):
         self.return_rucio['status'] = "error"
         return
       
+      #Sanity check from zero sized files during the upload
+      # find *.pickles files which are size of zere and delte them before upload
+      for i_file in files:
+          file_size = os.get_size( os.path.join(datapath, i_file) )
+          if file_size == 0:
+              print("delete me")
+      exit()
+                                  
+      
       #Create the data structure for upload:
       #-------------------------------------
           
