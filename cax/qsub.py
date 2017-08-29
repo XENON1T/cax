@@ -100,7 +100,7 @@ def submit_dag_job(outer_dag, dag_config):
 
 
     caxdir = os.path.dirname(os.path.dirname(__file__)) 
-    submit_command = ('condor_submit_dag -config {caxdir}/osg_scripts/dag_config {script}'.format(caxdir=caxdir, script=outer_dag))
+    submit_command = ('condor_submit_dag -config /xenon/cax/osg_scripts/dag_config {script}'.format(caxdir=caxdir, script=outer_dag))
 
     logging.info("submit job:\n %s" % submit_command)
 
