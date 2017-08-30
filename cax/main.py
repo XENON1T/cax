@@ -892,7 +892,9 @@ def massive_tsmclient():
                         dest='config_file',
                         help="Load a custom .json config file into cax")
     parser.add_argument('--run', type=int,
-                        help="Select a single run")
+                        help="Select a single raw data set by run number")
+    parser.add_argument('--name', type=str,
+                        help="Select a single raw data set by run name")    
     parser.add_argument('--from-run', dest='from_run', type=int, 
                         help="Choose: run number start")
     parser.add_argument('--to-run', dest='to_run', type=int, 
@@ -918,6 +920,11 @@ def massive_tsmclient():
     run_window = False
     run_window_lastruns = False
     run_lastdays = False
+    
+    #Prevent user from up/downloading via --name and --run at the same time
+    if args.run != None and args.name != None:
+        logging.info("Input to massive-tsm is --run {r} and --name {n} at the same time! <- Forbidden".format(r=args.run, n=args.name))
+        exit()
     
     if args.from_run == None and args.to_run == None and args.last_days == None:
       pass
@@ -952,14 +959,24 @@ def massive_tsmclient():
                          args.config_file)
             config.set_json(args.config_file)
             config_arg = os.path.abspath(args.config_file)
-      
+    
+    #extract if tsm-server up- or download is made:
+    tsm_task = None
+    tsm_file = json.loads(open(config_arg, 'r').read())
+    for i_host in tsm_file:
+        if i_host['name'] == config.get_hostname():
+            if "tsm-server" in i_host['upload_options']:
+                tsm_task = "upload"
+            elif "tsm-server" in i_host['download_options']:
+                tsm_task = "download"
+
     # Setup logging
     log_path = {"xe1t-datamanager": "/home/xe1ttransfer/tsm_log",
                 "midway-login1": "n/a",
                 "tegner-login-1": "/afs/pdc.kth.se/home/b/bobau/tsm_log"}
     
     if log_path[config.get_hostname()] == "n/a":
-        print("Modify the log path in main.py")
+        logging.info("Modify the log path in main.py")
         exit()
     
     if not os.path.exists(log_path[config.get_hostname()]):
@@ -1032,11 +1049,15 @@ def massive_tsmclient():
 
         for doc in docs:
             
-            #Select a single run for rucio upload (massive-ruciax -> ruciax)
+            #Select a single run up/download
             if args.run:
-              if args.run != doc['number']:
-                continue
-            
+                #print("Test A")
+                if args.run != doc['number']:
+                    continue
+            if args.name:
+                if str(args.name) != str(doc['name']):
+                    continue
+
             #Double check if a 'data' field is defind in doc (runDB entry)
             if 'data' not in doc:
               continue
@@ -1047,31 +1068,39 @@ def massive_tsmclient():
             for idoc in doc['data']:
               if idoc['host'] == config.get_hostname() and idoc['status'] == "transferred":
                 host_data = True
-              if idoc['host'] == "tsm-server" and idoc['status'] == "transferred":
-                tsm_data = True  
-            
-            if host_data == False:
+              if idoc['host'] == "tsm-server" and (idoc['status'] == "transferred" or idoc['status'] == "transferring"):
+                #we can skip a tsm-server transfer try if the tsm-status is:
+                # - transferred [everything fine]
+                # - transferring [the file is marked for upload right now [suppose that everything is fine]
+                tsm_data = True
+                
+            #Evaluate the double check
+            if host_data == False and tsm_task == "upload":
               #Do not try upload data which are not registered in the runDB
               continue
             #make sure now that only "new data" are uploaded
-            if tsm_data == True:
+            if tsm_data == True and tsm_task == "upload":
               continue
-
+            
 
             #Detector choice
             local_time = time.strftime("%Y%m%d_%H%M%S", time.localtime())
-            if doc['detector'] == 'tpc':
-              job = "--config {conf} --run {number} --log-file {log_path}/tsm_log_{number}_{timestamp}.txt".format(
+            
+            run_selection = None
+            if args.run != None and args.name == None:
+                #select a run by run number
+                run_selection = "--run {run}".format(run=args.run)
+            elif args.run == None and args.name != None:
+                run_selection = "--name {run}".format(run=args.name)
+            elif args.run == None and args.name == None:
+                run_selection = "--name {run}".format(run=doc['name'])
+            
+            #The job defintin string:
+            job = "--config {conf} {run_selection} --log-file {log_path}/tsm_log_{number}_{timestamp}.txt".format(
                   conf=config_arg,
+                  run_selection=run_selection,
+                  log_path=log_path[config.get_hostname()],
                   number=doc['number'],
-                  log_path=log_path[config.get_hostname()],
-                  timestamp=local_time)
-                
-            elif doc['detector'] == 'muon_veto':
-              job = "--config {conf} --name {number} --log-file {log_path}/tsm_log_{number}_{timestamp}.txt".format(
-                  conf=config_arg,
-                  number=doc['name'],
-                  log_path=log_path[config.get_hostname()],
                   timestamp=local_time)
             
             #start the time for an upload:
