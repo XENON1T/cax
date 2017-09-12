@@ -578,9 +578,6 @@ def massiveruciax():
 
     parser.add_argument('--once', action='store_true',
                         help="Run all tasks just one, then exits")
-    parser.add_argument('--on-disk-only', action='store_true',
-                        dest='on_disk_only',
-                        help="Select only runs which are stored at the data analysis facility anyways")
     parser.add_argument('--config', action='store', type=str,
                         dest='config_file',
                         help="Load a custom .json config file into cax")
@@ -597,9 +594,6 @@ def massiveruciax():
     parser.add_argument('--rucio-rule', type=str,
                         dest='config_rule',
                         help="Load the a rule file")
-    parser.add_argument('--skip-error', action='store_true',
-                        dest='skip_error',
-                        help="Skip all database entries with an error")
     
 
     args = parser.parse_args()
@@ -674,8 +668,8 @@ def massiveruciax():
       rucio_rule = "--rucio-rule {rulefile}".format( rulefile=abs_config_rule )
       verfication_only = json.loads(open(abs_config_rule, 'r').read())[0]['verification_only']
     else:
-      rucio_rule = ""
       verfication_only = False
+      rucio_rule = ""
     
 
     # Establish mongo connection
@@ -747,49 +741,43 @@ def massiveruciax():
             rucio_data = False
             rucio_data_upload = None
             host_data_error = False
+            
             for idoc in doc['data']:
               if idoc['host'] == config.get_hostname() and idoc['status'] == "transferred":
                 host_data = True
-              if idoc['host'] == config.get_hostname() and idoc['status'] == "error":
+                host_data_error == False
+              elif idoc['host'] == config.get_hostname() and idoc['status'] == "error":
                 host_data = True
                 host_data_error = True
+              
               if idoc['host'] == "rucio-catalogue":
                 rucio_data = True
                 rucio_data_upload = idoc['status']
             
-            if host_data == False and args.on_disk_only == True:
-              continue
+            if verfication_only == False:
+                
+                #A rucio upload makes only sense if the data are stored at the host
+                #where ruciax runs right now.
+                if host_data != True:
+                    continue
+                elif host_data == True and host_data_error == True:
+                    continue
+                #Trigger rucio uploads:
+                #If rucio data exists which are in status transferring or error let us skip them.
+                #RSEreupload is still executed
+                if rucio_data == True and (rucio_data_upload == "transferring" or rucio_data_upload == "error" or rucio_data_upload == "transferred"):
+                    continue
             
-            if host_data == True and host_data_error == True and args.skip_error == True:
-              continue
-            
-            #Trigger rucio uploads:
-            #If rucio data exists which are in status transferring or error let us skip them.
-            #RSEreupload is still executed
-            if rucio_data == True and (rucio_data_upload == "transferring" or rucio_data_upload == "error"):
-                continue
-            
-            #massive-ruciax does not care about data which are already
-            #in the rucio catalogue for upload
-            if rucio_data == True and verfication_only == False:
-              continue
+            elif verfication_only == True:
+                if rucio_data == False or rucio_data_upload != "transferred":
+                    continue
             
             #Get the local time:
             local_time = time.strftime("%Y%m%d_%H%M%S", time.localtime())
             
-            #Detector choice
-            run = ""
-            runlogfile = ""
-            if doc['detector'] == 'tpc':
-              run = "--run {number}".format(number=doc['number'])
-              runlogfile = "--log-file {log_path}/ruciax_log_{number}_{timestamp}.txt".format(
-                            log_path=log_path[config.get_hostname()],
-                            number=doc['number'],
-                            timestamp=local_time)
-                  
-            elif doc['detector'] == 'muon_veto':
-              run = "--name {number}".format(number=doc['name'])
-              runlogfile = "--log-file {log_path}/ruciax_log_{number}_{timestamp}.txt".format(
+            #Prepare run name for upload and log file
+            run = "--name {name}".format(name=doc['name'])
+            runlogfile = "--log-file {log_path}/ruciax_log_{number}_{timestamp}.txt".format(
                             log_path=log_path[config.get_hostname()],
                             number=doc['number'],
                             timestamp=local_time)
@@ -819,18 +807,18 @@ ruciax --once {job}
             
             
             #Submit the command
-            sc = qsub.create_script(command)
-            execute = subprocess.Popen( ['sh', sc.name] , 
-                                        stdin=subprocess.PIPE,
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.STDOUT, shell=False )
-            stdout_value, stderr_value = execute.communicate()
-            stdout_value = stdout_value.decode("utf-8")
-            stdout_value = stdout_value.split("\n")
+            #sc = qsub.create_script(command)
+            #execute = subprocess.Popen( ['sh', sc.name] , 
+                                        #stdin=subprocess.PIPE,
+                                        #stdout=subprocess.PIPE,
+                                        #stderr=subprocess.STDOUT, shell=False )
+            #stdout_value, stderr_value = execute.communicate()
+            #stdout_value = stdout_value.decode("utf-8")
+            #stdout_value = stdout_value.split("\n")
             
-            #Return command output:
-            for i in stdout_value:
-              logging.info('massive-ruciax: %s', i)
+            ##Return command output:
+            #for i in stdout_value:
+              #logging.info('massive-ruciax: %s', i)
             
             #Manage the upload time:
             time_end = datetime.datetime.utcnow()
@@ -838,7 +826,7 @@ ruciax --once {job}
             dd = divmod(diff.total_seconds(), 60)
             
             #delete script:
-            qsub.delete_script( sc )
+            #qsub.delete_script( sc )
             
             logging.info("+--------------------------->>>")
             logging.info("| Summary: massive-ruciax for run/name: %s/%s", doc['number'], doc['name'] )
