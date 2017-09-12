@@ -582,7 +582,7 @@ class CopyBase(Task):
         logging.info("Path to tsm data: %s", raw_data_tsm)
         logging.info("File/Folder for backup: %s", raw_data_filename)
         
-        #Do a simple pretest to analyse the directly what is going to be backuped
+        #Do a simple pretest to analyse the directory what is going to be backuped up
         #continue only if there are files in the directory and no more folders
         list_files = []
         list_folders = []
@@ -592,6 +592,16 @@ class CopyBase(Task):
           for name in dirs:
             list_folders.append(name)
         
+        #Sanity check from zero sized files during the upload
+        # find *.pickles or *log files which are size of zere and delte them before upload
+        for i_file in list_files:
+            file_size = os.path.getsize( os.path.join( raw_data_location, i_file) )
+            if file_size == 0:
+                logging.info("Delete file {file} with {size} bytes".format(file=i_file, size=file_size))
+                os.remove( i_file )
+                list_files.remove(i_file)            
+        
+        #Sanity check if raw data folder contains a subfolder (mostly important for old raw data sets)
         if len(list_files) == 0 or len(list_folders) > 0:
           logging.info("ERROR: There are %s files in %s", len(list_files), raw_data_path+raw_data_filename)
           if len(list_folders) > 0:
@@ -613,8 +623,8 @@ class CopyBase(Task):
         else:
           logging.info("Pre-test of %s counts %s files for tape upload [succcessful]", raw_data_path+raw_data_filename, len(list_files))
 
-
-        #Do a checksum pre-test:
+        exit()
+        #Do a checksum pre-test for double counts:
         checksum_pretest_list = []
         for i_file in files:
           f_path = os.path.join(raw_data_path, raw_data_filename, i_file)

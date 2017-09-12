@@ -1062,15 +1062,15 @@ class RucioBase(Task):
         return
       
       #Sanity check from zero sized files during the upload
-      # find *.pickles files which are size of zere and delte them before upload
+      # find *.pickles or *log files which are size of zere and delte them before upload
       for i_file in files:
           file_size = os.path.getsize( i_file )
-          if file_size == 0 and str(i_file.split("/")[-1]) == "acquisition_monitor_data.pickles":
-              print("Need: Delete {s}".format(s=i_file))
-              #os.remove( i_file )
-              #files.remove(i_file)
-                                  
-      
+          
+          if file_size == 0:
+              logging.info("Delete file {file} with {size} bytes".format(file=i_file, size=file_size))
+              os.remove( i_file )
+              files.remove(i_file)
+
       #Create the data structure for upload:
       #-------------------------------------
           
@@ -2530,6 +2530,19 @@ class RucioRule(Task):
       destination_livetime  = t[0]['destination_livetime']  #need pre-definition
       destination_condition = t[0]['destination_condition']
       
+      #catch the random statement in the destination_rse:
+      for i_rse in destination_rse:
+          if i_rse.find("random") >= 0:
+              key = i_rse
+              random_rse = i_rse.split(":")[1].replace(" ", "").split(",")
+              i_random_rse = random.choice(random_rse)
+              logging.info("(rule_definition) - A list of RSEs: {rse} is given.".format(rse=random_rse))
+              logging.info("(rule_definition) - Pick one random element: {e}".format(e=i_random_rse))
+                            
+              destination_rse.remove( key )
+              destination_rse.append( i_random_rse)
+              destination_livetime[i_random_rse] = destination_livetime.pop(key)
+      
       if t[0]['remove_rse'] == None:
         remove_rse            = []
       else:
@@ -2719,6 +2732,7 @@ class RucioRule(Task):
         #Get rule definition from json file
         transfer_lifetime = {}
         rule_def = self.rule_definition()
+        
         if rule_def != 0:
           logging.info("A seperated rucio-rule file is loaded")  
           transfer_list, transfer_lifetime, self.delete_list = self.magic( actual_run, rule_def, all_rse )
