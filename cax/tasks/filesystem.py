@@ -243,7 +243,7 @@ class AddSize(Task):
 
                 #This adds the size of the processed files if are present in the local disk.
                 if ( _type ==  "processed" and _status == "transferred" ):
-                   if 'size_byte' not in data_doc:
+                   if 'size' not in data_doc:
                        if os.path.isfile(_location):
                            byt= os.stat(_location)
                            self.log.debug("Location: %s Size: %i Byte (%.2f GB)"
