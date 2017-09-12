@@ -1,7 +1,10 @@
 """Handle copying data between sites.
-
-This is one of the key tasks of 'cax' because it's responsible for moving
-data between sites.  At present, it just does scp.
+   tsm_mover.py contains the necessary classes
+   to upload and download from tape backup and
+   syncronize it with the runDB.
+   
+   Author: Boris Bauermeister
+   Email: Boris.Bauermeister@fysik.su.se
 """
 
 import datetime
