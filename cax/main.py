@@ -807,18 +807,18 @@ ruciax --once {job}
             
             
             #Submit the command
-            #sc = qsub.create_script(command)
-            #execute = subprocess.Popen( ['sh', sc.name] , 
-                                        #stdin=subprocess.PIPE,
-                                        #stdout=subprocess.PIPE,
-                                        #stderr=subprocess.STDOUT, shell=False )
-            #stdout_value, stderr_value = execute.communicate()
-            #stdout_value = stdout_value.decode("utf-8")
-            #stdout_value = stdout_value.split("\n")
+            sc = qsub.create_script(command)
+            execute = subprocess.Popen( ['sh', sc.name] , 
+                                        stdin=subprocess.PIPE,
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.STDOUT, shell=False )
+            stdout_value, stderr_value = execute.communicate()
+            stdout_value = stdout_value.decode("utf-8")
+            stdout_value = stdout_value.split("\n")
             
-            ##Return command output:
-            #for i in stdout_value:
-              #logging.info('massive-ruciax: %s', i)
+            #Return command output:
+            for i in stdout_value:
+              logging.info('massive-ruciax: %s', i)
             
             #Manage the upload time:
             time_end = datetime.datetime.utcnow()
