@@ -254,16 +254,16 @@ def processing_script(args={}):
 export PATH={anaconda}:$PATH
 export JOB_WORKING_DIR={base}/{use}/{number}_{pax_version}
 mkdir -p ${{JOB_WORKING_DIR}}
-cd ${{JOB_WORKING_DIR}}
+cd ${{JOB_WORKING_DIR}}/..
 
-ln -sf {base}/{use}/pax_* .
+#ln -sf {base}/{use}/pax_* .
 
 source activate pax_{pax_version}
 
 HOSTNAME={host}
-{command}
+{command} --log-file ${{JOB_WORKING_DIR}}/cax.log
 
-rm -f pax_event_class*
+rm -f ${{JOB_WORKING_DIR}}/pax_event_class*
 
 {stats}
 """.format(**args)
