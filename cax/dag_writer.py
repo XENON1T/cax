@@ -210,7 +210,8 @@ class dag_writer():
                 inner_dagdir = basedir + '/dags'
                 inner_dagfile = inner_dagdir + "/" + str(run) + "_%s.dag" % c['pax_version']
                 os.makedirs(inner_dagdir, exist_ok=True )
-                os.chmod(inner_dagdir, 0o777)
+                if os.stat(basedir).st_uid == os.getuid():
+                    os.chmod(inner_dagdir, 0o777)
 
                 outputdir = config.get_processing_dir(c['host'], c['pax_version'])
                 json_file = self.write_json_file(doc)
@@ -445,7 +446,7 @@ x509userproxy = {cert}
 when_to_transfer_output = ON_EXIT
 transfer_executable = True
 
-periodic_remove =  ((JobStatus == 2) && ((CurrentTime - EnteredCurrentStatus) > (60*60*12)))
+periodic_remove =  ((JobStatus == 2) && ((CurrentTime - EnteredCurrentStatus) > (60*60*8)))
 arguments = $(name) $(input_file) $(host) $(pax_version) $(pax_hash) $(out_location) $(ncpus) $(disable_updates) $(json_file) $(on_rucio)
 queue 1
 """
