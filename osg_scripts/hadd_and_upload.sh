@@ -30,9 +30,10 @@ fi
 
 source activate pax_$2_OSG
 
-export PYTHONPATH=/xenon/cax:$PYTHONPATH
+#export PYTHONPATH=/xenon/cax:$PYTHONPATH
 
-cax_dir=/xenon/cax
+#cax_dir=/xenon/cax
+cax_dir=$HOME/cax
 
 if [[ ! -e $rootfile ]]; then
 	rawdir=$1
