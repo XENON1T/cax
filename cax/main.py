@@ -826,7 +826,7 @@ ruciax --once {job}
             dd = divmod(diff.total_seconds(), 60)
             
             #delete script:
-            #qsub.delete_script( sc )
+            qsub.delete_script( sc )
             
             logging.info("+--------------------------->>>")
             logging.info("| Summary: massive-ruciax for run/name: %s/%s", doc['number'], doc['name'] )
