@@ -623,7 +623,6 @@ class CopyBase(Task):
         else:
           logging.info("Pre-test of %s counts %s files for tape upload [succcessful]", raw_data_path+raw_data_filename, len(list_files))
 
-        exit()
         #Do a checksum pre-test for double counts:
         checksum_pretest_list = []
         for i_file in files:
