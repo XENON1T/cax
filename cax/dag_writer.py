@@ -3,12 +3,13 @@ from __future__ import print_function
 import os
 import stat
 from cax.api import api
-from cax import config, __file__
+from cax import config
 import json
 import time
 import subprocess
 import re
 import pwd
+
 """
 This class contains functions for writing inner and outer dag files. It takes a list of runs (integers) and pax_version as input.
 """
@@ -29,8 +30,8 @@ default_run_config = {"exclude_sites": [],
 GRID_CERT = config.get_config()['grid_cert']
 
 # one dir up from usual so that we can access the osg_scripts easily
-CAX_DIR = os.path.dirname(os.path.dirname(__file__))
-
+#CAX_DIR = os.path.dirname(os.path.dirname(__file__))
+CAX_DIR = os.path.expanduser("~") + "/cax"
 
 class dag_writer():
 

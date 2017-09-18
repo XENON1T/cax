@@ -14,13 +14,15 @@ if [[ $5 == 'muon_veto' ]]; then
     pre_log=$4/pax_$2/${run}_MV/PRE_LOG
 fi
 echo "------ Start of prescript ------" >> $pre_log
-echo $PWD >> $pre_log
+#echo $PWD >> $pre_log
 date >> $pre_log
 
 source activate pax_$2_OSG
 
 # get cax directory so know how to execute the pre script
-cax_dir=$(python -c "import cax; import os; print(os.path.dirname(os.path.dirname(cax.__file__)))")
+#cax_dir=$(python -c "import cax; import os; print(os.path.dirname(os.path.dirname(cax.__file__)))")
+
+cax_dir=$HOME/cax
 
 source ${cax_dir}/osg_scripts/setup_rucio.sh
 

@@ -14,13 +14,11 @@ import checksumdir
 import json
 #from pymongo import ReturnDocument
 
-os.environ["PYTHONPATH"]="/xenon/cax:"+os.environ["PYTHONPATH"]
+#os.environ["PYTHONPATH"]="/xenon/cax:"+os.environ["PYTHONPATH"]
 
-from cax import qsub, config, __file__
+from cax import qsub, config
 from cax.task import Task
 from cax.api import api
-
-
 
 def verify():
     """Verify the file
@@ -124,7 +122,8 @@ def _upload(name, n_zips, pax_version, detector = "tpc", update_database=True):
     # if all root files present, then perform hadd, checksum, and register to database
     else:
         print("merging %s" % name)
-        cax_dir = os.path.dirname(os.path.dirname(__file__))
+        #cax_dir = os.path.dirname(os.path.dirname(__file__))
+        cax_dir = os.path.expanduser("~") + "/cax"
         print (cax_dir)
         subprocess.Popen(cax_dir + "/osg_scripts/merge_roots.sh " + procdir, shell = True).wait()
 
