@@ -9,7 +9,7 @@ import os
 
 #runlist=['170331_1249'] #MUV to reprocess
 #runlist=list(np.arange(3410, 3421)) + list(np.arange(3446, 3458)) + [3443]
-runlist = [12857]
+runlist = ['170104_2118']
 
 #runlist = make_runlist()
 
@@ -20,8 +20,8 @@ config = { 'runlist' : runlist,
            'specify_sites' : [],
  	   "exclude_sites": ["Comet"], 
            'host' : 'login',
-           'use_midway' : True, # this overrides the specify and exclude sites above,
-           'rush' : False # processes as quickly as possible, submits to euro sites before raw data gets to stash
+           'use_midway' : False, # this overrides the specify and exclude sites above,
+           'rush' : True # processes as quickly as possible, submits to euro sites before raw data gets to stash
            }
 
 
