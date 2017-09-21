@@ -1,7 +1,11 @@
 """Handle copying data between sites.
-
-This is one of the key tasks of 'cax' because it's responsible for moving
-data between sites.  At present, it just does scp.
+   ruciax_mover.py contains the classes which are
+   necessary for raw data transfer to the rucio storage
+   elements.
+   Furthermore it contains a class to handle transfer
+   rule requests
+   Author: Boris Bauermeister
+   Email: Boris.Bauermeister@fysik.su.se
 """
 
 import datetime
@@ -1061,16 +1065,6 @@ class RucioBase(Task):
         self.return_rucio['status'] = "error"
         return
       
-      #Sanity check from zero sized files during the upload
-      # find *.pickles or *log files which are size of zere and delte them before upload
-      for i_file in files:
-          file_size = os.path.getsize( i_file )
-          
-          if file_size == 0:
-              logging.info("Delete file {file} with {size} bytes".format(file=i_file, size=file_size))
-              os.remove( i_file )
-              files.remove(i_file)
-
       #Create the data structure for upload:
       #-------------------------------------
           
