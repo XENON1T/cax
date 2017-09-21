@@ -592,14 +592,6 @@ class CopyBase(Task):
           for name in dirs:
             list_folders.append(name)
         
-        #Sanity check from zero sized files during the upload
-        # find *.pickles or *log files which are size of zere and delte them before upload
-        for i_file in list_files:
-            file_size = os.path.getsize( os.path.join( raw_data_location, i_file) )
-            if file_size == 0:
-                logging.info("Delete file {file} with {size} bytes".format(file=i_file, size=file_size))
-                os.remove( i_file )
-                list_files.remove(i_file)            
         
         #Sanity check if raw data folder contains a subfolder (mostly important for old raw data sets)
         if len(list_files) == 0 or len(list_folders) > 0:
