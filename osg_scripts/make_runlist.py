@@ -14,13 +14,13 @@ def make_runlist():
     collection = db['runs_new']
     
     query = {"$or" : [{"detector" : "tpc",
-                       "$and" : [{"number" : {"$gt" : 6731}}] 
+                       "$and" : [{"number" : {"$lt" : 6731}}] 
                        #"$and" : [{"number" : {"$gt" : 6731}},
                                  #{"number" : {"$lt" : 11000}} # to specify range of run numbers
                        },
                       {"detector" : "muon_veto",  # UNCOMMENT TO INCLUDE MV AFTER DATETIME BELOW
                        #"end" : {"$gt" : (datetime.datetime(2017, 7, 29, 00, 00, 00))} # ALE 
-                       "end" : {"$gt" : (datetime.datetime(2017, 2, 1, 00, 00, 00))}} # Feb 1 2017 at midnight
+                       "end" : {"$lt" : (datetime.datetime(2017, 2, 1, 00, 00, 00))}} # Feb 1 2017 at midnight
                       # }
                       ], 
                       
@@ -37,9 +37,16 @@ def make_runlist():
              'processor.correction_versions': {'$exists': True},
              'processor.WaveformSimulator': {'$exists': True},
              'processor.NeuralNet|PosRecNeuralNet': {'$exists': True},
-             'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess'}}},
+             '$and' : [{'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess'}}}},
+                       {'tags' : {"$not" : {'$elemMatch' : {'name':'messy'}}}},
+                       {'tags' : {"$not" : {'$elemMatch' : {'name':'test'}}}},
+                       {'tags' : {"$not" : {'$elemMatch' :{'name':'bad'}}}},
+                       {'tags' : {'$elemMatch' : {'name' : '_sciencerun0_candidate'}}}
+                       ]
+#             'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess'}}},
+#             'tags' : {"$not" : {'$elemMatch' : {'name' : 'test'}}},
 #             'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess', 'name':'messy', 'name':'test','name':'bad'}}},
-             'tags' : {'$elemMatch' : {'name' : '_sciencerun1_candidate'}},
+#             'tags' : {'$elemMatch' : {'name' : '_sciencerun0_candidate'}},
              }
 
     version = 'v' + __version__
@@ -107,6 +114,7 @@ def make_runlist():
 
         if (on_rucio or on_stash or on_midway):
             can_process.append(run[_id])
+            #print(run[_id])
         else:
             cant_process.append(run[_id])
                 

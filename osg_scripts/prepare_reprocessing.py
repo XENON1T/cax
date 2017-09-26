@@ -9,9 +9,9 @@ import os
 
 #runlist=['170331_1249'] #MUV to reprocess
 #runlist=list(np.arange(3410, 3421)) + list(np.arange(3446, 3458)) + [3443]
-runlist = ['170104_2118']
+#runlist = [6001]
 
-#runlist = make_runlist()
+runlist = make_runlist()
 
 config = { 'runlist' : runlist,
            'pax_version' :'v' +  __version__,
@@ -29,4 +29,4 @@ dag = dag_writer(config)
 
 #this name has to be changed in case one wants to do reprocessing
 #dag.write_outer_dag('/scratch/processing/katrina_3412.dag')
-dag.write_outer_dag('/scratch/processing/midway_test.dag')
+dag.write_outer_dag('/scratch/processing/680_SR0.dag')

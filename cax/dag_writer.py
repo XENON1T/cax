@@ -20,7 +20,8 @@ midway_uri = "gsiftp://sdm06.rcc.uchicago.edu:2811"
 euro_sites = {"processing": ["NIKHEF-ELPROD", "CCIN2P3",
                              "WEIZMANN-LCG2", "INFN-T1"],
               "rucio": ["NIKHEF_USERDISK", "CCIN2P3_USERDISK",
-                        "WEIZMANN_USERDISK", "CNAF_USERDISK"]}
+                        "WEIZMANN_USERDISK", "CNAF_USERDISK",
+                       	"CNAF_TAPE_USERDISK"]}
 
 default_run_config = {"exclude_sites": [],
                       "specify_sites": []}
@@ -105,7 +106,7 @@ class dag_writer():
             # fix doc so that all '|' become '.' in json
             fixed_doc = self.FixKeys(doc)
             json.dump(fixed_doc, f)
-            
+        os.chmod(json_file, 0o777)
         return json_file
         
         
@@ -173,6 +174,10 @@ class dag_writer():
                 if on_rucio:
                     rawdata_loc = 'rucio-catalogue'
                     rses = self.get_rses(rucio_name)
+                    if len(rses) < 1:
+                        print("Run %s is not on any RSE. Skipping" % run)
+                        continue
+
 
                     if not any(site in rses for site in (euro_sites['rucio'] + ['UC_OSG_USERDISK'])):
                         if on_stash_local:
@@ -527,7 +532,8 @@ queue 1
             if len(line) > 4 and line[3][:2] == "OK":
                 rses.append(line[4])
         if len(rses) < 1:
-            raise AssertionError("Problem finding rucio rses")
+            #raise AssertionError("Problem finding rucio rses")
+            print("Problem finding rucio rses")
         return rses
 
     def FixKeys(self, dictionary):
