@@ -57,16 +57,18 @@ class CorrectionBase(Task):
         self.correction_doc = cdoc = self.correction_collection.find_one(sort=(('calculation_time', -1), ))
         self.version = cdoc.get('version', str(cdoc['calculation_time']))
 
-        # Get the correction sympy function, if one is set
-        if 'function' in cdoc:
-            self.function = parse_expr(cdoc['function'])
-
         # Check if this correction's version correction has already been applied. If so, skip this run.
         classname = self.__class__.__name__
         this_run_version = self.run_doc.get('processor', {}).get('correction_versions', {}).get(classname, 'not_set')
+        self.log.debug("Checking if version %s == %s" % (this_run_version, self.version))
         if this_run_version == self.version:
             # No change was made in the correction, nothing to do for this run.
+            self.log.debug("Skipping, no change with version %s" % this_run_version)
             return
+
+        # Get the correction sympy function, if one is set
+        if 'function' in cdoc:
+            self.function = parse_expr(cdoc['function'])
 
         # We have to (re)compute the correction setting value. This is done in the evaluate method.
         # There used to be an extra check for self.key: {'$exists': False} in the query, but now that we allow
