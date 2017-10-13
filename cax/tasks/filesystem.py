@@ -222,7 +222,6 @@ class AddSize(Task):
                     # Check if the number of files match with the number of events
                     completeness = False
                     raw_size = 0
-                    filelist=os.listdir(_location)
                     nfiles = len(os.listdir(_location))-4
                     
                     
