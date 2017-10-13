@@ -205,7 +205,7 @@ class AddSize(Task):
         nevents = trigger['events_built']
         ents = int(nevents)/evn_per_zip
         self.log.debug("Number of Events: %d" % (nevents))
-        self.log.debug("Number of Zip Files: %.3f" % (ents))
+        self.log.debug("Number of Zip Files: %i" % (int(ents)+1))
 
         for data_doc in self.run_doc['data']:
 
