@@ -223,7 +223,6 @@ class AddSize(Task):
                     completeness = False
                     raw_size = 0
                     filelist=os.listdir(_location)
-                    print(filelist[0])
                     nfiles = len(os.listdir(_location))-4
                     
                     
