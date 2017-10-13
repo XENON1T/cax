@@ -187,10 +187,25 @@ class AddSize(Task):
 
         run_number = self.run_doc['number']
         run_name = self.run_doc['name']
-
-
         trigger = self.run_doc['trigger']
+        reader = self.run_doc['reader']
+
+        evn_per_zip = 0
+        
+        if 'trigger_config_override' not in reader['ini']:
+            evn_per_zip = 1000
+        elif 'Zip' not in reader['ini']['trigger_config_override']:
+            evn_per_zip = 1000 
+        else:
+            evn_per_zip = reader['ini']['trigger_config_override']['Zip']['events_per_file'] 
+        
+        self.log.debug("Event per zip: %d" % (evn_per_zip))
+        
+        
         nevents = trigger['events_built']
+        ents = int(nevents)/evn_per_zip 
+        self.log.debug("Number of Events: %d" % (nevents) )
+        self.log.debug("Number of Zip Files: %.3f" % (ents))
 
         for data_doc in self.run_doc['data']:
 
@@ -207,9 +222,11 @@ class AddSize(Task):
                     # Check if the number of files match with the number of events
                     completeness = False
                     raw_size = 0
+                    filelist=os.listdir(_location)
+                    print(filelist[0])
                     nfiles = len(os.listdir(_location))-4
-                    ents = int(nevents)/1000.
-
+                    
+                    
                     if 'raw_size_byte' not in self.run_doc:
                         
                         # The Muon Veto data have one file less respect to the TPC run
