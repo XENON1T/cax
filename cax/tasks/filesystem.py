@@ -195,16 +195,16 @@ class AddSize(Task):
         if 'trigger_config_override' not in reader['ini']:
             evn_per_zip = 1000
         elif 'Zip' not in reader['ini']['trigger_config_override']:
-            evn_per_zip = 1000 
+            evn_per_zip = 1000
         else:
-            evn_per_zip = reader['ini']['trigger_config_override']['Zip']['events_per_file'] 
+            evn_per_zip = reader['ini']['trigger_config_override']['Zip']['events_per_file']
         
         self.log.debug("Event per zip: %d" % (evn_per_zip))
         
         
         nevents = trigger['events_built']
-        ents = int(nevents)/evn_per_zip 
-        self.log.debug("Number of Events: %d" % (nevents) )
+        ents = int(nevents)/evn_per_zip
+        self.log.debug("Number of Events: %d" % (nevents))
         self.log.debug("Number of Zip Files: %.3f" % (ents))
 
         for data_doc in self.run_doc['data']:
