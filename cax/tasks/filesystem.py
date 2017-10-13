@@ -250,7 +250,7 @@ class AddSize(Task):
                                 raw_size += byt.st_size
                          
                             self.log.debug("Raw size: %d Byte  %.2f GByte nEvents: %d Size per evnt: %.1f" %
-                                             (raw_size,raw_size*10e-9, nevents,float(raw_size/nevents) ))
+                                             (raw_size,raw_size*1e-9, nevents,float(raw_size/nevents) ))
                          
                             self.collection.update( {'_id' : self.run_doc['_id'] },
                                                       {'$set': {'raw_size_byte' : raw_size } } )
