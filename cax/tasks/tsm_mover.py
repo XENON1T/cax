@@ -664,7 +664,7 @@ class TSMLogFileCheck():
                       x_axis, nb_uploaded_files)
                 i = i + 1
             except:
-                pass
+                print("Log file not readable: {f}".format(f=i_file))
 
         gr_upload_rate.SetTitle("Upload Rate")
         gr_upload_rate.GetXaxis().SetTitle("time [s]")
