@@ -108,23 +108,19 @@ def main():
         corrections.SetS2xyMap(),
         corrections.SetLightCollectionEfficiency(),
         corrections.SetFieldDistortion(),
-        corrections.SetNeuralNetwork(),
-        # corrections.AddSlowControlInformation(),
-        # Upload data through e.g. scp or gridftp to this location where cax running
-        data_mover.CopyPush(),
-        # tsm_mover.AddTSMChecksum(), # Add forgotten Checksum for runDB for TSM client.
-        checksum.CompareChecksums(),  # See if local data corrupted
-        # If data transferring e.g. 48 hours, probably cax crashed so delete then retry
-        clear.RetryStalledTransfer(),
-        # If bad checksum for local data and can fetch from somewhere else, delete our copy
-        clear.RetryBadChecksumTransfer(),
+        corrections.SetNeuralNetwork(),    
+        #corrections.AddSlowControlInformation(),  
+        data_mover.CopyPush(),  # Upload data through e.g. scp or gridftp to this location where cax running
+        #tsm_mover.AddTSMChecksum(), # Add forgotten Checksum for runDB for TSM client.
+	      checksum.CompareChecksums(),  # See if local data corrupted
+        clear.RetryStalledTransfer(),  # If data transferring e.g. 48 hours, probably cax crashed so delete then retry
+        clear.RetryBadChecksumTransfer(),  # If bad checksum for local data and can fetch from somewhere else, delete our copy
 
-        data_mover.CopyPull(),  # Download data through e.g. scp to this location
-        # Add checksum for data here so can know if corruption (useful for knowing when many good copies!)
-        checksum.AddChecksum(),
+        data_mover.CopyPull(), # Download data through e.g. scp to this location
+        checksum.AddChecksum(),  # Add checksum for data here so can know if corruption (useful for knowing when many good copies!)
 
-        # Set any permissions (primarily for Tegner) for new data to make sure analysts can access
-        filesystem.SetPermission(),
+        filesystem.SetPermission(),  # Set any permissions (primarily for Tegner) for new data to make sure analysts can access
+        filesystem.AddSize(),  # Evaluate the size of the raw files and check that they are complete
         process.ProcessBatchQueue(),  # Process the data with pax
         process_hax.ProcessBatchQueueHax(),  # Process the data with hax
         clear.PurgeProcessed(),  # Clear the processed data for a given version
