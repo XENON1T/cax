@@ -36,6 +36,7 @@ from paramiko import SSHClient, util
 from cax import config
 from cax.task import Task
 from cax.tasks.checksum import ChecksumMethods
+#from cax.tasks.data_mover import local_data_finder
 
 
 class RucioBase(Task):
@@ -1531,68 +1532,6 @@ class RucioBase(Task):
 
         # final return!
         return
-
-    def each_run(self):
-
-        #-2) Setup host and remote host:
-        self.set_host(config.get_hostname())
-        self.set_remote_host()
-
-        #-1) Only go on if method is rucio:
-        if config.get_config(self.remote_host)["method"] != "rucio":
-
-            # Do some test before rucio upload:
-            # 0)Check if rucio is available on the host:
-            if self.check_rucio() == False:
-                logging.info(
-                    "Check for you Rucio installation at %s", self.host)
-                return
-
-            if self.ping_rucio() == False:
-                logging.info("Unable to ping Rucio server")
-                return
-
-            # 1) Check if the specified rucio account exists
-            if self.check_rucio_account() == False:
-                logging.info("The specified account %s does not exists in the current rucio list",
-                             config.get_config(self.remote_host)["rucio_account"])
-                logging.info("Use \'rucio-admin account list\' manually!")
-                return
-
-            # 3)Check if the requested RSE from the configuration file is registered
-            #  to the Rucio catalogue.
-            if self.get_rucio_rse() not in self.get_rse_list():
-                logging.info(
-                    "Attention: Check your json configuration file: RSE %s does not exists!", self.get_rucio_rse())
-                return
-
-            for data_type in config.get_config(config.get_hostname())['data_type']:
-                logging.debug("%s" % data_type)
-                self.do_possible_transfers(
-                    option_type=self.option_type, data_type=data_type)
-
-        else:
-            logging.info("Nothing to do for rucio uploader")
-
-    def do_possible_transfers(self,
-                              option_type='upload',
-                              data_type='raw'):
-        """Determine candidate transfers.
-        :param option_type: 'upload' or 'download'
-         :type str
-        :param data_type: 'raw' or 'processed'
-         :type str
-        :return:
-        """
-
-        if 'data_type' not in config.get_config(config.get_hostname()):
-            logging.info(
-                "Error: Define a data_type in your configuration file")
-            logging.info("       (e.g. 'data_type': ['raw'])")
-            exit()
-
-        for data_type in config.get_config(config.get_hostname())['data_type']:
-            self.copyRucio(option_type, data_type)
 
     def RucioCommandLine(self, host, method, filelist=None, metakey=None):
         """Define a general command line interface
