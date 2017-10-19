@@ -200,12 +200,7 @@ class AddSize(Task):
             evn_per_zip = reader['ini']['trigger_config_override']['Zip']['events_per_file']
         
         self.log.debug("Event per zip: %d" % (evn_per_zip))
-        
-        
-        nevents = trigger['events_built']
-        ents = int(nevents)/evn_per_zip
-        self.log.debug("Number of Events: %d" % (nevents))
-        self.log.debug("Number of Zip Files: %i" % (int(ents)+1))
+
 
         for data_doc in self.run_doc['data']:
 
@@ -218,6 +213,10 @@ class AddSize(Task):
                 if _type ==  "raw" and _status == "transferred":
                     self.log.debug("host: %s  location: %s  type: %s" %(_host,_location,_type ) )
 
+                    nevents = trigger['events_built']
+                    ents = int(nevents)/evn_per_zip
+                    self.log.debug("Number of Events: %d" % (nevents))
+                    self.log.debug("Number of Zip Files: %i" % (int(ents)+1))
 
                     # Check if the number of files match with the number of events
                     completeness = False
@@ -230,8 +229,8 @@ class AddSize(Task):
                         # The Muon Veto data have one file less respect to the TPC run
                         if ( (nfiles) == (int(ents)) or (nfiles) == (int(ents)+1) ) :
                             self.log.debug("nevnt: %i  nfile: %i" %(nfiles,int(ents) ) )
-                            self.log.debug("Run Name: %s  Number: %d  is on midway: %s" %
-                                           (run_name,run_number , _location))
+                            self.log.debug("Run Name: %s  Number: %d  is on %s: %s" %
+                                           (run_name,run_number, _host, _location))
                             completeness = True
                         else:
                             self.log.debug("!!! Corrupted !!! Expected %d files found %d  Name: %s " %((int(ents)+1), number_files, name) )
