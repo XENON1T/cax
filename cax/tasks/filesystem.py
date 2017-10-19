@@ -233,7 +233,7 @@ class AddSize(Task):
                                            (run_name,run_number, _host, _location))
                             completeness = True
                         else:
-                            self.log.debug("!!! Corrupted !!! Expected %d files found %d  Name: %s " %((int(ents)+1), nfiles, name) )
+                            self.log.debug("!!! Corrupted !!! Expected %d files found %d  Name: %s " %((int(ents)+1), nfiles, run_name) )
                             completeness = False
                          
                         # If the raw files are complete calculate the size summing the size of
