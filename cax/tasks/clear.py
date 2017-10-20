@@ -40,6 +40,12 @@ class RetryStalledTransfer(checksum.CompareChecksums):
             time_modified = 0
         time_modified = datetime.datetime.fromtimestamp(time_modified)
         time_made = data_doc['creation_time']
+
+        # Some RunsDB entries are different format for some reason (#40)
+        if isinstance(time_made, list):
+            # Assume only one list entry that contains the time
+            time_made = time_made[0]
+
         difference = datetime.datetime.utcnow() - max(time_modified,
                                                       time_made)
 
