@@ -190,6 +190,10 @@ class AddSize(Task):
         trigger = self.run_doc['trigger']
         reader = self.run_doc['reader']
 
+        if 'events_built' not in trigger:
+	   self.log.debug("Events not build in Name: %s " %(self.run_doc['name']) )
+	   return
+
         evn_per_zip = 0
         
         if 'trigger_config_override' not in reader['ini']:
