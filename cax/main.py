@@ -117,6 +117,8 @@ def main():
         checksum.AddChecksum(),  # Add checksum for data here so can know if corruption (useful for knowing when many good copies!)
 
         filesystem.SetPermission(),  # Set any permissions (primarily for Tegner) for new data to make sure analysts can access
+        filesystem.AddSize(),  # Evaluate the size of the raw files and check that they are complete
+
         process.ProcessBatchQueue(),  # Process the data with pax
         process_hax.ProcessBatchQueueHax(),  # Process the data with hax
         clear.PurgeProcessed(),  # Clear the processed data for a given version
