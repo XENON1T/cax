@@ -42,7 +42,7 @@ class RetryStalledTransfer(checksum.CompareChecksums):
         time_made = data_doc['creation_time']
 
         # Some RunsDB entries are different format for some reason (#40)
-        if type(time_made) is list:
+        if isinstance(time_made, list):
             # Assume only one list entry that contains the time
             time_made = time_made[0]
 
