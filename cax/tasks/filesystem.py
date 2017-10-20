@@ -227,7 +227,7 @@ class AddSize(Task):
                     raw_size = 0
                     
                     if 'raw_size_byte' not in self.run_doc:
-                        nfiles = len(os.listdir(_location))-4                        
+                        nfiles = len(os.listdir(_location))-4
                         # The Muon Veto data have one file less respect to the TPC run
                         if ( (nfiles) == (int(ents)) or (nfiles) == (int(ents)+1) ) :
                             self.log.debug("nevnt: %i  nfile: %i" %(nfiles,int(ents) ) )
