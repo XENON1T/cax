@@ -190,7 +190,7 @@ class AddSize(Task):
         trigger = self.run_doc['trigger']
         reader = self.run_doc['reader']
 
-        if 'events_built' not in trigger:
+        if ( ('events_built' not in trigger) or (trigger['events_built'] == 0) ):
             self.log.debug("Events not build in Name: %s " %(self.run_doc['name']) )
             return
 
