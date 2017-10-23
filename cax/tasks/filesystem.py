@@ -177,22 +177,22 @@ class AddSize(Task):
 
         # Check of data info
         if 'data' not in self.run_doc:
-           self.log.debug("Data not found Name: %s " %(self.run_doc['name']) )
-           return
+            self.log.debug("Data not found Name: %s " %(self.run_doc['name']) )
+            return
 
         # Check of Trigger info
         if 'trigger' not in self.run_doc:
-           self.log.debug("Trigger not found Name: %s " %(self.run_doc['name']) )
-           return
+            self.log.debug("Trigger not found Name: %s " %(self.run_doc['name']) )
+            return
 
         run_number = self.run_doc['number']
         run_name = self.run_doc['name']
         trigger = self.run_doc['trigger']
         reader = self.run_doc['reader']
 
-        if 'events_built' not in trigger:
-           self.log.debug("Events not build in Name: %s " %(self.run_doc['name']) )
-           return
+        if ( ('events_built' not in trigger) or (trigger['events_built'] == 0) ):
+            self.log.debug("Events not build in Name: %s " %(self.run_doc['name']) )
+            return
 
         evn_per_zip = 0
         
@@ -225,11 +225,9 @@ class AddSize(Task):
                     # Check if the number of files match with the number of events
                     completeness = False
                     raw_size = 0
-                    nfiles = len(os.listdir(_location))-4
-                    
                     
                     if 'raw_size_byte' not in self.run_doc:
-                        
+                        nfiles = len(os.listdir(_location))-4
                         # The Muon Veto data have one file less respect to the TPC run
                         if ( (nfiles) == (int(ents)) or (nfiles) == (int(ents)+1) ) :
                             self.log.debug("nevnt: %i  nfile: %i" %(nfiles,int(ents) ) )
