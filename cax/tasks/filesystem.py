@@ -213,8 +213,9 @@ class AddSize(Task):
             _type = data_doc['type']
             _status = data_doc['status']
 
-            try:
-                if _type ==  "raw" and _status == "transferred":
+	    try:
+                if ((_type ==  "raw") and (_status == "transferred") and (_host == "xe1t-datamanager")):
+
                     self.log.debug("host: %s  location: %s  type: %s" %(_host,_location,_type ) )
 
                     nevents = trigger['events_built']
