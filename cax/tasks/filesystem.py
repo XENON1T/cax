@@ -172,6 +172,7 @@ class AddSize(Task):
     """
     def __init__(self):
         Task.__init__(self)
+        self.hostname = config.get_hostname()
 
     def each_run(self):
 
@@ -214,7 +215,7 @@ class AddSize(Task):
             _status = data_doc['status']
 
 	    try:
-                if ((_type ==  "raw") and (_status == "transferred") and (_host == "xe1t-datamanager")):
+                if ((_type ==  "raw") and (_status == "transferred") and (_host == self.hostname)):
 
                     self.log.debug("host: %s  location: %s  type: %s" %(_host,_location,_type ) )
 
