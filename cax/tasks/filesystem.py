@@ -214,7 +214,7 @@ class AddSize(Task):
             _type = data_doc['type']
             _status = data_doc['status']
 
-	    try:
+            try:
                 if ((_type ==  "raw") and (_status == "transferred") and (_host == self.hostname)):
 
                     self.log.debug("host: %s  location: %s  type: %s" %(_host,_location,_type ) )
