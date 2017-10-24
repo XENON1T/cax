@@ -12,6 +12,7 @@ from cax.task import Task
 PAX_CONFIG = configuration.load_configuration('XENON1T')
 PAX_CONFIG_MV = configuration.load_configuration('XENON1T_MV')
 
+
 class CorrectionBase(Task):
     """Base class for corrections.
 
@@ -56,6 +57,10 @@ class CorrectionBase(Task):
         # We can't do this in init: cax is a long-running application, and corrections may change while it is running.
         self.correction_doc = cdoc = self.correction_collection.find_one(sort=(('calculation_time', -1), ))
         self.version = cdoc.get('version', str(cdoc['calculation_time']))
+
+        # Get the correction sympy function, if one is set
+        if 'function' in cdoc:
+            self.function = parse_expr(cdoc['function'])
 
         # Check if this correction's version correction has already been applied. If so, skip this run.
         classname = self.__class__.__name__
@@ -148,7 +153,7 @@ class AddGains(CorrectionBase):
     def get_gains(self, timestamp):
         """Timestamp is a UNIX timestamp in UTC
         """
-        V = sympy.symbols('V')
+        # V = sympy.symbols('V')
         pmt = sympy.symbols('pmt', integer=True)
         t = sympy.symbols('t')
 
@@ -159,8 +164,7 @@ class AddGains(CorrectionBase):
         for i in range(0, len(PAX_CONFIG['DEFAULT']['pmts'])):
             gain = self.function.evalf(subs={pmt: i,
                                              t: self.run_doc['start'].replace(tzinfo=pytz.utc).timestamp(),
-                                             't0': 0
-                                       })
+                                             't0': 0})
             gains.append(float(gain) * self.correction_units)
 
         return gains
@@ -170,7 +174,7 @@ class SetNeuralNetwork(CorrectionBase):
     '''Set the proper neural network file according to run number'''
     key = "processor.NeuralNet|PosRecNeuralNet.neural_net_file"
     collection_name = 'neural_network'
-    
+
     def evaluate(self):
         number = self.run_doc['number']
         for rdef in self.correction_doc['correction']:
@@ -178,35 +182,38 @@ class SetNeuralNetwork(CorrectionBase):
                 return rdef['value']
         return None
 
-class SetFieldDistortion(CorrectionBase):
-	'''Set the proper field distortion map according to run number'''
-	key = 'processor.WaveformSimulator.rz_position_distortion_map'
-	collection_name = 'field_distortion'
 
-	def evaluate(self):
-		number = self.run_doc['number']
-		for rdef in self.correction_doc['correction']:
-			if number >= rdef['min'] and number < rdef['max']:
-				return rdef['value']
-		return None
+class SetFieldDistortion(CorrectionBase):
+    '''Set the proper field distortion map according to run number'''
+    key = 'processor.WaveformSimulator.rz_position_distortion_map'
+    collection_name = 'field_distortion'
+
+    def evaluate(self):
+        number = self.run_doc['number']
+        for rdef in self.correction_doc['correction']:
+            if number >= rdef['min'] and number < rdef['max']:
+                return rdef['value']
+        return None
+
 
 class SetLightCollectionEfficiency(CorrectionBase):
-	'''Set the proper LCE map according to run number'''
-	key = 'processor.WaveformSimulator.s1_light_yield_map'
-	collection_name = 'light_collection_efficiency'
+    '''Set the proper LCE map according to run number'''
+    key = 'processor.WaveformSimulator.s1_light_yield_map'
+    collection_name = 'light_collection_efficiency'
 
-	def evaluate(self):
-		number = self.run_doc['number']
-		for rdef in self.correction_doc['correction']:
-			if number >= rdef['min'] and number < rdef['max']:
-				return rdef['value']
-		return None
+    def evaluate(self):
+        number = self.run_doc['number']
+        for rdef in self.correction_doc['correction']:
+            if number >= rdef['min'] and number < rdef['max']:
+                return rdef['value']
+        return None
+
 
 class SetS2xyMap(CorrectionBase):
     """Set the proper S2 x, y map according to run number"""
     key = 'processor.WaveformSimulator.s2_light_yield_map'
     collection_name = 's2_xy_map'
-    
+
     def evaluate(self):
         number = self.run_doc['number']
         for rdef in self.correction_doc['correction']:
