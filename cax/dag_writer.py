@@ -11,11 +11,13 @@ import re
 import pwd
 
 """
-This class contains functions for writing inner and outer dag files. It takes a list of runs (integers) and pax_version as input.
+This class contains functions for writing inner and outer dag files. It takes a list of runs (integers) 
+and pax_version as input.
 """
 
 ci_uri = "gsiftp://gridftp.grid.uchicago.edu:2811/cephfs/srm"
 midway_uri = "gsiftp://sdm06.rcc.uchicago.edu:2811"
+dcache_uri = "gsiftp://xenon-gridftp.grid.uchicago.edu:2811/xenon/"
 
 euro_sites = {"processing": ["NIKHEF-ELPROD", "CCIN2P3",
                              "WEIZMANN-LCG2", "INFN-T1"],
@@ -559,3 +561,17 @@ PARENT {inner_dagname} CHILD {inner_dagname}_noop2
 VARS {number}.{zip_i} input_file="{infile}" out_location="{outfile_full}" name="{run_name}" ncpus="1" disable_updates="True" host="login" pax_version="{pax_version}" pax_hash="n/a" zip_name="{zip_name}" json_file="{json_file}" on_rucio="{on_rucio}" dirname="{dirname}"
 RETRY {number}.{zip_i} {n_retries}
 """
+
+def gfal_mkdir(uri, path, p=True):
+    path = "-p "*p + os.path.join(uri, path)
+    cmd = "gfal-mkdir %s" % path
+    cmd = cmd.split(" ")
+    #print(cmd)
+    subprocess.Popen(cmd).communicate()
+
+def gfal_rm(uri, path, r=True):
+    path = "-r "*r + os.path.join(uri, path)
+    cmd = "gfal-rm %s" % path
+    cmd = cmd.split(" ")
+    #print(cmd)
+    subprocess.Popen(cmd).communicate()
