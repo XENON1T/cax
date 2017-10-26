@@ -205,7 +205,7 @@ class ProcessBatchQueue(Task):
                                                     }
                                      }
                            },
-                 "$or" : [{'number' : {"$gte" : 12560}},    #REMOVE ME PLEASE
+                 "$or" : [{'number' : {"$gte" : 12000}},    #REMOVE ME PLEASE
 #                 "$or" : [{'number' : {"$gte" : 6731}},   #UNCOMMENT ME TO GET BACK TO SR1 full list of runs
                           {"detector" : "muon_veto",
                            "end" : {"$gt" : (datetime.datetime.utcnow() - datetime.timedelta(days=15))}
@@ -273,11 +273,13 @@ class ProcessBatchQueue(Task):
 
             if not os.path.exists(inner_dag_dir):
                 os.makedirs(inner_dag_dir)
+                os.chmod(inner_dag_dir, 0o777)
 
             joblog_dir = outer_dag_dir.replace('dags', 'joblogs')
 
             if not os.path.exists(joblog_dir):
                 os.makedirs(joblog_dir)
+                os.chmod(inner_dag_dir,0o777)
 
             if detector == 'tpc':
                 outer_dag_file = outer_dag_dir + "/{number}_outer.dag".format(number=number)
@@ -344,7 +346,7 @@ class ProcessBatchQueue(Task):
 
             # now check how many dags are running
             self.log.debug("%d dags currently running" % len(qsub.get_queue()))
-            if len(qsub.get_queue()) > 30:
+            if len(qsub.get_queue()) > 10:
                 self.log.info("Too many dags in queue, waiting 10 minutes")
                 time.sleep(60*10)
                 return

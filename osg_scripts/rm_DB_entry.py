@@ -60,7 +60,7 @@ def update_path(number, data_type, detector):
         if data_doc['pax_version'] != 'v' +__version__:
             continue
 
-        if data_doc['status'] != 'transferring':
+        if data_doc['status'] != 'error':
             continue
 
         datum = data_doc

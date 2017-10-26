@@ -32,7 +32,6 @@ GRID_CERT = config.get_config()['grid_cert']
 # one dir up from usual so that we can access the osg_scripts easily
 #CAX_DIR = os.path.dirname(os.path.dirname(__file__))
 CAX_DIR = os.path.expanduser("~") + "/cax"
-
 class dag_writer():
 
     def __init__(self, config):

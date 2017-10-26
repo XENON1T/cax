@@ -5,13 +5,11 @@ from make_runlist import make_runlist
 from pax import __version__
 import os
 
-#os.environ["PYTHONPATH"]="/xenon/cax:"+os.environ["PYTHONPATH"]
-
-#runlist=['170331_1249'] #MUV to reprocess
-#runlist=list(np.arange(3410, 3421)) + list(np.arange(3446, 3458)) + [3443]
-runlist = ['170104_2118']
-
 #runlist = make_runlist()
+
+runlist = list(np.arange(10991, 11008)) + list(np.arange(11012, 11018))
+runlist = [int(r) for r in runlist]
+print(runlist)
 
 config = { 'runlist' : runlist,
            'pax_version' :'v' +  __version__,
@@ -29,4 +27,5 @@ dag = dag_writer(config)
 
 #this name has to be changed in case one wants to do reprocessing
 #dag.write_outer_dag('/scratch/processing/katrina_3412.dag')
-dag.write_outer_dag('/scratch/processing/midway_test.dag')
+
+dag.write_outer_dag('/scratch/processing/katrina_666.dag')
