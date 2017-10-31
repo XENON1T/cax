@@ -5,10 +5,10 @@ from make_runlist import make_runlist
 from pax import __version__
 import os
 
-#runlist = make_runlist()
+runlist = make_runlist()
 
-runlist = list(np.arange(10991, 11008)) + list(np.arange(11012, 11018))
-runlist = [int(r) for r in runlist]
+#runlist = list(np.arange(10991, 11008)) + list(np.arange(11012, 11018))
+#runlist = [int(r) for r in runlist]
 print(runlist)
 
 config = { 'runlist' : runlist,
@@ -28,4 +28,4 @@ dag = dag_writer(config)
 #this name has to be changed in case one wants to do reprocessing
 #dag.write_outer_dag('/scratch/processing/katrina_3412.dag')
 
-dag.write_outer_dag('/scratch/processing/katrina_666.dag')
+dag.write_outer_dag('/scratch/processing/680_SR0_MV.dag')

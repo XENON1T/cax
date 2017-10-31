@@ -19,8 +19,9 @@ def make_runlist():
                                  #{"number" : {"$lt" : 11000}} # to specify range of run numbers
                        },
                       {"detector" : "muon_veto",  # UNCOMMENT TO INCLUDE MV AFTER DATETIME BELOW
+                       }
                        #"end" : {"$gt" : (datetime.datetime(2017, 7, 29, 00, 00, 00))} # ALE 
-                       "end" : {"$gt" : (datetime.datetime(2017, 2, 1, 00, 00, 00))}} # Feb 1 2017 at midnight
+                       #"end" : {"$gt" : (datetime.datetime(2017, 1, 1, 00, 00, 00))}} # Feb 1 2017 at midnight
                       # }
                       ], 
                       
@@ -39,7 +40,7 @@ def make_runlist():
              'processor.NeuralNet|PosRecNeuralNet': {'$exists': True},
              'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess'}}},
 #             'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess', 'name':'messy', 'name':'test','name':'bad'}}},
-             'tags' : {'$elemMatch' : {'name' : '_sciencerun1_candidate'}},
+             'tags' : {'$elemMatch' : {'name' : '_sciencerun0_candidate'}},
              }
 
     version = 'v' + __version__
@@ -120,8 +121,13 @@ def make_runlist():
     print("CAN PROCESS: %d" % len(can_process))
     print("CANNOT PROCESS: %d" % len(cant_process))
     print(cant_process)
+    
+#    with open("can_process.txt", "w") as f:
+#        for r in can_process:
+#            f.write("{run}\n".format(run=r))
 
     return can_process
+
 
 if __name__ == '__main__':
     make_runlist()
