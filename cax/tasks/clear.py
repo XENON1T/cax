@@ -95,8 +95,11 @@ class RetryBadChecksumTransfer(checksum.CompareChecksums):
             return
 
         if data_doc['checksum'] != comparison:
-            self.give_error("Bad checksum %d, %s, %s, %s" % (self.run_doc['number'], data_doc['host'], \
-                            data_doc['type'], data_doc['pax_version']))
+            self.give_error("Bad checksum %d, %s, %s" % (self.run_doc['number'], data_doc['host'], \
+                            data_doc['type']))
+
+            if data_doc['type'] == 'processed':
+                self.give_error("Bad checksum %s" % data_doc['pax_version'])
 
             if self.check(data_doc['type'], warn=False) > 1:
                 self.purge(data_doc)
