@@ -29,6 +29,7 @@ else
 fi
 
 source activate pax_$2_OSG
+source $HOME/cax/osg_scripts/setup_rucio.sh
 
 #export PYTHONPATH=/xenon/cax:$PYTHONPATH
 
