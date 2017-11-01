@@ -7,17 +7,9 @@ import hashlib
 import subprocess
 import sys
 import os
-from collections import defaultdict
-import time
-import pax
 import checksumdir
-import json
-#from pymongo import ReturnDocument
 
-#os.environ["PYTHONPATH"]="/xenon/cax:"+os.environ["PYTHONPATH"]
-
-from cax import qsub, config
-from cax.task import Task
+from cax import config
 from cax.api import api
 
 def verify():
@@ -26,7 +18,6 @@ def verify():
     Now is nothing.  Could check number of events later?
     """
     return True
-
 
 
 def get_ziplist(name):
@@ -61,7 +52,7 @@ def get_ziplist(name):
                            stdout=subprocess.PIPE).stdout.read()
         out = str(out).split("\\n")
         files = set([l.split(" ")[3] for l in out if '---' not in l and 'x1t' in l])
-        ziplist = sorted([f for f in files if f.startswith('XENON1T')])
+        ziplist = list(sorted([f for f in files if f.startswith('XENON1T')]))
 
     else:
         print("Run %i not on stash or rucio" % doc['number'])
@@ -71,17 +62,19 @@ def get_ziplist(name):
 
 def _upload(name, n_zips, pax_version, detector = "tpc", update_database=True):
 
-
     if detector == "tpc":
         MV = ""
     else:
         MV = "_MV"
 
     # check how many processed zip files we have back 
-    procdir = config.get_processing_dir("login", pax_version) + "/" + name + MV
-    print(procdir)
-    n_processed = len(os.listdir(procdir))
+    proc_zip_dir = config.get_processed_zip_dir("login", pax_version) + "/" + name + MV
+    print(proc_zip_dir)
+    n_processed = len(os.listdir(proc_zip_dir))
     print("Processed files: ",n_processed)
+
+    # get dir where we want the merged root file
+    final_location = os.path.join(config.get_processing_dir("login", pax_version), name + MV + ".root")
 
     # does number of processed files match the raw zip files?
     n_zips = int(n_zips)
@@ -99,15 +92,14 @@ def _upload(name, n_zips, pax_version, detector = "tpc", update_database=True):
                'type'          : 'processed',
                'pax_version'   : pax_version,
                'status'        : 'transferred',
-               'location'      : procdir,
+               'location'      : final_location,
                'checksum'      : None,
                'creation_time' : datetime.datetime.utcnow(),
                'creation_place': 'OSG'}
     
     datum = None
     for entry in doc["data"]:
-        if (entry["host"] == 'login' and entry["type"] == 'processed' and
-            entry["pax_version"] == pax_version):
+        if (entry["host"] == 'login' and entry["type"] == 'processed' and entry["pax_version"] == pax_version):
             datum = entry
 
 
@@ -115,20 +107,19 @@ def _upload(name, n_zips, pax_version, detector = "tpc", update_database=True):
     if n_processed != n_zips:
         print("There was an error during processing. Missing root files for these %i zips:" % (n_zips - n_processed))
         for zip in get_ziplist(name):
-            if not os.path.exists(procdir + "/" + zip.replace(".zip", ".root")):
+            if not os.path.exists(proc_zip_dir + "/" + zip.replace(".zip", ".root")):
                 print("\t%s" % zip)
         updatum["status"] = 'error'
 
     # if all root files present, then perform hadd, checksum, and register to database
     else:
         print("merging %s" % name)
-        #cax_dir = os.path.dirname(os.path.dirname(__file__))
         cax_dir = os.path.expanduser("~") + "/cax"
         print (cax_dir)
-        subprocess.Popen(cax_dir + "/osg_scripts/merge_roots.sh " + procdir, shell = True).wait()
+        subprocess.Popen([cax_dir + "/osg_scripts/merge_roots.sh", proc_zip_dir, proc_merged_dir], shell = True).wait()
 
         # final location of processed root file
-        final_location = procdir + ".root"   
+        final_location = proc_merged_dir + ".root"
 
         checksum = checksumdir._filehash(final_location,
                                          hashlib.sha512)        

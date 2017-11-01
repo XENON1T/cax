@@ -189,7 +189,7 @@ def pre_script(run_name, pax_version, run_number, detector = 'tpc'):
 
     name = doc["name"]
     
-    procdir = config.get_processing_dir("login", pax_version) + "/" + name
+    procdir = config.get_processed_zip_dir("login", pax_version) + "/" + name
 
     if detector == 'muon_veto':
         procdir = procdir + "_MV"

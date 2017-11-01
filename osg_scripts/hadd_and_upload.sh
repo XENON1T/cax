@@ -44,7 +44,7 @@ if [[ ! -e $rootfile ]]; then
 	#echo "python ${cax_dir}/osg_scripts/upload.py $1 $5 $2 $6" >> $post_log 2>&1	
 	python ${cax_dir}/osg_scripts/upload.py $1 $5 $2 $6 >> $post_log 2>&1
 	if [[ $? -ne 0 ]]; then
-    		echo "hadd or DB stuff failed, exiting"
+    		echo "hadd or DB stuff failed, exiting" >> $post_log
     		exit 1
 	fi
 fi	  

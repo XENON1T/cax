@@ -221,10 +221,11 @@ class dag_writer():
                 if os.stat(basedir).st_uid == os.getuid():
                     os.chmod(inner_dagdir, 0o777)
 
-                outputdir = config.get_processing_dir(c['host'], c['pax_version'])
+                # where the zip files will get copied - NOT where the final merged file will be
+                outputdir = config.get_processed_zip_dir(c['host'], c['pax_version'])
+
                 json_file = self.write_json_file(doc)
                 os.makedirs(os.path.join(basedir, "joblogs"), exist_ok=True)
-                dagdir = outer_dag.rsplit('/',1)[0]
                 submitfile = inner_dagdir + "/process.submit"
 
                 self.write_submit_script(submitfile, run_config)
@@ -274,6 +275,15 @@ class dag_writer():
 
         c = self.config
 
+        # update n_retries if it was passed to config
+        n_retries = c['retries'] if 'retries' in c else n_retries
+
+        # which uri to use for output files
+        uri = ci_uri
+        if 'xenon_dcache' in outputdir:
+            uri = dcache_uri
+            outputdir = outputdir.replace('/xenon_dcache/', '')
+
         # if raw data on stash, get zips directly from raw directory
         if rawdata_loc == "rucio-catalogue":
             on_rucio = True
@@ -312,12 +322,15 @@ class dag_writer():
                         infile_local = os.path.abspath(os.path.join(dir_name, infile))
                         infile = ci_uri + infile_local
                         if not os.path.exists(os.path.join(outputdir, run_name + MV)):
-                            os.makedirs(os.path.join(outputdir, run_name + MV))
-                            os.chmod(os.path.join(outputdir, run_name + MV), 0o777)
+                            if uri == dcache_uri:
+                                gfal_mkdir(dcache_uri, outputdir.replace('/xenon_dcache/', ''))
+                            else:
+                                os.makedirs(os.path.join(outputdir, run_name + MV))
+                                os.chmod(os.path.join(outputdir, run_name + MV), 0o777)
 
                         outfile = os.path.abspath(os.path.join(outputdir,
                                                                run_name + MV, outfile))
-                        outfile_full = ci_uri + outfile
+                        outfile_full = uri + outfile
                         inner_dag.write(self.inner_dag_template.format(number=run_id, zip_i=i, submit_file = submitfile,
                                                                        infile=infile, outfile_full=outfile_full, run_name=run_name,
                                                                        pax_version = c['pax_version'], zip_name=zip_name,
@@ -340,6 +353,13 @@ class dag_writer():
                     print("Run not in rucio catalog. Check RunsDB")
                     return
 
+                if not os.path.exists(os.path.join(outputdir, run_name + MV)):
+                    if uri == dcache_uri:
+                        gfal_mkdir(dcache_uri, os.path.join(outputdir, run_name + MV))
+                        # else:
+                        #    os.makedirs(os.path.join(outputdir, run_name + MV))
+                        #    os.chmod(os.path.join(outputdir, run_name + MV), 0o777)
+
                 if (c['runlist'] is not None and run_id not in c['runlist']):
                     print("Run not in runlist")
                     return
@@ -353,13 +373,10 @@ class dag_writer():
                         continue
                     outfile = zip_name + ".root"
                     infile = rucio_scope.replace("raw", zip)
-                    if not os.path.exists(os.path.join(outputdir, run_name + MV)):
-                        os.makedirs(os.path.join(outputdir, run_name + MV))
-                        os.chmod(os.path.join(outputdir, run_name + MV), 0o777)
 
-                    outfile = os.path.abspath(os.path.join(outputdir,
-                                                           run_name + MV, outfile))
-                    outfile_full = ci_uri + outfile
+                    outfile = os.path.join(outputdir, run_name + MV, outfile)
+                    #os.path.abspath(os.path.join(outputdir, run_name + MV, outfile))
+                    outfile_full = uri + outfile
                     inner_dag.write(self.inner_dag_template.format(number=run_id, zip_i=i, submit_file=submitfile,
                                                                    infile=infile, outfile_full=outfile_full,
                                                                    run_name=run_name,
@@ -395,12 +412,15 @@ class dag_writer():
                     outfile = zip_name + ".root"
                     infile = midway_uri + midway_location + "/" + zip
                     if not os.path.exists(os.path.join(outputdir, run_name + MV)):
-                        os.makedirs(os.path.join(outputdir, run_name + MV))
-                        os.chmod(os.path.join(outputdir, run_name + MV), 0o777)
+                        if uri == dcache_uri:
+                            gfal_mkdir(dcache_uri, outputdir.replace('/xenon_dcache/', ''))
+                        else:
+                            os.makedirs(os.path.join(outputdir, run_name + MV))
+                            os.chmod(os.path.join(outputdir, run_name + MV), 0o777)
 
                     outfile = os.path.abspath(os.path.join(outputdir,
                                                            run_name, outfile))
-                    outfile_full = ci_uri + outfile
+                    outfile_full = uri + outfile
                     inner_dag.write(self.inner_dag_template.format(number=run_id, zip_i=i, submit_file=submitfile,
                                                                    infile=infile, outfile_full=outfile_full,
                                                                    run_name=run_name,
@@ -518,7 +538,7 @@ queue 1
 
 
     def midway_getzips(self, midway_path):
-        uri = self.midway_uri
+        uri = midway_uri
         out = subprocess.Popen(["gfal-ls","--cert", GRID_CERT, uri + midway_path], stdout=subprocess.PIPE).stdout.read()
         out = str(out.decode("utf-8")).split("\n")
         zips = [l for l in out if l.startswith('XENON')]

@@ -1,22 +1,15 @@
-#from cax.dag_writer_mod import dag_writer
 from cax.dag_writer import dag_writer
 import numpy as np
 from make_runlist import make_runlist
 from pax import __version__
 import os
 
-#os.environ["PYTHONPATH"]="/xenon/cax:"+os.environ["PYTHONPATH"]
-
-#runlist=['170331_1249'] #MUV to reprocess
-#runlist=list(np.arange(3410, 3421)) + list(np.arange(3446, 3458)) + [3443]
-#runlist = [6001]
-
-runlist = make_runlist()
+runlist = [14075] #make_runlist()
 
 config = { 'runlist' : runlist,
            'pax_version' :'v' +  __version__,
            'logdir' : '/scratch/processing',
-           'retries' : 9,
+           'retries' : 1,
            'specify_sites' : [],
  	   "exclude_sites": ["Comet"], 
            'host' : 'login',
@@ -29,4 +22,4 @@ dag = dag_writer(config)
 
 #this name has to be changed in case one wants to do reprocessing
 #dag.write_outer_dag('/scratch/processing/katrina_3412.dag')
-dag.write_outer_dag('/scratch/processing/680_SR0.dag')
+dag.write_outer_dag('/scratch/processing/dcache_test.dag')

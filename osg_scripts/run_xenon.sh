@@ -20,7 +20,7 @@ echo $HOSTNAME
 echo
 echo $LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/envs/pax_$4_OSG/lib:$LD_LIBRARY_PATH
-export GFAL2_GRIDFTP_DEBUG=1
+#export GFAL2_GRIDFTP_DEBUG=1
 echo $LD_LIBRARY_PATH
 # df -h
 echo 
@@ -217,7 +217,7 @@ echo "-----"
 echo "outfile: $outfile"
 echo "Arg 6: $stash_loc"
 # echo "time gfal-copy --cert ${outfile} -T 36000 -t 36000 -f -p --checksum md5 file://${out_file} ${stash_loc}"
-upload_cmd="gfal-copy -v -T 36000 -t 36000 -f -p --checksum md5 file://${start_dir}/output/${outfile} ${stash_loc}" 
+upload_cmd="gfal-copy -T 36000 -t 36000 -f -p --checksum md5 file://${start_dir}/output/${outfile} ${stash_loc}" 
 export X509_USER_PROXY=$TEMP_X509_USER_PROXY
 echo "Using this proxy: $X509_USER_PROXY"
 source $osg_software/setup.sh
@@ -225,7 +225,7 @@ export GFAL_CONFIG_DIR=$OSG_LOCATION/etc/gfal2.d
 export GFAL_PLUGIN_DIR=$OSG_LOCATION/usr/lib64/gfal2-plugins/
 upload ()
 {
-  gfal-copy -v -T 36000 -t 36000 -f -p --checksum md5 file://${start_dir}/output/${outfile} ${stash_loc}
+  gfal-copy -T 36000 -t 36000 -f -p --checksum md5 file://${start_dir}/output/${outfile} ${stash_loc}
 }
 
 echo $upload_cmd
@@ -233,11 +233,6 @@ echo $upload_cmd
 (curl_moni "start uploading") || (curl_moni "start uploading")
 
 (upload) || (sleep 30s && upload) || (sleep 60s && upload) || (echo "upload failed" && exit 255)
-if [[ $? -ne 0 ]];
-then
-	echo "upload failed" 
-	exit 255
-fi
 
 (curl_moni "end uploading") || (curl_moni "end uploading")
 
