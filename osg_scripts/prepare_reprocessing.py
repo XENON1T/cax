@@ -28,4 +28,4 @@ dag = dag_writer(config)
 #this name has to be changed in case one wants to do reprocessing
 #dag.write_outer_dag('/scratch/processing/katrina_3412.dag')
 
-dag.write_outer_dag('/scratch/processing/680_SR0_MV.dag')
+dag.write_outer_dag('/scratch/processing/680_notags.dag')

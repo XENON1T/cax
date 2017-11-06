@@ -14,12 +14,11 @@ def make_runlist():
     collection = db['runs_new']
     
     query = {"$or" : [{"detector" : "tpc",
-                       "$and" : [{"number" : {"$gt" : 6731}}] 
+                       "$and" : [{"number" : {"$lt" : 14000}}, 
                        #"$and" : [{"number" : {"$gt" : 6731}},
-                                 #{"number" : {"$lt" : 11000}} # to specify range of run numbers
+                                 {"number" : {"$gt" : 4000}}] # to specify range of run numbers
                        },
-                      {"detector" : "muon_veto",  # UNCOMMENT TO INCLUDE MV AFTER DATETIME BELOW
-                       }
+                      {"detector" : "muon_veto"}  # UNCOMMENT TO INCLUDE MV AFTER DATETIME BELOW
                        #"end" : {"$gt" : (datetime.datetime(2017, 7, 29, 00, 00, 00))} # ALE 
                        #"end" : {"$gt" : (datetime.datetime(2017, 1, 1, 00, 00, 00))}} # Feb 1 2017 at midnight
                       # }
@@ -40,7 +39,7 @@ def make_runlist():
              'processor.NeuralNet|PosRecNeuralNet': {'$exists': True},
              'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess'}}},
 #             'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess', 'name':'messy', 'name':'test','name':'bad'}}},
-             'tags' : {'$elemMatch' : {'name' : '_sciencerun0_candidate'}},
+#             'tags' : {'$elemMatch' : {'name' : '_sciencerun0_candidate'}},
              }
 
     version = 'v' + __version__
@@ -125,6 +124,9 @@ def make_runlist():
 #    with open("can_process.txt", "w") as f:
 #        for r in can_process:
 #            f.write("{run}\n".format(run=r))
+
+    if '170608_0557' in can_process:
+        print("MV run is in can_process")
 
     return can_process
 

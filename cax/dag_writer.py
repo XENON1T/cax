@@ -20,8 +20,7 @@ midway_uri = "gsiftp://sdm06.rcc.uchicago.edu:2811"
 euro_sites = {"processing": ["NIKHEF-ELPROD", "CCIN2P3",
                              "WEIZMANN-LCG2", "INFN-T1"],
               "rucio": ["NIKHEF_USERDISK", "CCIN2P3_USERDISK",
-                        "WEIZMANN_USERDISK", "CNAF_USERDISK", "CNAF_TAPE_USERDISK",
-                        "SURFSARA_USERDISK"]}
+                        "WEIZMANN_USERDISK", "CNAF_USERDISK", "CNAF_TAPE_USERDISK"]}
 
 default_run_config = {"exclude_sites": [],
                       "specify_sites": []}
@@ -454,7 +453,7 @@ queue 1
 
         if self.config['use_midway']:
             requirements = '(HAS_CVMFS_xenon_opensciencegrid_org)' \
-                           '&& (RCC_Factory == "ciconnect")' #&& (OSGVO_OS_STRING == "RHEL 6" || RCC_Factory == "ciconnect") ' \
+                           '&& (OSGVO_OS_STRING == "RHEL 6" || RCC_Factory == "ciconnect") ' \
                            '&& (VC3_GLIDEIN_VERSION == "0.9.4") \n' \
                            '+MATCH_APF_QUEUE=XENON1T'
 
@@ -468,7 +467,7 @@ queue 1
                                     "|| (RCC_Factory == \"ciconnect\") || (GLIDEIN_Site == \"MWT2-COREOS\")) " \
                                "&& ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName4) " \
                                      "|| (RCC_Factory == \"ciconnect\") || (GLIDEIN_Site == \"MWT2-COREOS\"))) " \
-                            "&& (RCC_Factory == \"ciconnect\")" #"&& (OSGVO_OS_STRING == \"RHEL 6\" || RCC_Factory == \"ciconnect\")"
+                           "&& (OSGVO_OS_STRING == \"RHEL 6\" || RCC_Factory == \"ciconnect\")"
 
             for site in run_config['exclude_sites']:
                 requirements += " && (GLIDEIN_ResourceName =!= \"{site}\")".format(site=site)
@@ -527,7 +526,8 @@ queue 1
             if len(line) > 4 and line[3][:2] == "OK":
                 rses.append(line[4])
         if len(rses) < 1:
-            raise AssertionError("Problem finding rucio rses")
+            print("Problem finding rucio rses for %s" % rucio_name)
+            #raise AssertionError("Problem finding rucio rses")
         return rses
 
     def FixKeys(self, dictionary):
