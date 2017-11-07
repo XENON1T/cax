@@ -34,7 +34,6 @@
     "upload_options": ["midway-login1"],
     "method": "rsync",
     "hostname": "login.ci-connect.uchicago.edu",
-    "dir_raw": "/xenon/xenon1t/raw",
     "username": "pdeperio",
     "download_options": [],
     "task_list": ["ProcessBatchQueue"],

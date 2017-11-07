@@ -74,7 +74,8 @@ def _upload(name, n_zips, pax_version, detector = "tpc", update_database=True):
     print("Processed files: ",n_processed)
 
     # get dir where we want the merged root file
-    final_location = os.path.join(config.get_processing_dir("login", pax_version), name + MV + ".root")
+    proc_merged_dir = config.get_processing_dir("login", pax_version)
+    final_location = os.path.join(proc_merged_dir, name + MV + ".root")
 
     # does number of processed files match the raw zip files?
     n_zips = int(n_zips)
@@ -116,7 +117,9 @@ def _upload(name, n_zips, pax_version, detector = "tpc", update_database=True):
         print("merging %s" % name)
         cax_dir = os.path.expanduser("~") + "/cax"
         print (cax_dir)
-        subprocess.Popen([cax_dir + "/osg_scripts/merge_roots.sh", proc_zip_dir, proc_merged_dir], shell = True).wait()
+        print([cax_dir + "/osg_scripts/merge_roots.sh", proc_zip_dir, proc_merged_dir])
+        merge_script = os.path.join(cax_dir, 'osg_scripts/merge_roots.sh')
+        subprocess.Popen([merge_script, proc_zip_dir, proc_merged_dir]).communicate()
 
         # final location of processed root file
         final_location = proc_merged_dir + ".root"
