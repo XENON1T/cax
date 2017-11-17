@@ -40,7 +40,7 @@ def _process_hax(name, in_location, host, pax_version,
         print('creating hax minitrees for run', name, pax_version, in_location, out_location)
         init_hax(in_location, pax_version, out_location)   # may initialize once only
         hax.minitrees.load_single_dataset(name, ['Corrections', 'Basics', 'Fundamentals',
-                                                 'DoubleScatter', 'LargestPeakProperties',
+                                                 'CorrectedDoubleS1Scatter', 'LargestPeakProperties',
                                                  'TotalProperties',  'Extended', 'Proximity','LoneSignalsPreS1', 'LoneSignals'])
 
     except Exception as exception:
