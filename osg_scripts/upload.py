@@ -119,10 +119,14 @@ def _upload(name, n_zips, pax_version, detector = "tpc", update_database=True):
         print (cax_dir)
         print([cax_dir + "/osg_scripts/merge_roots.sh", proc_zip_dir, proc_merged_dir])
         merge_script = os.path.join(cax_dir, 'osg_scripts/merge_roots.sh')
-        subprocess.Popen([merge_script, proc_zip_dir, proc_merged_dir]).communicate()
+        P = subprocess.Popen([merge_script, proc_zip_dir, proc_merged_dir])
+        P.communicate()
+        if P.returncode != 0:
+            raise ValueError("Subprocess returned non zero value")
+        
 
         # final location of processed root file
-        final_location = proc_merged_dir + ".root"
+        final_location = proc_merged_dir + "/%s.root" % (name + MV)
 
         checksum = checksumdir._filehash(final_location,
                                          hashlib.sha512)        

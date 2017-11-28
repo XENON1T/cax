@@ -236,5 +236,12 @@ echo $upload_cmd
 
 (curl_moni "end uploading") || (curl_moni "end uploading")
 
+gfal-ls -v ${stash_loc}
+if [[ $? -ne 0 ]];
+then
+    echo “file not found”
+    exit 225
+fi
+
 rm -rf $work_dir
 rm -rf ${start_dir}/output

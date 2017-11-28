@@ -25,7 +25,9 @@ if [[ ! $? -eq 0 ]]; then
 fi
 
 cd ..
-#rm -rf $procdir
+dcache_path=${proc_zip_dir#"/xenon_dcache/"}
+echo "gfal-rm gsiftp://xenon-gridftp.grid.uchicago.edu:2811/xenon/$dcache_path"
+#gfal-rm gsiftp://xenon-gridftp.grid.uchicago.edu:2811/xenon/$proc_zip_dir
 
 source deactivate
 

@@ -1,4 +1,4 @@
-#!/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/envs/pax_v6.6.2_OSG/bin/python
+#!/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/envs/pax_head/bin/python
 
 import pymongo
 import os

@@ -344,10 +344,9 @@ class ProcessBatchQueue(Task):
 
             # now check how many dags are running
             self.log.debug("%d dags currently running" % len(qsub.get_queue()))
-            if len(qsub.get_queue()) > 30:
+            while len(qsub.get_queue()) > 10:
                 self.log.info("Too many dags in queue, waiting 10 minutes")
                 time.sleep(60*10)
-                return
 
         disable_updates = not config.DATABASE_LOG
 

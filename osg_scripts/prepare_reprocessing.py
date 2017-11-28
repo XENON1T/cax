@@ -4,12 +4,15 @@ from make_runlist import make_runlist
 from pax import __version__
 import os
 
-runlist = [14075] #make_runlist()
+runlist = []
+with open('/home/ershockley/fei_list_num.py') as f:
+    for line in f.readlines():
+        runlist.append(int(line.rstrip()))
 
 config = { 'runlist' : runlist,
            'pax_version' :'v' +  __version__,
            'logdir' : '/scratch/processing',
-           'retries' : 1,
+           'retries' : 9,
            'specify_sites' : [],
  	   "exclude_sites": ["Comet"], 
            'host' : 'login',
@@ -21,5 +24,4 @@ config = { 'runlist' : runlist,
 dag = dag_writer(config)
 
 #this name has to be changed in case one wants to do reprocessing
-#dag.write_outer_dag('/scratch/processing/katrina_3412.dag')
-dag.write_outer_dag('/scratch/processing/dcache_test.dag')
+dag.write_outer_dag('/scratch/processing/dags_683/fei.dag')
