@@ -27,7 +27,7 @@
   {
     "name": "login",
     "method": "rsync",
-    "hostname": "login.ci-connect.uchicago.edu",
+    "hostname": "login.xenon.ci-connect.net",
     "dir_raw": "/xenon/xenon1t_test",
     "dir_processed": null,
     "upload_options": [],
