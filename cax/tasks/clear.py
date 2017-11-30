@@ -100,7 +100,10 @@ class RetryBadChecksumTransfer(checksum.CompareChecksums):
 
             if data_doc['type'] == 'processed':
                 self.give_error("Bad checksum %s" % data_doc['pax_version'])
+                self.purge(data_doc)
+                return
 
+            # Check for 2 or more copies with raw data
             if self.check(data_doc['type'], warn=False) > 1:
                 self.purge(data_doc)
 
