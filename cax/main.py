@@ -99,8 +99,6 @@ def main():
             config.set_json(args.config_file)
 
     tasks = [
-        # Add electron lifetime to run, which is just a function of calendar time
-        corrections.AddElectronLifetime(),
         # Adds gains to a run, where this is computed using slow control information
         corrections.AddGains(),
         # Adds drift velocity to the run, also computed from slow control info
