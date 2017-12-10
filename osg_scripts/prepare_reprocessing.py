@@ -5,9 +5,11 @@ from pax import __version__
 import os
 
 runlist = []
-with open('/home/ershockley/fei_list_num.py') as f:
+with open('/home/ershockley/Runs_for_kr85.txt') as f:
     for line in f.readlines():
         runlist.append(int(line.rstrip()))
+
+#print(runlist)
 
 config = { 'runlist' : runlist,
            'pax_version' :'v' +  __version__,
@@ -24,4 +26,4 @@ config = { 'runlist' : runlist,
 dag = dag_writer(config)
 
 #this name has to be changed in case one wants to do reprocessing
-dag.write_outer_dag('/scratch/processing/dags_683/fei.dag')
+dag.write_outer_dag('/scratch/processing/dags_680/miguel.dag')

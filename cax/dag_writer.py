@@ -73,7 +73,7 @@ class dag_writer():
                           },
                  "$or": [{"$and" : [{'number': {"$gte": 2000}},
                                     {'processor.DEFAULT.gains': {'$exists': True}},
-                                    {'processor.DEFAULT.electron_lifetime_liquid': {'$exists': True}},
+#                                    {'processor.DEFAULT.electron_lifetime_liquid': {'$exists': True}},
                                     {'processor.DEFAULT.drift_velocity_liquid': {'$exists': True}},
                                     {'processor.correction_versions': {'$exists': True}},
                                     {'processor.WaveformSimulator': {'$exists': True}},
@@ -267,7 +267,7 @@ class dag_writer():
         return run_counter
 
     def write_inner_dag(self, run_id, inner_dag, outputdir, submitfile, jsonfile, doc, rawdata_loc,
-                        n_retries = 10, inputfilefilter = "XENON1T-", muonveto = False):
+                        n_retries=5, inputfilefilter = "XENON1T-", muonveto = False):
 
         """
         Writes inner dag file that contains jobs for each zip file in a run

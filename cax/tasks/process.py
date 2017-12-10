@@ -214,7 +214,7 @@ class ProcessBatchQueue(Task):
                  'reader.ini.write_mode' : 2,
                  'trigger.events_built' : {"$gt" : 0},
                  'processor.DEFAULT.gains' : {'$exists' : True},
-                 'processor.DEFAULT.electron_lifetime_liquid' : {'$exists' : True},
+#                 'processor.DEFAULT.electron_lifetime_liquid' : {'$exists' : True},
                  'processor.DEFAULT.drift_velocity_liquid' : {'$exists' : True},
                  'processor.correction_versions': {'$exists': True},
                  'processor.WaveformSimulator': {'$exists': True},
@@ -286,7 +286,7 @@ class ProcessBatchQueue(Task):
                 outer_dag_file = outer_dag_dir + "/{name}_MV_outer.dag".format(name=name)
 
             # if there are more than 10 rescue dags, there's clearly something wrong, so don't submit
-            if self.count_rescues(outer_dag_dir) >= 10:
+            if self.count_rescues(outer_dag_dir) >= 2:
                 self.log.info("10 or more rescue dags exist for Run %d. Skipping." % number)
 
                 # register as an error to database if haven't already
@@ -344,7 +344,7 @@ class ProcessBatchQueue(Task):
 
             # now check how many dags are running
             self.log.debug("%d dags currently running" % len(qsub.get_queue()))
-            while len(qsub.get_queue()) > 10:
+            while len(qsub.get_queue()) > 19:
                 self.log.info("Too many dags in queue, waiting 10 minutes")
                 time.sleep(60*10)
 
