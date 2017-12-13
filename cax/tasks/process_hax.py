@@ -57,6 +57,7 @@ def _process_hax(name, in_location, host, pax_version,
 
             except Exception as exception:
                 os.remove("%s/%s_%s.root" % (out_location, name, treemaker))
+                print ("Deleting %s/%s_%s.root" % (out_location, name, treemaker))
                 nRetries -= 1
                 if nRetries == 0:
                     raise
