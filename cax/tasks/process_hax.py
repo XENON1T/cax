@@ -36,16 +36,30 @@ def _process_hax(name, in_location, host, pax_version,
 
     os.makedirs(out_location, exist_ok=True)
 
-    try:
-        print('creating hax minitrees for run', name, pax_version, in_location, out_location)
-        init_hax(in_location, pax_version, out_location)   # may initialize once only
-        hax.minitrees.load_single_dataset(name, ['Corrections', 'Basics', 'Fundamentals',
-                                                 'CorrectedDoubleS1Scatter', 'LargestPeakProperties',
-                                                 'TotalProperties',  'Extended', 'Proximity','LoneSignalsPreS1', 
-                                                 'LoneSignals', 'FlashIdentification'])
+    init_hax(in_location, pax_version, out_location)   # may initialize once only
 
-    except Exception as exception:
-        raise
+    print('creating hax minitrees for run', name, pax_version, in_location, out_location)
+
+    TREEMAKERS = ['Corrections', 'Basics', 'Fundamentals',
+                  'CorrectedDoubleS1Scatter', 'LargestPeakProperties',
+                  'TotalProperties',  'Extended', 'Proximity','LoneSignalsPreS1',
+                  'LoneSignals', 'FlashIdentification']
+
+    for treemaker in TREEMAKERS:
+
+        nRetries = 5
+
+        while nRetries > 0:
+            try:
+                print ('Creating minitree', treemaker)
+                hax.minitrees.load_single_dataset(name, treemaker)
+                nRetries = 0
+
+            except Exception as exception:
+                os.remove("%s/%s_%s.root" % (out_location, name, treemaker))
+                nRetries -= 1
+                if nRetries == 0:
+                    raise
 
 
 class ProcessBatchQueueHax(Task):
