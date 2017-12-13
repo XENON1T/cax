@@ -42,7 +42,7 @@ def _process_hax(name, in_location, host, pax_version,
 
     TREEMAKERS = ['Corrections', 'Basics', 'Fundamentals',
                   'CorrectedDoubleS1Scatter', 'LargestPeakProperties',
-                  'TotalProperties',  'Extended', 'Proximity','LoneSignalsPreS1',
+                  'TotalProperties', 'Extended', 'Proximity', 'LoneSignalsPreS1',
                   'LoneSignals', 'FlashIdentification']
 
     for treemaker in TREEMAKERS:
@@ -51,13 +51,13 @@ def _process_hax(name, in_location, host, pax_version,
 
         while nRetries > 0:
             try:
-                print ('Creating minitree', treemaker)
+                print('Creating minitree', treemaker)
                 hax.minitrees.load_single_dataset(name, treemaker)
                 nRetries = 0
 
             except Exception as exception:
                 os.remove("%s/%s_%s.root" % (out_location, name, treemaker))
-                print ("Deleting %s/%s_%s.root" % (out_location, name, treemaker))
+                print("Deleting %s/%s_%s.root" % (out_location, name, treemaker))
                 nRetries -= 1
                 if nRetries == 0:
                     raise
