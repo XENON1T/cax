@@ -15,6 +15,7 @@ import pymongo
 CAX_CONFIGURE = ''
 DATABASE_LOG = True
 HOST = os.environ.get("HOSTNAME") if os.environ.get("HOSTNAME") else socket.gethostname().split('.')[0]
+USER = os.environ.get("USER")
 DATA_USER_PDC = 'bobau'
 DATA_GROUP_PDC = 'xenon-users'
 NCPU = 1
@@ -49,6 +50,11 @@ def mongo_password():
                                'Then rerun this command.')
     return mongo_pwd
 
+def get_user():
+    """Get username of user running this
+    """
+    global USER
+    return USER
 
 def get_hostname():
     """Get hostname of the machine we're running on.
