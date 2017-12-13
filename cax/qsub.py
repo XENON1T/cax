@@ -86,6 +86,7 @@ def delete_script(fileobj):
 
 
 def get_number_in_queue(host=config.get_hostname(), partition=''):
+    print (len(get_queue(host, partition)), host, partition)
     return len(get_queue(host, partition))
 
 
@@ -94,7 +95,7 @@ def get_queue(host=config.get_hostname(), partition=''):
 
     if host == "midway-login1":
         args = {'partition': 'sandyb',
-                'user' : 'mklinton'}
+                'user' : config.get_user()}
     elif host == 'tegner-login-1':
         args = {'partition': 'main',
                 'user' : 'bobau'}
