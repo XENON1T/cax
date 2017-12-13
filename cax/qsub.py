@@ -86,7 +86,7 @@ def delete_script(fileobj):
 
 
 def get_number_in_queue(host=config.get_hostname(), partition=''):
-    print (len(get_queue(host, partition)), host, partition)
+    # print (len(get_queue(host, partition)), host, partition)
     return len(get_queue(host, partition))
 
 
