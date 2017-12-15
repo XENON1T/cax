@@ -269,6 +269,8 @@ source activate pax_{pax_version}
 HOSTNAME={host}
 {command} --log-file ${{JOB_WORKING_DIR}}/cax.log
 
+chgrp -R xenon1t-admins ${{JOB_WORKING_DIR}}
+
 rm -f ${{JOB_WORKING_DIR}}/pax_event_class*
 
 {stats}
