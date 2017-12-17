@@ -106,15 +106,15 @@ def main():
         corrections.SetS2xyMap(),
         corrections.SetLightCollectionEfficiency(),
         corrections.SetFieldDistortion(),
-        corrections.SetNeuralNetwork(),    
-        #corrections.AddSlowControlInformation(),  
+        corrections.SetNeuralNetwork(),
+        # corrections.AddSlowControlInformation(),
         data_mover.CopyPush(),  # Upload data through e.g. scp or gridftp to this location where cax running
-        #tsm_mover.AddTSMChecksum(), # Add forgotten Checksum for runDB for TSM client.
-	checksum.CompareChecksums(),  # See if local data corrupted
+        # tsm_mover.AddTSMChecksum(), # Add forgotten Checksum for runDB for TSM client.
+        checksum.CompareChecksums(),  # See if local data corrupted
         clear.RetryStalledTransfer(),  # If data transferring e.g. 48 hours, probably cax crashed so delete then retry
         clear.RetryBadChecksumTransfer(),  # If bad checksum for local data and can fetch from somewhere else, delete our copy
 
-        data_mover.CopyPull(), # Download data through e.g. scp to this location
+        data_mover.CopyPull(),  # Download data through e.g. scp to this location
         checksum.AddChecksum(),  # Add checksum for data here so can know if corruption (useful for knowing when many good copies!)
 
         filesystem.SetPermission(),  # Set any permissions (primarily for Tegner) for new data to make sure analysts can access
@@ -266,7 +266,7 @@ def massive():
             logging.info("Iterative mode")
 
             # See if there is something to do
-            query['start'] = {'$gt' : t0}
+            query['start'] = {'$gt': t0}
 
             logging.info(query)
         else:
@@ -324,10 +324,12 @@ def massive():
                               (job_name, pax.__version__))
                 continue
 
-            while qsub.get_number_in_queue(partition=partition) > (500 if config.get_hostname() == 'midway-login1' else 30):
-                logging.info("Speed break 60s because %d in queue" %
-                             qsub.get_number_in_queue(partition=partition))
+            queue_num = qsub.get_number_in_queue(partition=partition)
+
+            while queue_num >= (500 if config.get_hostname() == 'midway-login1' else 30):
+                logging.info("Speed break 60s because %d in queue" % queue_num)
                 time.sleep(60)
+                queue_num = qsub.get_number_in_queue(partition=partition)
 
             print(script)
             qsub.submit_job(script)
@@ -340,7 +342,7 @@ def massive():
         else:
             pace = 60
             logging.info("Done, waiting %d minutes" % pace)
-            time.sleep(60*pace) # Pace 5 minutes
+            time.sleep(60 * pace)  # Pace 5 minutes
 
 
 def move():
