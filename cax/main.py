@@ -342,7 +342,7 @@ def massive():
         else:
             pace = 60
             logging.info("Done, waiting %d minutes" % pace)
-            time.sleep(60 * pace)  # Pace 5 minutes
+            time.sleep(60 * pace)
 
 
 def move():
