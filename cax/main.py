@@ -103,9 +103,9 @@ def main():
         corrections.AddGains(),
         # Adds drift velocity to the run, also computed from slow control info
         corrections.AddDriftVelocity(),
-        corrections.SetS2xyMap(),
-        corrections.SetLightCollectionEfficiency(),
-        corrections.SetFieldDistortion(),
+        # corrections.SetS2xyMap(),
+        # corrections.SetLightCollectionEfficiency(),
+        # corrections.SetFieldDistortion(),
         corrections.SetNeuralNetwork(),
         # corrections.AddSlowControlInformation(),
         data_mover.CopyPush(),  # Upload data through e.g. scp or gridftp to this location where cax running
