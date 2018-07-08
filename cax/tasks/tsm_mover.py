@@ -184,6 +184,7 @@ class TSMclient(Task):
 
         tno_dict = {
             "tno_inspected": -1,
+            "tno_backedup": -1,
             "tno_updated": -1,
             "tno_rebound": -1,
             "tno_deleted": -1,
