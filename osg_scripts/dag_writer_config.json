@@ -1,6 +1,6 @@
 {"specify_sites": [],
  "retries": 9, 
  "logdir": "/scratch/processing", 
- "exclude_sites": ["Comet"], 
+ "exclude_sites": [], 
  "rush": true,
  "use_midway": false}

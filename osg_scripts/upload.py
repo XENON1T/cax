@@ -11,13 +11,21 @@ import checksumdir
 
 from cax import config
 from cax.api import api
+from hax.paxroot import _open_pax_rootfile
 
-def verify():
-    """Verify the file
+def events_in_root(path):
+    rootfile = _open_pax_rootfile(path)
+    events = rootfile.Get('tree').GetEntries()
+    return events
 
-    Now is nothing.  Could check number of events later?
-    """
-    return True
+def verify(root_path, doc):
+    """Verify the file by checking number of events"""
+
+    DB_events = doc['trigger']['events_built']
+    root_events = events_in_root(root_path)
+    print('DB events: %d' % DB_events)
+    print('root events: %d' % root_events)
+    return (DB_events == root_events)
 
 
 def get_ziplist(name):
@@ -132,7 +140,11 @@ def _upload(name, n_zips, pax_version, detector = "tpc", update_database=True):
                                          hashlib.sha512)        
         updatum['checksum'] = checksum
         updatum['location'] = final_location
-        
+    
+    # verify 
+    if not verify(final_location, doc):
+        updatum['status'] = 'error'
+
     # if there is no entry for this site/pax_version, add a new location
     if datum is None:
         API.add_location(doc['_id'], updatum)

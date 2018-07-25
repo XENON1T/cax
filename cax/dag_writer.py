@@ -23,7 +23,7 @@ euro_sites = {"processing": ["NIKHEF-ELPROD", "CCIN2P3",
                              "WEIZMANN-LCG2", "INFN-T1"],
               "rucio": ["NIKHEF_USERDISK", "CCIN2P3_USERDISK",
                         "WEIZMANN_USERDISK", "CNAF_USERDISK",
-                       	"CNAF_TAPE_USERDISK"]}
+                       	"CNAF_TAPE_USERDISK", "SURFSARA_USERDISK"]}
 
 default_run_config = {"exclude_sites": [],
                       "specify_sites": []}
@@ -76,7 +76,7 @@ class dag_writer():
 #                                    {'processor.DEFAULT.electron_lifetime_liquid': {'$exists': True}},
                                     {'processor.DEFAULT.drift_velocity_liquid': {'$exists': True}},
                                     {'processor.correction_versions': {'$exists': True}},
-                                    {'processor.WaveformSimulator': {'$exists': True}},
+#                                    {'processor.WaveformSimulator': {'$exists': True}},
                                     {'processor.NeuralNet|PosRecNeuralNet': {'$exists': True}},
                                     ]
                           },
@@ -108,7 +108,8 @@ class dag_writer():
             # fix doc so that all '|' become '.' in json
             fixed_doc = self.FixKeys(doc)
             json.dump(fixed_doc, f)
-        os.chmod(json_file, 0o777)
+        if os.stat(json_file).st_uid == os.getuid():
+            os.chmod(json_file, 0o777)
         return json_file
         
         
@@ -168,18 +169,18 @@ class dag_writer():
                     run_number = doc['number']
 
 
-
                 # run config to be used in submit script below
                 run_config = default_run_config.copy()
 
                 # use rucio if possible, else download from stash or midway
+                ### TEMPORARY ###
+               # on_rucio = False
                 if on_rucio:
                     rawdata_loc = 'rucio-catalogue'
                     rses = self.get_rses(rucio_name)
                     if len(rses) < 1:
                         print("Run %s is not on any RSE. Skipping" % run)
                         continue
-
 
                     if not any(site in rses for site in (euro_sites['rucio'] + ['UC_OSG_USERDISK'])):
                         if on_stash_local:
@@ -234,7 +235,7 @@ class dag_writer():
                                      rawdata_loc, muonveto=muon_veto)
 
                 if self.n_zips < 1:
-                    print("There are no zip files for run %s for some reason (looking at you MV group). Skipping" % run)
+                    print("There are no zip files for run %s for some reason. Skipping" % run)
                     continue
 
                 print("Adding run %s to dag" % run)
@@ -280,6 +281,7 @@ class dag_writer():
 
         # which uri to use for output files
         uri = ci_uri
+
         if 'xenon_dcache' in outputdir:
             uri = dcache_uri
             outputdir = outputdir.replace('/xenon_dcache/', '')
@@ -322,15 +324,12 @@ class dag_writer():
                         infile_local = os.path.abspath(os.path.join(dir_name, infile))
                         infile = ci_uri + infile_local
                         if not os.path.exists(os.path.join(outputdir, run_name + MV)):
-                            if uri == dcache_uri:
-                                gfal_mkdir(dcache_uri, outputdir.replace('/xenon_dcache/', ''))
-                            else:
-                                os.makedirs(os.path.join(outputdir, run_name + MV))
-                                os.chmod(os.path.join(outputdir, run_name + MV), 0o777)
+                            os.makedirs(os.path.join(outputdir, run_name + MV))
+                            os.chmod(os.path.join(outputdir, run_name + MV), 0o777)
 
-                        outfile = os.path.abspath(os.path.join(outputdir,
-                                                               run_name + MV, outfile))
+                        outfile = os.path.join(outputdir, run_name + MV, outfile)
                         outfile_full = uri + outfile
+                        
                         inner_dag.write(self.inner_dag_template.format(number=run_id, zip_i=i, submit_file = submitfile,
                                                                        infile=infile, outfile_full=outfile_full, run_name=run_name,
                                                                        pax_version = c['pax_version'], zip_name=zip_name,
@@ -437,7 +436,7 @@ class dag_writer():
         for entry in doc["data"]:
             if entry["host"] == self.config['host'] and entry["type"] == "raw":
                 if entry["status"] != "transferred":
-                    print("Run %s raw data is not transferred to %s yet!" % (doc['name'], self.host))
+                    print("Run %s raw data is not transferred to %s yet!" % (doc['name'], self.config['host']))
                     return None
                 path = entry["location"]
         return path        
@@ -457,8 +456,8 @@ class dag_writer():
         template = """#!/bin/bash
 executable = {cax_dir}/osg_scripts/run_xenon.sh
 universe = vanilla
-Error = {logdir}/pax_$(pax_version)/$(dirname)/$(zip_name)_$(cluster).log
-Output  = {logdir}/pax_$(pax_version)/$(dirname)/$(zip_name)_$(cluster).log
+Error = {logdir}/pax_$(pax_version)/$(dirname)/$(zip_name).log
+Output  = {logdir}/pax_$(pax_version)/$(dirname)/$(zip_name).log
 Log     = {logdir}/pax_$(pax_version)/$(dirname)/joblogs/$(zip_name)_$(cluster).joblog
 
 Requirements = {requirements}

@@ -1,5 +1,4 @@
-"""Process raw data into processed data
-
+"""
 Performs batch queue operations to run pax.
 """
 
@@ -197,27 +196,30 @@ class ProcessBatchQueue(Task):
 
         query = {"data" : {"$not" : {"$elemMatch" : {"type" : "processed",
                                                      "pax_version" : self.pax_version,
-                                                     "host" : self.thishost,
+#                                                     "host" : self.thishost,
                                                      "$or" : [{"status" : "transferred"},
                                                               { "status" : "error"}
                                                              ]
-
                                                     }
                                      }
                            },
-                 "$or" : [{'number' : {"$gte" : 12560}},    #REMOVE ME PLEASE
-#                 "$or" : [{'number' : {"$gte" : 6731}},   #UNCOMMENT ME TO GET BACK TO SR1 full list of runs
-                          {"detector" : "muon_veto",
-                           "end" : {"$gt" : (datetime.datetime.utcnow() - datetime.timedelta(days=15))}
+                 #"$and" : [{"$or" : [{'number' : {"$gte" : 18984}},    #REMOVE ME PLEASE
+                 "$and": [{"$or" : [{'number' : {"$gte" : 17500}},   #UNCOMMENT ME TO GET BACK TO SR1 full list of runs
+                                   {"detector" : "muon_veto",
+                                    "end" : {"$gt" : (datetime.datetime.utcnow() - datetime.timedelta(days=15))}
+                                    }
+                                    ]
+                           },
+                          {'$or' : [{'processor.DEFAULT.electron_lifetime_liquid' : {'$exists' : False}},
+                                     {'processor.DEFAULT.electron_lifetime_liquid' : {'$ne' : 0}}]
                            }
                           ],
                  'reader.ini.write_mode' : 2,
                  'trigger.events_built' : {"$gt" : 0},
                  'processor.DEFAULT.gains' : {'$exists' : True},
-#                 'processor.DEFAULT.electron_lifetime_liquid' : {'$exists' : True},
                  'processor.DEFAULT.drift_velocity_liquid' : {'$exists' : True},
                  'processor.correction_versions': {'$exists': True},
-                 'processor.WaveformSimulator': {'$exists': True},
+#                 'processor.WaveformSimulator': {'$exists': True},
                  'processor.NeuralNet|PosRecNeuralNet': {'$exists': True},
                  'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess'}}},
                  }
@@ -227,6 +229,7 @@ class ProcessBatchQueue(Task):
         # will check later if on UC_OSG_USERDISK
         if self.thishost == 'login':
             query["data"]["$elemMatch"] = {"host" : "rucio-catalogue", "type": "raw", "status" : "transferred"}
+            #query["data"]["$elemMatch"] = {"host" : "login", "type": "raw", "status" : "transferred"}
         # if not using OSG (midway most likely), need the raw data at that host
         else:
             query["data"]["$elemMatch"] = {"host" : self.thishost,
@@ -286,7 +289,7 @@ class ProcessBatchQueue(Task):
                 outer_dag_file = outer_dag_dir + "/{name}_MV_outer.dag".format(name=name)
 
             # if there are more than 10 rescue dags, there's clearly something wrong, so don't submit
-            if self.count_rescues(outer_dag_dir) >= 2:
+            if self.count_rescues(outer_dag_dir) >= 10:
                 self.log.info("10 or more rescue dags exist for Run %d. Skipping." % number)
 
                 # register as an error to database if haven't already
@@ -325,16 +328,15 @@ class ProcessBatchQueue(Task):
                 if d['host'] == self.thishost and d['type'] == 'processed' and d['pax_version'] == self.pax_version:
                     transferring = (d['status']=='transferring')
 
-            if rucio_name is None: # something wrong with query if this happens
-                self.log.info("Run %d not in rucio catalogue." % self.run_doc['number'])
-                return
-            # if not on stash, skip this run. don't have logging here since I imagine this will happen
-            # for quite a few runs
-            else:
-                if not self.is_on_stash(rucio_name) and not self.hurry:
-                    id = self.run_doc['number'] if detector == 'tpc' else self.run_doc['name']
-                    self.log.info("Run %s not on stash RSE" % id)
-                    return
+           # if rucio_name is None: # something wrong with query if this happens
+           #     self.log.info("Run %d not in rucio catalogue." % self.run_doc['number'])
+           #     return
+            # if not on stash, skip this run. 
+           # else:
+           #     if not self.is_on_stash(rucio_name) and not self.hurry:
+           #         id = self.run_doc['number'] if detector == 'tpc' else self.run_doc['name']
+           #         self.log.info("Run %s not on stash RSE" % id)
+           #         return
 
             # if status is 'transferring' then see if the run is in the queue
             if transferring:
@@ -439,7 +441,7 @@ class ProcessBatchQueue(Task):
         return False
 
     def in_queue(self, id):
-        cmd = "condor_q -long -attributes DAGNodeName | grep xe1t_%s" % id
+        cmd = "condor_q -nobatch -long -attributes DAGNodeName | grep xe1t_%s" % id
         args = shlex.split(cmd)
         out = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True).stdout.read()
         out = out.decode('utf-8')

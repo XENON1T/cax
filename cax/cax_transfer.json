@@ -2,12 +2,12 @@
   {
     "name": "midway-login1",
     "method": "rsync",
-    "hostname": "midway-login1.rcc.uchicago.edu",
+    "hostname": "dali-login.rcc.uchicago.edu",
     "dir_raw": "/project2/lgrandi/xenon1t/raw",
     "dir_processed": "/project2/lgrandi/xenon1t/processed",
     "dir_minitrees": "/project2/lgrandi/xenon1t/minitrees",
     "upload_options": [],
-    "username": "mklinton",
+    "username": "ershockley",
     "download_options": ["xe1t-datamanager"],
     "purge" : 25,
     "grid_cert": "/project/lgrandi/deployHQ/cax/user_cert"

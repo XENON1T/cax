@@ -4,7 +4,11 @@ import sys
 import re
 
 
-EURO_SITES = ["CCIN2P3_USERDISK", "NIKHEF_USERDISK", "WEIZMANN_USERDISK", "CNAF_USERDISK"]
+EURO_SITES = ["CCIN2P3_USERDISK", 
+              "NIKHEF_USERDISK",
+              "WEIZMANN_USERDISK", 
+              "CNAF_USERDISK", 
+              "SURFSARA_USERDISK"]
 
 US_SITES = ["UC_OSG_USERDISK"]
 

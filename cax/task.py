@@ -52,7 +52,7 @@ class Task():
             return
 
         # Iterate over each run
-        for id in ids:
+        for id in reversed(ids):
             # Make sure up to date
             self.run_doc = self.get_rundoc(id)
 

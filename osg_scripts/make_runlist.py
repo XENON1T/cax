@@ -14,35 +14,33 @@ def make_runlist():
     collection = db['runs_new']
     
     query = {"$or" : [{"detector" : "tpc",
-                       "$and" : [{"number" : {"$lt" : 6731}}] 
+                       "$and" : [{"number" : {"$gt" : 15000}}] 
                        #"$and" : [{"number" : {"$gt" : 6731}},
                                  #{"number" : {"$lt" : 11000}} # to specify range of run numbers
                        },
                       {"detector" : "muon_veto",  # UNCOMMENT TO INCLUDE MV AFTER DATETIME BELOW
                        #"end" : {"$gt" : (datetime.datetime(2017, 7, 29, 00, 00, 00))} # ALE 
-                       "end" : {"$lt" : (datetime.datetime(2017, 2, 1, 00, 00, 00))}} # Feb 1 2017 at midnight
+                       "end" : {"$gt" : (datetime.datetime(2017, 12, 1, 00, 00, 00))}} # Feb 1 2017 at midnight
                       # }
                       ], 
                       
-#             'tags.name' : '_sciencerun1', # if you want to specify a tag
-             
-#             'data' : {'$elemMatch' : {'pax_version':'v6.6.6', 'status' : 'transferred'}},
+#             'tags.name' : '_sciencerun1', # if you want to specify a tag             
+
 #             'source.type' : 'none',  # if you want to specify a source
 
              'reader.ini.write_mode' : 2,
              'trigger.events_built' : {"$gt" : 0},
              'processor.DEFAULT.gains' : {'$exists' : True},
-             'processor.DEFAULT.electron_lifetime_liquid' : {'$exists' : True},
              'processor.DEFAULT.drift_velocity_liquid' : {'$exists' : True},
              'processor.correction_versions': {'$exists': True},
-             'processor.WaveformSimulator': {'$exists': True},
+#             'processor.WaveformSimulator': {'$exists': True},
              'processor.NeuralNet|PosRecNeuralNet': {'$exists': True},
-             '$and' : [{'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess'}}}},
-                       {'tags' : {"$not" : {'$elemMatch' : {'name':'messy'}}}},
-                       {'tags' : {"$not" : {'$elemMatch' : {'name':'test'}}}},
-                       {'tags' : {"$not" : {'$elemMatch' :{'name':'bad'}}}},
-                       {'tags' : {'$elemMatch' : {'name' : '_sciencerun0_candidate'}}}
-                       ]
+#             '$and' : [{'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess'}}}},
+#                       {'tags' : {"$not" : {'$elemMatch' : {'name':'messy'}}}},
+#                       {'tags' : {"$not" : {'$elemMatch' : {'name':'test'}}}},
+#                       {'tags' : {"$not" : {'$elemMatch' :{'name':'bad'}}}},
+#                       {'tags' : {'$elemMatch' : {'name' : '_sciencerun0_candidate'}}}
+#                       ]
 #             'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess'}}},
 #             'tags' : {"$not" : {'$elemMatch' : {'name' : 'test'}}},
 #             'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess', 'name':'messy', 'name':'test','name':'bad'}}},

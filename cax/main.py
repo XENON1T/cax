@@ -151,7 +151,7 @@ def main():
             break
         else:
             logging.info('Sleeping.')
-            time.sleep(60)
+            time.sleep(600)
 
 
 def massive():

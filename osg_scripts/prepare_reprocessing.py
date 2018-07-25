@@ -4,11 +4,9 @@ from make_runlist import make_runlist
 from pax import __version__
 import os
 
-runlist = []
-with open('/home/ershockley/Runs_for_kr85.txt') as f:
-    for line in f.readlines():
-        runlist.append(int(line.rstrip()))
-
+runlist = np.load('v610_runs.npz')['runs'].astype(int)
+runlist = [int(r) for r in runlist]
+#runlist = [18425]
 #print(runlist)
 
 config = { 'runlist' : runlist,
@@ -16,7 +14,7 @@ config = { 'runlist' : runlist,
            'logdir' : '/scratch/processing',
            'retries' : 9,
            'specify_sites' : [],
- 	   "exclude_sites": ["Comet"], 
+ 	   "exclude_sites": [], 
            'host' : 'login',
            'use_midway' : False, # this overrides the specify and exclude sites above,
            'rush' : True # processes as quickly as possible, submits to euro sites before raw data gets to stash
@@ -26,4 +24,4 @@ config = { 'runlist' : runlist,
 dag = dag_writer(config)
 
 #this name has to be changed in case one wants to do reprocessing
-dag.write_outer_dag('/scratch/processing/dags_680/miguel.dag')
+dag.write_outer_dag('/scratch/processing/dags_610/check_10runs3.dag')

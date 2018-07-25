@@ -155,11 +155,8 @@ def get_queue(host=config.get_hostname(), partition=''):
 
         command = 'squeue --user={user} -o "%.30j"'.format(**args)
 
-
-
-
     else:
-        command = "condor_q %s | grep dagman | awk '{print $1}'" % os.environ['USER']
+        command = "condor_q %s" % os.environ['USER']
 
     try:
         queue = subprocess.check_output(command,
@@ -177,6 +174,8 @@ def get_queue(host=config.get_hostname(), partition=''):
         if host != 'login':
             return queue_list[1:]
         else:
+            queue_list = queue.rstrip().decode('ascii').split('\n')
+            queue_list = [e for e in queue_list if e != '']
             return queue_list
     return []
 

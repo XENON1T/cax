@@ -172,7 +172,7 @@ then
 	exit 255
 fi 
 old_ld_library_path=$LD_LIBRARY_PATH
-source $anaconda_env/activate pax_$4_OSG
+source $anaconda_env/activate pax_$4 #_OSG
 echo $PYTHONPATH
 
 export LD_LIBRARY_PATH=/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/envs/pax_$4_OSG/lib:$LD_LIBRARY_PATH

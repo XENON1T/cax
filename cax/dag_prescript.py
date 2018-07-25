@@ -126,10 +126,10 @@ def pre_script(run_name, pax_version, run_number, detector = 'tpc'):
                       },
              "$or": [{"$and": [{'number': {"$gte": 2000}},
                                {'processor.DEFAULT.gains': {'$exists': True}},
-                               {'processor.DEFAULT.electron_lifetime_liquid': {'$exists': True}},
+#                               {'processor.DEFAULT.electron_lifetime_liquid': {'$exists': True}},
                                {'processor.DEFAULT.drift_velocity_liquid': {'$exists': True}},
                                {'processor.correction_versions': {'$exists': True}},
-                               {'processor.WaveformSimulator': {'$exists': True}},
+#                               {'processor.WaveformSimulator': {'$exists': True}},
                                {'processor.NeuralNet|PosRecNeuralNet': {'$exists': True}},
                                ]
                       },
