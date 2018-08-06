@@ -125,7 +125,8 @@ def make_runlist():
     print("ERROR: %d" % len(error))
     print("CAN PROCESS: %d" % len(can_process))
     print("CANNOT PROCESS: %d" % len(cant_process))
-    print(cant_process)
+    print(can_process)
+
 
     return can_process
 

@@ -176,6 +176,9 @@ source $anaconda_env/activate pax_$4 #_OSG
 echo $PYTHONPATH
 
 export LD_LIBRARY_PATH=/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/envs/pax_$4_OSG/lib:$LD_LIBRARY_PATH
+
+export LD_LIBRARY_PATH=/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/envs/pax_$4/lib:$LD_LIBRARY_PATH
+
 export API_USER='ci-connect'
 export API_KEY=5ac3ed84c1ed8210c84f4d70f194161a64758e29
 

@@ -204,7 +204,7 @@ class ProcessBatchQueue(Task):
                                      }
                            },
                  #"$and" : [{"$or" : [{'number' : {"$gte" : 18984}},    #REMOVE ME PLEASE
-                 "$and": [{"$or" : [{'number' : {"$gte" : 17500}},   #UNCOMMENT ME TO GET BACK TO SR1 full list of runs
+                 "$and": [{"$or" : [{'number' : {"$gte" : 21077}},   #UNCOMMENT ME TO GET BACK TO SR1 full list of runs
                                    {"detector" : "muon_veto",
                                     "end" : {"$gt" : (datetime.datetime.utcnow() - datetime.timedelta(days=15))}
                                     }
@@ -346,7 +346,7 @@ class ProcessBatchQueue(Task):
 
             # now check how many dags are running
             self.log.debug("%d dags currently running" % len(qsub.get_queue()))
-            while len(qsub.get_queue()) > 19:
+            while len(qsub.get_queue()) > 12:
                 self.log.info("Too many dags in queue, waiting 10 minutes")
                 time.sleep(60*10)
 

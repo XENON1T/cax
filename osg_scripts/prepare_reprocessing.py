@@ -4,9 +4,9 @@ from make_runlist import make_runlist
 from pax import __version__
 import os
 
-runlist = np.load('v610_runs.npz')['runs'].astype(int)
-runlist = [int(r) for r in runlist]
-#runlist = [18425]
+#runlist = np.load('v610_runs.npz')['runs'].astype(int)
+#runlist = [int(r) for r in runlist]
+runlist = make_runlist()
 #print(runlist)
 
 config = { 'runlist' : runlist,
@@ -24,4 +24,4 @@ config = { 'runlist' : runlist,
 dag = dag_writer(config)
 
 #this name has to be changed in case one wants to do reprocessing
-dag.write_outer_dag('/scratch/processing/dags_610/check_10runs3.dag')
+dag.write_outer_dag('/scratch/processing/dags_680/lastcatchup.dag')
