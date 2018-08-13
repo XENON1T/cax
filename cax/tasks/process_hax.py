@@ -40,7 +40,7 @@ def _process_hax(name, in_location, host, pax_version,
 
     print('creating hax minitrees for run', name, pax_version, in_location, out_location)
 
-    TREEMAKERS = ['Corrections', 'Basics', 'Fundamentals', 'PositionReconstruction',
+    TREEMAKERS = ['Corrections', 'Basics', 'Fundamentals', 'PatternReconstruction',
                   'CorrectedDoubleS1Scatter', 'LargestPeakProperties', 'IsolatedPeaks',
                   'TotalProperties', 'Extended', 'Proximity', 'LoneSignalsPreS1',
                   'LoneSignals', 'FlashIdentification', 'SingleElectrons']
