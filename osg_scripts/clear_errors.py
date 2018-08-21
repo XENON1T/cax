@@ -21,7 +21,7 @@ c = pymongo.MongoClient(uri,
 db = c['run']
 collection = db['runs_new']
 host_name = "login"
-status = "transferring"
+status = "error"
 
 def find_errors():
     query = {"data" : {"$elemMatch" : {"status" : status, 

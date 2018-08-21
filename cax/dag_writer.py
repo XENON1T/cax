@@ -39,6 +39,7 @@ CAX_DIR = os.path.expanduser("~") + "/cax"
 class dag_writer():
 
     def __init__(self, config):
+        print('hi')
         self.config = config
         self.outer_dag_template = self.outerdag_template()
         self.inner_dag_template = self.innerdag_template()
@@ -65,13 +66,13 @@ class dag_writer():
                  "data": {"$not": {"$elemMatch": {"type": "processed",
                                                   "pax_version": self.config['pax_version'],
                                                   "host": self.config['host'],
-                                                  "$or": [{"status": "transferred"},
-                                                          {"status": "transferring"}
+                                                  "$or": [{"status": "tmp"}, #"transferred"},
+#                                                          {"status": "transferring"}
                                                           ]
                                                   }
                                    }
                           },
-                 "$or": [{"$and" : [{'number': {"$gte": 2000}},
+                 "$or": [{"$and" : [{'number': {"$gte": 1000}},
                                     {'processor.DEFAULT.gains': {'$exists': True}},
 #                                    {'processor.DEFAULT.electron_lifetime_liquid': {'$exists': True}},
                                     {'processor.DEFAULT.drift_velocity_liquid': {'$exists': True}},
@@ -230,6 +231,8 @@ class dag_writer():
                 submitfile = inner_dagdir + "/process.submit"
 
                 self.write_submit_script(submitfile, run_config)
+                if os.stat(submitfile).st_uid == os.getuid():
+                    os.chmod(submitfile, 0o777)
 
                 self.write_inner_dag(run, inner_dagfile, outputdir, submitfile, json_file, doc,
                                      rawdata_loc, muonveto=muon_veto)
@@ -363,7 +366,7 @@ class dag_writer():
                     print("Run not in runlist")
                     return
 
-                time.sleep(0.5)
+                time.sleep(0.001)
                 zip_list = self.rucio_getzips(rucio_scope)
                 self.n_zips = len(zip_list)
                 for zip in zip_list:

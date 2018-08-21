@@ -51,6 +51,11 @@ if [[ $? -ne 0 ]]; then
 #fi
 fi	  
 
+if [[ $2 == 'v6.8.0' ]]; then
+    echo "SKIPPING TRANSFERS FOR v6.8.0"
+    exit 0
+fi
+
 # transfer to midway
 
 echo "Beginning cax transfer to midway" >> $post_log
