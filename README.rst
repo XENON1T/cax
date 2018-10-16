@@ -8,6 +8,8 @@ Copying All XENON1T
 
 .. image:: http://img.shields.io/badge/gitter-XENON1T/computing-blue.svg 
     :target: https://gitter.im/XENON1T/computing
+.. image:: https://zenodo.org/badge/52204491.svg
+   :target: https://zenodo.org/badge/latestdoi/52204491
 
 Copying XENON1T data around
 
