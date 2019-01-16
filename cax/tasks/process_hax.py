@@ -43,7 +43,7 @@ def _process_hax(name, in_location, host, pax_version,
     TREEMAKERS = ['Corrections', 'Basics', 'Fundamentals', 'PositionReconstruction',
                   'CorrectedDoubleS1Scatter', 'LargestPeakProperties', 'IsolatedPeaks',
                   'TotalProperties', 'Extended', 'Proximity', 'LoneSignalsPreS1',
-                  'LoneSignals', 'FlashIdentification', 'SingleElectrons']
+                  'LoneSignals', 'FlashIdentification', 'SingleElectrons', 'LoneS2Info', 'BigBeforeSmall']
 
     for treemaker in TREEMAKERS:
 
