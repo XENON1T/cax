@@ -8,7 +8,9 @@ EURO_SITES = ["CCIN2P3_USERDISK",
               "NIKHEF_USERDISK",
               "WEIZMANN_USERDISK", 
               "CNAF_USERDISK", 
-              "SURFSARA_USERDISK"]
+              "SURFSARA_USERDISK",
+              #"CNAF_TAPE_USERDISK"
+              ]
 
 US_SITES = ["UC_OSG_USERDISK"]
 
@@ -35,8 +37,14 @@ def determine_rse(rse_list, glidein_country):
                 return site
 
         if not in_US:
-            print("This run is not in the US so can't be processed here. Exit 255")
-            sys.exit(255)
+            #print("This run is not in the US so can't be processed here. Exit 255")
+            for site in ['NIKHEF_USERDISK', 
+                         'SURFSARA_USERDISK', 
+                         'CCIN2P3_USERDISK'
+                         ]:
+                if site in rse_list:
+                    return site
+            sys.exit(250)
 
     elif glidein_country == "FR":
         for site in EURO_SITES:

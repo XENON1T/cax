@@ -150,8 +150,9 @@ if [[ ${10} == 'True' ]]; then
 
 	#sleep $[ ( $RANDOM % 1200 )  + 1 ]s
 	echo "Performing rucio download"
-	echo "rucio -T 18000 download $2 --no-subdir --dir ${rawdata_path} --rse $rse"
-	download="rucio -T 18000 download $2 --no-subdir --dir ${rawdata_path} --rse $rse" #removed -v option
+	echo "rucio -T 1200 download $2 --no-subdir --dir ${rawdata_path} --rse $rse"
+	download="rucio -T 1200 download $2 --no-subdir --dir ${rawdata_path} --rse $rse --ndownloader 1" #removed -v option
+	download2="rucio -T 1200 download $2 --no-subdir --dir ${rawdata_path} --ndownloader 1"
 
 fi
 
@@ -159,12 +160,13 @@ if [[ ${10} == 'False' ]]; then
 	#sleep $[ ( $RANDOM % 600 )  + 1 ]s
 	echo "Performing gfal copy"
 	download="gfal-copy -v -f -p -t 3600 -T 3600 -K md5 $2 file://${rawdata_path}"
+	download2="gfal-copy -v -f -p -t 3600 -T 3600 -K md5 $2 file://${rawdata_path}"
 
 fi
 
 # perform the download
-echo "($download) || (sleep 60s && $download) || (sleep 120s && $download)"
-($download) || (sleep $[ ( $RANDOM % 60 )  + 1 ]s && $download) || (sleep $[ ( $RANDOM % 120 )  + 1 ]s && $download) || exit 1 
+echo "$download"
+($download) || (sleep $[ ( $RANDOM % 60 )  + 1 ]s && $download) || (sleep $[ ( $RANDOM % 120 )  + 1 ]s && $download2) || exit 1 
 #(sleep $[ ( $RANDOM % 180 )  + 1 ]s && $download) || (sleep $[ ( $RANDOM % 240 )  + 1 ]s && $download) || exit 1
 
 if [[ $? -ne 0 ]];
@@ -209,11 +211,17 @@ echo ${start_dir}/output/$1.root
 source deactivate
 export LD_LIBRARY_PATH=$old_ld_library_path
 
+# change name of the output file
+rootname=`echo ${input_file} | cut -d: -f2`
+rootname=`echo "${rootname/zip/root}"`
+echo "ROOTNAME: $rootname"
+
 (curl_moni "end processing") || (curl_moni "end processing")
 
 echo "---- Test line ----"
 echo "Processing done, here's what's inside the output directory:"
-outfile=$(ls ${start_dir}/output/)
+outfile=$(ls ${start_dir}/output)
+mv ${start_dir}/output/${outfile} ${start_dir}/output/$rootname
 echo "-----"
 ls ${start_dir}/output/*.root
 echo "-----"
@@ -228,14 +236,14 @@ export GFAL_CONFIG_DIR=$OSG_LOCATION/etc/gfal2.d
 export GFAL_PLUGIN_DIR=$OSG_LOCATION/usr/lib64/gfal2-plugins/
 upload ()
 {
-  gfal-copy -T 36000 -t 36000 -f -p --checksum md5 file://${start_dir}/output/${outfile} ${stash_loc}
+  gfal-copy -T 36000 -t 36000 -f -p --checksum adler32 file://${start_dir}/output/${rootname} ${stash_loc}
 }
 
 echo $upload_cmd
 
 (curl_moni "start uploading") || (curl_moni "start uploading")
 
-(upload) || (sleep 30s && upload) || (sleep 60s && upload) || (echo "upload failed" && exit 255)
+(upload) || (sleep 90s && upload) || (sleep 180s && upload) || (echo "upload failed" && exit 255)
 
 (curl_moni "end uploading") || (curl_moni "end uploading")
 

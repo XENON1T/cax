@@ -2,8 +2,11 @@
 from __future__ import print_function
 import os
 import stat
+import pandas as pd
+import numpy as np
 from cax.api import api
 from cax import config
+import pymongo
 import json
 import time
 import subprocess
@@ -39,11 +42,26 @@ CAX_DIR = os.path.expanduser("~") + "/cax"
 class dag_writer():
 
     def __init__(self, config):
-        print('hi')
+        if not config.get('use_api', True):
+                uri = 'mongodb://eb:%s@xenon1t-daq.lngs.infn.it:27017,copslx50.fysik.su.se:27017,zenigata.uchicago.edu:27017/run'
+                uri = uri % os.environ.get('MONGO_PASSWORD')
+                c = pymongo.MongoClient(uri,
+                                        replicaSet='runs',
+                                        readPreference='secondaryPreferred')
+                db = c['run']
+                self.collection = db['runs_new']
+
         self.config = config
         self.outer_dag_template = self.outerdag_template()
         self.inner_dag_template = self.innerdag_template()
-
+        
+        # TEMPORARY
+        self.lowgain_runs = np.load("/home/ershockley/lowgains.npz")['numbers']
+        df = pd.read_csv('/home/ershockley/gain_scaling.csv', header=None, 
+                         names=['scaler'])
+        self.gain_mods = np.ones(260)
+        for index, row in df.iterrows():
+            self.gain_mods[index] = row['scaler']
         if any(site in config['exclude_sites'] for site in config['specify_sites']):
             raise ValueError("You can't both specify and exclude a site. Check config")
 
@@ -66,8 +84,8 @@ class dag_writer():
                  "data": {"$not": {"$elemMatch": {"type": "processed",
                                                   "pax_version": self.config['pax_version'],
                                                   "host": self.config['host'],
-                                                  "$or": [{"status": "tmp"}, #"transferred"},
-#                                                          {"status": "transferring"}
+                                                  "$or": [{"status": "transferred"},
+                                                          #{"status": "transferring"}
                                                           ]
                                                   }
                                    }
@@ -88,9 +106,12 @@ class dag_writer():
                  'tags': {"$not": {'$elemMatch': {'name': 'donotprocess'}}},
                  }
 
-        query = {'query': json.dumps(query)}
-        API = api()
-        doc = API.get_next_run(query)
+        if self.config.get('use_api', True):
+            query = {'query': json.dumps(query)}
+            API = api()
+            doc = API.get_next_run(query)
+        else:
+            doc = self.collection.find_one(query)
         time.sleep(0.1)
         return doc
     
@@ -104,6 +125,13 @@ class dag_writer():
 
         elif doc['detector'] == 'tpc':
             json_file = self.config['logdir'] + '/pax_%s/'%self.config['pax_version'] + name + "/" + name + ".json"
+
+        # TEMPORARY update gains for certain runs
+        if doc['number'] in self.lowgain_runs:
+            old_gains = doc['processor']['DEFAULT']['gains']
+            new_gains = np.array(old_gains) / self.gain_mods
+            print("Using modified gains")
+            doc['processor']['DEFAULT']['gains'] = list(new_gains)
 
         with open(json_file, "w") as f:
             # fix doc so that all '|' become '.' in json
@@ -355,12 +383,17 @@ class dag_writer():
                     print("Run not in rucio catalog. Check RunsDB")
                     return
 
-                if not os.path.exists(os.path.join(outputdir, run_name + MV)):
-                    if uri == dcache_uri:
-                        gfal_mkdir(dcache_uri, os.path.join(outputdir, run_name + MV))
+            
+                #if not os.path.exists(os.path.join(outputdir, run_name + MV)):
+                #    if uri == dcache_uri:
+                        #gfal_mkdir(dcache_uri, os.path.join(outputdir, run_name + MV))
                         # else:
                         #    os.makedirs(os.path.join(outputdir, run_name + MV))
                         #    os.chmod(os.path.join(outputdir, run_name + MV), 0o777)
+                #else:
+                #    if uri == dcache_uri: 
+                        #gfal_rm(dcache_uri, os.path.join(outputdir, run_name + MV))
+                        #gfal_mkdir(dcache_uri, os.path.join(outputdir, run_name + MV))
 
                 if (c['runlist'] is not None and run_id not in c['runlist']):
                     print("Run not in runlist")
@@ -465,7 +498,7 @@ Log     = {logdir}/pax_$(pax_version)/$(dirname)/joblogs/$(zip_name)_$(cluster).
 
 Requirements = {requirements}
 request_cpus = $(ncpus)
-request_memory = 1900MB
+request_memory = 2400MB
 request_disk = 3GB
 transfer_input_files = $(json_file), {cax_dir}/osg_scripts/determine_rse.py
 transfer_output_files = ""
@@ -475,6 +508,7 @@ x509userproxy = {cert}
 +AccountingGroup = "group_opportunistic.xenon1t.processing"
 when_to_transfer_output = ON_EXIT
 transfer_executable = True
+should_transfer_files = YES
 
 periodic_remove =  ((JobStatus == 2) && ((CurrentTime - EnteredCurrentStatus) > (60*60*8)))
 arguments = $(name) $(input_file) $(host) $(pax_version) $(pax_hash) $(out_location) $(ncpus) $(disable_updates) $(json_file) $(on_rucio)
@@ -497,7 +531,12 @@ queue 1
                                     "|| (RCC_Factory == \"ciconnect\") || (GLIDEIN_Site == \"MWT2-COREOS\")) " \
                                "&& ((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName4) " \
                                      "|| (RCC_Factory == \"ciconnect\") || (GLIDEIN_Site == \"MWT2-COREOS\"))) " \
-                           "&& (OSGVO_OS_STRING == \"RHEL 6\" || RCC_Factory == \"ciconnect\")"
+                           "&& (OSGVO_OS_STRING == \"RHEL 6\" || RCC_Factory == \"ciconnect\" || VC3_GLIDEIN_VERSION == \"1.1.4\")"
+
+            requirements = "(HAS_CVMFS_xenon_opensciencegrid_org)" \
+                           "&& (((TARGET.GLIDEIN_ResourceName =!= MY.MachineAttrGLIDEIN_ResourceName1) " \
+                                    "|| (RCC_Factory == \"ciconnect\") || (GLIDEIN_Site == \"MWT2-COREOS\"))) " \
+                           "&& (OSGVO_OS_STRING == \"RHEL 6\" || RCC_Factory == \"ciconnect\" || VC3_GLIDEIN_VERSION == \"1.1.4\")"
 
             for site in run_config['exclude_sites']:
                 requirements += " && (GLIDEIN_ResourceName =!= \"{site}\")".format(site=site)

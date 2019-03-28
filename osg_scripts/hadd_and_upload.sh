@@ -15,6 +15,11 @@ post_log=$4/pax_$2/$run/POST_LOG
 if [[ $6 == 'muon_veto' ]]; then
     post_log=$4/pax_$2/${run}_MV/POST_LOG  
 fi
+# remove previous POST logs
+if [[ -e ${post_log} ]]
+then
+    rm ${post_log}
+fi
 
 echo "------ Start of post script ---------" >> $post_log
 date >> $post_log
@@ -28,7 +33,7 @@ else
     rootfile=/xenon/xenon1t_processed/pax_$2/$1.root
 fi
 
-source activate pax_$2_OSG
+source activate pax_$2
 source $HOME/cax/osg_scripts/setup_rucio.sh
 
 #export PYTHONPATH=/xenon/cax:$PYTHONPATH
@@ -42,7 +47,12 @@ rawdir=$1
 # save exit status of pipe
 set -o pipefail
 
-	#echo "python ${cax_dir}/osg_scripts/upload.py $1 $5 $2 $6" >> $post_log 2>&1	
+
+# move to scratch space. This way we don't have to rewrite the pax_event_classes for each job
+scratchdir="/scratch/ershockley/pax_$2"
+mkdir -p $scratchdir
+cd $scratchdir
+
 python ${cax_dir}/osg_scripts/upload.py $1 $5 $2 $6 >> $post_log 2>&1
 
 if [[ $? -ne 0 ]]; then
@@ -51,10 +61,12 @@ if [[ $? -ne 0 ]]; then
 #fi
 fi	  
 
-if [[ $2 == 'v6.8.0' ]]; then
-    echo "SKIPPING TRANSFERS FOR v6.8.0"
-    exit 0
-fi
+
+echo "SKIPPING TRANSFERS FOR NOW" >> $post_log
+exit 0
+
+
+echo "got here" >> $post_log
 
 # transfer to midway
 

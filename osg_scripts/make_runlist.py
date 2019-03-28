@@ -2,6 +2,7 @@ import pymongo
 import os
 import sys
 import datetime
+import numpy as np
 from pax import __version__
 
 def make_runlist():
@@ -14,19 +15,21 @@ def make_runlist():
     collection = db['runs_new']
     
     query = {"$or" : [{"detector" : "tpc",
-                       "$and" : [{"number" : {"$gt" : 15000}}] 
-                       #"$and" : [{"number" : {"$gt" : 6731}},
-                                 #{"number" : {"$lt" : 11000}} # to specify range of run numbers
+                       "$and" : [{"number" : {"$gt" : 6000}}],
                        },
                       {"detector" : "muon_veto",  # UNCOMMENT TO INCLUDE MV AFTER DATETIME BELOW
                        #"end" : {"$gt" : (datetime.datetime(2017, 7, 29, 00, 00, 00))} # ALE 
                        "end" : {"$gt" : (datetime.datetime(2017, 12, 1, 00, 00, 00))}} # Feb 1 2017 at midnight
                       # }
                       ], 
-                      
-#             'tags.name' : '_sciencerun1', # if you want to specify a tag             
+             "tags": {"$elemMatch" : {"name" : {'$in': ["_sciencerun2_preliminary",
+                                                        #"_sciencerun2_candidate"
+                                                        ]
+                                                }
+                                      }
+                      },
 
-#             'source.type' : 'none',  # if you want to specify a source
+             'source.type': 'none',  # if you want to specify a source
 
              'reader.ini.write_mode' : 2,
              'trigger.events_built' : {"$gt" : 0},
@@ -35,16 +38,6 @@ def make_runlist():
              'processor.correction_versions': {'$exists': True},
 #             'processor.WaveformSimulator': {'$exists': True},
              'processor.NeuralNet|PosRecNeuralNet': {'$exists': True},
-#             '$and' : [{'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess'}}}},
-#                       {'tags' : {"$not" : {'$elemMatch' : {'name':'messy'}}}},
-#                       {'tags' : {"$not" : {'$elemMatch' : {'name':'test'}}}},
-#                       {'tags' : {"$not" : {'$elemMatch' :{'name':'bad'}}}},
-#                       {'tags' : {'$elemMatch' : {'name' : '_sciencerun0_candidate'}}}
-#                       ]
-#             'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess'}}},
-#             'tags' : {"$not" : {'$elemMatch' : {'name' : 'test'}}},
-#             'tags' : {"$not" : {'$elemMatch' : {'name' : 'donotprocess', 'name':'messy', 'name':'test','name':'bad'}}},
-#             'tags' : {'$elemMatch' : {'name' : '_sciencerun0_candidate'}},
              }
 
     version = 'v' + __version__
@@ -56,6 +49,8 @@ def make_runlist():
                                      "_id" : False})
     
     cursor = list(cursor)
+#    all_runs = np.array([(r['number'], r['name']) for r in cursor])
+#    np.save('sr2_all_runlist.npy', all_runs)
     
     print("Total runs: %d" % len(cursor))
     bad = []
@@ -84,11 +79,13 @@ def make_runlist():
         for d in run['data']:
             if d['type'] == 'processed' and 'pax_version' in d:
                 if d['pax_version'] == version and d['status'] == 'transferred':
-                    processed  = True
+                    pass
+                    #processed  = True
                     #continue
 
                 elif d['pax_version'] == version and d['status'] == 'transferring' and d['host'] == 'login':
-                    processing.append(run[_id])
+                    pass
+                    #processing.append(run[_id])
                     #continue
                 
                 elif d['pax_version'] == version and d['status'] == 'error' and d['host'] == 'login':
@@ -122,10 +119,11 @@ def make_runlist():
     print("BAD: %d" % len(bad))
     print("PROCESSED ALREADY: %d" % len(processed_list))
     print("PROCESSING NOW: %d" % len(processing))
+    print(processing)
     print("ERROR: %d" % len(error))
     print("CAN PROCESS: %d" % len(can_process))
     print("CANNOT PROCESS: %d" % len(cant_process))
-    print(can_process)
+    print(cant_process)
 
 
     return can_process
