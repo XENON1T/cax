@@ -6,30 +6,30 @@ import numpy as np
 from pax import __version__
 
 def make_runlist():
-    uri = 'mongodb://eb:%s@xenon1t-daq.lngs.infn.it:27017,copslx50.fysik.su.se:27017,zenigata.uchicago.edu:27017/run'
+    uri = 'mongodb://eb:%s@xenon1t-daq.lngs.infn.it:27017,copslx50.fysik.su.se:27017/run'
     uri = uri % os.environ.get('MONGO_PASSWORD')
     c = pymongo.MongoClient(uri,
-                            replicaSet='runs',
+                            replicaSet='run',
                             readPreference='secondaryPreferred')
     db = c['run']
     collection = db['runs_new']
     
     query = {"$or" : [{"detector" : "tpc",
-                       "$and" : [{"number" : {"$gt" : 6000}}],
+                       "$and" : [{"number" : {"$gt" : 1000}}],
                        },
                       {"detector" : "muon_veto",  # UNCOMMENT TO INCLUDE MV AFTER DATETIME BELOW
                        #"end" : {"$gt" : (datetime.datetime(2017, 7, 29, 00, 00, 00))} # ALE 
                        "end" : {"$gt" : (datetime.datetime(2017, 12, 1, 00, 00, 00))}} # Feb 1 2017 at midnight
                       # }
                       ], 
-             "tags": {"$elemMatch" : {"name" : {'$in': ["_sciencerun2_preliminary",
-                                                        #"_sciencerun2_candidate"
+             "tags": {"$elemMatch" : {"name" : {'$in': [#"_sciencerun0",
+                                                        "_sciencerun2_candidate"
                                                         ]
                                                 }
                                       }
                       },
 
-             'source.type': 'none',  # if you want to specify a source
+             'source.type': {'$in': ['Rn220', 'Kr83m']}, # {'$ne': 'LED'},  # if you want to specify a source
 
              'reader.ini.write_mode' : 2,
              'trigger.events_built' : {"$gt" : 0},
@@ -46,7 +46,8 @@ def make_runlist():
                                      "name" : True,
                                      "data" : True,
                                      "detector" : True,
-                                     "_id" : False})
+                                     "_id" : False,
+                                     "processor": True})
     
     cursor = list(cursor)
 #    all_runs = np.array([(r['number'], r['name']) for r in cursor])
@@ -58,6 +59,7 @@ def make_runlist():
     processing = []
     error = []
     can_process = []
+    no_gains = []
     cant_process = []
     
     for run in cursor:
@@ -71,6 +73,8 @@ def make_runlist():
             bad.append(run[_id])
             continue
 
+        if 'gains' not in run['processor']['DEFAULT']:
+            no_gains.append(run['number'])
         if run['detector'] == 'tpc':
             _id = 'number'
         else:
@@ -80,13 +84,13 @@ def make_runlist():
             if d['type'] == 'processed' and 'pax_version' in d:
                 if d['pax_version'] == version and d['status'] == 'transferred':
                     pass
-                    #processed  = True
-                    #continue
+                    processed  = True
+                    continue
 
                 elif d['pax_version'] == version and d['status'] == 'transferring' and d['host'] == 'login':
                     pass
-                    #processing.append(run[_id])
-                    #continue
+                    processing.append(run[_id])
+                    continue
                 
                 elif d['pax_version'] == version and d['status'] == 'error' and d['host'] == 'login':
                     error.append(run[_id])
@@ -121,9 +125,12 @@ def make_runlist():
     print("PROCESSING NOW: %d" % len(processing))
     print(processing)
     print("ERROR: %d" % len(error))
+    print(error)
     print("CAN PROCESS: %d" % len(can_process))
     print("CANNOT PROCESS: %d" % len(cant_process))
-    print(cant_process)
+    print("NO GAINS: %d " % len(no_gains))
+#    print(min(no_gains), max(no_gains))
+    #print(can_process)
 
 
     return can_process

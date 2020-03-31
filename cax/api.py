@@ -97,6 +97,9 @@ class api():
         ret = requests.put(url, data=pars,
                            headers=self.data_set_headers)
 
+        print(url)
+        print(pars)
+        print(ret)
         # This checks to make sure the location was added/removed/updated
         # GET request
         params = self.get_params
@@ -109,7 +112,6 @@ class api():
             if 'data' not in doc:
                 return True
             for entry in doc['data']:
-                
                 if self.verify_site(entry, parameters):
                     print(entry)
                     print(parameters)

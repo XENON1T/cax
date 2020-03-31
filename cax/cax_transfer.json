@@ -4,7 +4,7 @@
     "method": "rsync",
     "hostname": "dali-login.rcc.uchicago.edu",
     "dir_raw": "/project2/lgrandi/xenon1t/raw",
-    "dir_processed": "/project/lgrandi/xenon1t/processed",
+    "dir_processed": "/dali/lgrandi/xenon1t/processed",
     "dir_minitrees": "/project/lgrandi/xenon1t/minitrees",
     "upload_options": [],
     "username": "ershockley",

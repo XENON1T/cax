@@ -27,6 +27,7 @@ def has_tag(doc, name):
         return False
 
 def clear_errors(id, pax_version, detector='tpc'):
+    collection = config.mongo_collection()
 
     if detector == 'tpc':
         identifier = 'number'
@@ -46,10 +47,10 @@ def clear_errors(id, pax_version, detector='tpc'):
                        }
              }
 
-    query = {'query' : json.dumps(query)}
+    #query = {'query' : json.dumps(query)}
 
-    API = api()
-    doc = API.get_next_run(query)
+    #API = api()
+    doc = collection.find_one(query)
 
     # if query returns northing, there is no error
     if doc is None:
@@ -64,8 +65,8 @@ def clear_errors(id, pax_version, detector='tpc'):
                 parameters = entry
 
         if parameters is not None:
-            print("Clearing errors for run %s" %id)
-            API.remove_location(doc["_id"], parameters)
+            print("Clearing errors for run %s. ACTUALLY NOT." %id)
+            #API.remove_location(doc["_id"], parameters)
             time.sleep(0.5)
         else:
             print("Could not find relevant entry in doc")
@@ -140,15 +141,16 @@ def pre_script(run_name, pax_version, run_number, detector = 'tpc'):
              'tags': {"$not": {'$elemMatch': {'name': 'donotprocess'}}},
              }
     
-    query = {'query' : json.dumps(query)}
+    collection = config.mongo_collection()
+    #query = {'query' : json.dumps(query)}
 
     # initialize api instance
-    API = api()
-    doc = API.get_next_run(query)
+    #API = api()
+    #doc = API.get_next_run(query)
+    doc = collection.find_one(query)
+    print(doc['number'])
     time.sleep(0.5)
-    print(query)
         
-
     # if run doesn't satisfy above query, we don't process
     if doc is None:
         print("Run %s is not suitable for OSG processing. Check run doc" % id)
@@ -209,7 +211,10 @@ def pre_script(run_name, pax_version, run_number, detector = 'tpc'):
     elif detector == 'muon_veto':
         json_file = "/xenon/ershockley/jsons/" + name + "_MV.json"
     
-    API.add_location(doc['_id'], datum)
+
+    #API.add_location(doc['_id'], datum)
+    result = collection.update_one({'_id': doc['_id']},
+                                   {'$push': {'data': datum}})
     print('new entry added to database')
     return
 

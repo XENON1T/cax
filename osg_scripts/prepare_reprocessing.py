@@ -5,9 +5,13 @@ from make_runlist import make_runlist
 from pax import __version__
 import os
 
-#runlist = make_runlist()#np.load('/home/ershockley/lowgains.npz')['numbers']
-runlist = [16807, 17418, 17419, 23806]
+dagpath = '/scratch/ershockley/dags/pax_v6.11.0'
 
+os.makedirs(os.path.dirname(dagpath), exist_ok=True)
+
+#runlist = [7289, 7356, 7362, 7429, 7439, 7453, 13047, 13050, 13155]
+runlist = [23860, 18835, 18933] #np.arange(20008, 20127).tolist()
+print(runlist)
 
 config = { 'runlist' : runlist,
            'pax_version' :'v' +  __version__,
@@ -16,7 +20,7 @@ config = { 'runlist' : runlist,
            'specify_sites' : [],
  	   "exclude_sites": [], 
            'host' : 'login',
-           'use_api': True,
+           'use_api': False,
            'use_midway' : False, # this overrides the specify and exclude sites above,
            'rush' : True # processes as quickly as possible, submits to euro sites before raw data gets to stash
            }
@@ -25,4 +29,4 @@ config = { 'runlist' : runlist,
 dag = dag_writer(config)
 
 #this name has to be changed in case one wants to do reprocessing
-dag.write_outer_dag('/scratch/ershockley/dags/retry_missingevents.dag')
+dag.write_outer_dag(dagpath)

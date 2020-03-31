@@ -73,11 +73,11 @@ echo "got here" >> $post_log
 echo "Beginning cax transfer to midway" >> $post_log
 
 if [[ $6 == 'tpc' ]]; then
-    cax --once --run $3 --api --config ${cax_dir}/cax/cax_transfer.json >> $post_log 2>&1
+    cax --once --run $3 --config ${cax_dir}/cax/cax_transfer.json >> $post_log 2>&1
 fi
 
 if [[ $6 == 'muon_veto' ]]; then
-    cax --once --name $1 --api  --config ${cax_dir}/cax/cax_transfer.json >> $post_log 2>&1
+    cax --once --name $1  --config ${cax_dir}/cax/cax_transfer.json >> $post_log 2>&1
 fi
 
 if [[ $? -ne 0 ]]; then

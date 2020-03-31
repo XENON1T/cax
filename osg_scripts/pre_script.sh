@@ -17,7 +17,7 @@ echo "------ Start of prescript ------" >> $pre_log
 #echo $PWD >> $pre_log
 date >> $pre_log
 
-source activate pax_$2_OSG
+source activate pax_$2
 
 # get cax directory so know how to execute the pre script
 #cax_dir=$(python -c "import cax; import os; print(os.path.dirname(os.path.dirname(cax.__file__)))")
@@ -26,6 +26,7 @@ cax_dir=$HOME/cax
 
 source ${cax_dir}/osg_scripts/setup_rucio.sh
 
+echo "${cax_dir}/cax/dag_prescript.py $1 $2 $3 $5" >> $pre_log 2>&1
 python ${cax_dir}/cax/dag_prescript.py $1 $2 $3 $5>> $pre_log 2>&1
 
 ex=$?

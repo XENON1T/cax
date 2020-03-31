@@ -16,12 +16,13 @@ from cax import config
 uri = 'mongodb://eb:%s@xenon1t-daq.lngs.infn.it:27017,copslx50.fysik.su.se:27017/run'
 uri = uri % os.environ.get('MONGO_PASSWORD')
 c = pymongo.MongoClient(uri,
-                        replicaSet='runs',
+                        replicaSet='run',
                         read_preference=pymongo.ReadPreference.PRIMARY_PREFERRED)
 db = c['run']
 collection = db['runs_new']
 host_name = "login"
-status = "error"
+status = "transferring"
+
 
 def find_errors():
     query = {"data" : {"$elemMatch" : {"status" : status, 
@@ -29,7 +30,9 @@ def find_errors():
                                        "type" : "processed",
                                        "pax_version" : "v" + __version__
                                        }
-                       }
+                       },
+             #"number": {"$gt": 10000}
+             #"tags.name" : "_sciencerun1"
              }
 
     cursor = collection.find(query, {"_id" : False,
@@ -58,6 +61,7 @@ def find_errors():
 
     return ret
 
+
 def remove_entry(name, detector):
 
     data_type = 'processed'
@@ -73,7 +77,7 @@ def remove_entry(name, detector):
     if data_docs == 0:
         return
 
-    print (run_doc['name'])
+    print(run_doc['name'])
 
     events = run_doc.get('trigger',{}).get('events_built', 0)
 
@@ -96,9 +100,6 @@ def remove_entry(name, detector):
 
         datum = data_doc
 
-        print( "\nRun ", run)
-        pprint.pprint( datum )
-
         collection.update({'_id': run_doc['_id']}, {'$pull': {'data' : data_doc}})
 
         break
@@ -110,19 +111,23 @@ def remove_dag(run_name):
     shutil.rmtree(dir)
     time.sleep(0.5)
 
-if __name__ == "__main__":
+
+def main():
     runs_to_rm = find_errors()
     tpcruns, mvruns = runs_to_rm['tpc'], runs_to_rm['muon_veto']
     for i, run in enumerate(tpcruns):
         num = runs_to_rm['tpc_number'][i]
-        if num > 10000:
+        if num > 6000:
             print("Clearing error for TPC run %d" % num)
             remove_entry(run, 'tpc')
 #            remove_dag(run)
-        
+
     for run in mvruns:
         print("Clearing error for MV run %s" % run)
         remove_entry(run, 'muon_veto')
-#        remove_dag(run + "_MV")
-        
+        remove_dag(run + "_MV")
+
+
+if __name__ == "__main__":
+    main()       
 

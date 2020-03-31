@@ -32,8 +32,10 @@ def get_ziplist(name):
     query = {'detector' : 'tpc',
              'name' : name}
 
-    API = api()
-    doc = API.get_next_run(query)
+    #API = api()
+    collection = config.mongo_collection()
+    #doc = API.get_next_run(query)
+    doc = collection.find_one(query)
 
     # see if raw data is on stash
     on_stash=False
@@ -56,11 +58,9 @@ def get_ziplist(name):
 
     # if not, must go through rucio
     elif on_rucio:
-        out = subprocess.Popen(["rucio", "-a", "xenon-analysis", "list-file-replicas", rucio_scope],
-                           stdout=subprocess.PIPE).stdout.read()
+        out = subprocess.Popen(["rucio", "list-files", rucio_scope], stdout=subprocess.PIPE).stdout.read()
         out = str(out).split("\\n")
-        files = set([l.split(" ")[3] for l in out if '---' not in l and 'x1t' in l])
-        ziplist = list(sorted([f for f in files if f.startswith('XENON1T')]))
+        ziplist = list(set([l.split()[1].split(':')[1] for l in out if '---' not in l and 'XENON' in l]))
 
     else:
         print("Run %i not on stash or rucio" % doc['number'])
@@ -93,8 +93,10 @@ def _upload(name, n_zips, pax_version, detector = "tpc", update_database=True):
     query = {'detector' : detector,
              'name' : name}
     
-    API = api()
-    doc = API.get_next_run(query)
+    #API = api()
+    #doc = API.get_next_run(query)
+    collection = config.mongo_collection()
+    doc = collection.find_one(query)
 
     # entry we will add/update
     updatum = {'host'          : 'login',
@@ -147,11 +149,20 @@ def _upload(name, n_zips, pax_version, detector = "tpc", update_database=True):
 
     # if there is no entry for this site/pax_version, add a new location
     if datum is None:
-        API.add_location(doc['_id'], updatum)
+        collection.update_one(query,
+                              {'$push': {'data': updatum}})
+        #API.add_location(doc['_id'], updatum)
         print('new entry added to database')
     # if there is already an entry, update it
     else:
-        API.update_location(doc['_id'], datum, updatum)
+        query['data'] = {'$elemMatch': {'host'       : 'login',
+                                        'type'       : 'processed',
+                                        'pax_version': pax_version
+                                        }
+                         }
+
+        collection.update(query, {'$set': {'data.$': updatum}})
+#        API.update_location(doc['_id'], datum, updatum)
         print('entry updated in database')
 
     # if there was an error (we're missing root files), 

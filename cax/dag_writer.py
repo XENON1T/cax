@@ -8,6 +8,7 @@ from cax.api import api
 from cax import config
 import pymongo
 import json
+from bson import json_util
 import time
 import subprocess
 import re
@@ -43,10 +44,10 @@ class dag_writer():
 
     def __init__(self, config):
         if not config.get('use_api', True):
-                uri = 'mongodb://eb:%s@xenon1t-daq.lngs.infn.it:27017,copslx50.fysik.su.se:27017,zenigata.uchicago.edu:27017/run'
+                uri = 'mongodb://eb:%s@xenon1t-daq.lngs.infn.it:27017,copslx50.fysik.su.se:27017/run'
                 uri = uri % os.environ.get('MONGO_PASSWORD')
                 c = pymongo.MongoClient(uri,
-                                        replicaSet='runs',
+                                        replicaSet='run',
                                         readPreference='secondaryPreferred')
                 db = c['run']
                 self.collection = db['runs_new']
@@ -85,7 +86,7 @@ class dag_writer():
                                                   "pax_version": self.config['pax_version'],
                                                   "host": self.config['host'],
                                                   "$or": [{"status": "transferred"},
-                                                          #{"status": "transferring"}
+                                                          {"status": "transferring"}
                                                           ]
                                                   }
                                    }
@@ -126,6 +127,10 @@ class dag_writer():
         elif doc['detector'] == 'tpc':
             json_file = self.config['logdir'] + '/pax_%s/'%self.config['pax_version'] + name + "/" + name + ".json"
 
+        # make sure electron lifetime is not 0
+        if doc['processor']['DEFAULT'].get('electron_lifetime_liquid', 500) == 0:
+            doc['processor']['DEFAULT'].pop('electron_lifetime_liquid') 
+
         # TEMPORARY update gains for certain runs
         if doc['number'] in self.lowgain_runs:
             old_gains = doc['processor']['DEFAULT']['gains']
@@ -136,7 +141,7 @@ class dag_writer():
         with open(json_file, "w") as f:
             # fix doc so that all '|' become '.' in json
             fixed_doc = self.FixKeys(doc)
-            json.dump(fixed_doc, f)
+            json.dump(fixed_doc, f, default=json_util.default)
         if os.stat(json_file).st_uid == os.getuid():
             os.chmod(json_file, 0o777)
         return json_file
@@ -384,16 +389,16 @@ class dag_writer():
                     return
 
             
-                #if not os.path.exists(os.path.join(outputdir, run_name + MV)):
-                #    if uri == dcache_uri:
-                        #gfal_mkdir(dcache_uri, os.path.join(outputdir, run_name + MV))
-                        # else:
-                        #    os.makedirs(os.path.join(outputdir, run_name + MV))
-                        #    os.chmod(os.path.join(outputdir, run_name + MV), 0o777)
-                #else:
-                #    if uri == dcache_uri: 
-                        #gfal_rm(dcache_uri, os.path.join(outputdir, run_name + MV))
-                        #gfal_mkdir(dcache_uri, os.path.join(outputdir, run_name + MV))
+                if not os.path.exists(os.path.join(outputdir, run_name + MV)):
+                    if uri == dcache_uri:
+                        gfal_mkdir(dcache_uri, os.path.join(outputdir, run_name + MV))
+                    else:
+                        os.makedirs(os.path.join(outputdir, run_name + MV))
+                        os.chmod(os.path.join(outputdir, run_name + MV), 0o777)
+                else:
+                    if uri == dcache_uri: 
+                        gfal_rm(dcache_uri, os.path.join(outputdir, run_name + MV))
+                        gfal_mkdir(dcache_uri, os.path.join(outputdir, run_name + MV))
 
                 if (c['runlist'] is not None and run_id not in c['runlist']):
                     print("Run not in runlist")
@@ -569,12 +574,13 @@ queue 1
                 return True
         return False
 
-    def rucio_getzips(self, dataset):
+    def rucio_getzips(self, did):
         """returns list of zip files from rucio call"""
-        out = subprocess.Popen(["rucio", "list-file-replicas", dataset], stdout=subprocess.PIPE).stdout.read()
+        #did = get_did(dataset, detector)
+        out = subprocess.Popen(["rucio", "list-files", did], stdout=subprocess.PIPE).stdout.read()
         out = str(out).split("\\n")
-        files = set([l.split(" ")[3] for l in out if '---' not in l and 'x1t' in l])
-        zip_files = sorted([f for f in files if f.startswith('XENON1T')])
+        files = set([l.split()[1].split(':')[1] for l in out if '---' not in l and 'x1t' in l])
+        zip_files = np.array(sorted([f for f in files if f.startswith('XENON1T')]))
         return zip_files
 
 
