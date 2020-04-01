@@ -231,9 +231,9 @@ upload_cmd="gfal-copy -T 36000 -t 36000 -f -p --checksum md5 file://${start_dir}
 export X509_USER_PROXY=$TEMP_X509_USER_PROXY
 echo "Using this proxy: $X509_USER_PROXY"
 source /cvmfs/xenon.opensciencegrid.org/releases/nT/development/setup.sh
-#source $osg_software/setup.sh
-#export GFAL_CONFIG_DIR=$OSG_LOCATION/etc/gfal2.d
-#export GFAL_PLUGIN_DIR=$OSG_LOCATION/usr/lib64/gfal2-plugins/
+
+export GFAL_CONFIG_DIR=$OSG_LOCATION/etc/gfal2.d
+export GFAL_PLUGIN_DIR=$OSG_LOCATION/usr/lib64/gfal2-plugins/
 upload ()
 {
   gfal-copy -T 36000 -t 36000 -f -p --checksum adler32 file://${start_dir}/output/${rootname} ${stash_loc}
