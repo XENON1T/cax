@@ -503,7 +503,7 @@ Log     = {logdir}/pax_$(pax_version)/$(dirname)/joblogs/$(zip_name)_$(cluster).
 
 Requirements = {requirements}
 request_cpus = $(ncpus)
-request_memory = 2400MB
+request_memory = 3600MB
 request_disk = 3GB
 transfer_input_files = $(json_file), {cax_dir}/osg_scripts/determine_rse.py
 transfer_output_files = ""
