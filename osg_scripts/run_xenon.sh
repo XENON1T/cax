@@ -28,11 +28,8 @@ env | grep -i glidein
 env | grep -i OSG
 echo
 
-echo "RUCIO SOURCE SCRIPT"
-cat /cvmfs/xenon.opensciencegrid.org/software/rucio-py26/setup_rucio_1_8_3.sh
-echo
+source /cvmfs/xenon.opensciencegrid.org/releases/nT/development/setup.sh
 
-osg_software=/cvmfs/oasis.opensciencegrid.org/osg-software/osg-wn-client/3.3/3.3.26/el6-x86_64/
 anaconda_env=/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/bin
 start_dir=$PWD
 
@@ -48,8 +45,9 @@ export TEMP_X509_USER_PROXY=$X509_USER_PROXY
 echo "Using this proxy: $X509_USER_PROXY"
 unset X509_USER_KEY
 unset X509_USER_CERT
-source /cvmfs/xenon.opensciencegrid.org/software/rucio-py26/setup_rucio_1_8_3.sh
-source $osg_software/setup.sh					
+#source /cvmfs/xenon.opensciencegrid.org/software/rucio-py26/setup_rucio_1_8_3.sh
+#source /cvmfs/xenon.opensciencegrid.org/releases/nT/development/setup.sh
+#source $osg_software/setup.sh					
 export GFAL_CONFIG_DIR=$OSG_LOCATION/etc/gfal2.d
 export GFAL_PLUGIN_DIR=$OSG_LOCATION/usr/lib64/gfal2-plugins/
 export RUCIO_HOME=/cvmfs/xenon.opensciencegrid.org/software/rucio-py26/1.8.3/rucio/
@@ -231,9 +229,10 @@ echo "Arg 6: $stash_loc"
 upload_cmd="gfal-copy -T 36000 -t 36000 -f -p --checksum md5 file://${start_dir}/output/${outfile} ${stash_loc}" 
 export X509_USER_PROXY=$TEMP_X509_USER_PROXY
 echo "Using this proxy: $X509_USER_PROXY"
-source $osg_software/setup.sh
-export GFAL_CONFIG_DIR=$OSG_LOCATION/etc/gfal2.d
-export GFAL_PLUGIN_DIR=$OSG_LOCATION/usr/lib64/gfal2-plugins/
+source /cvmfs/xenon.opensciencegrid.org/releases/nT/development/setup.sh
+#source $osg_software/setup.sh
+#export GFAL_CONFIG_DIR=$OSG_LOCATION/etc/gfal2.d
+#export GFAL_PLUGIN_DIR=$OSG_LOCATION/usr/lib64/gfal2-plugins/
 upload ()
 {
   gfal-copy -T 36000 -t 36000 -f -p --checksum adler32 file://${start_dir}/output/${rootname} ${stash_loc}
