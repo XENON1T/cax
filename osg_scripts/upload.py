@@ -117,9 +117,9 @@ def _upload(name, n_zips, pax_version, detector = "tpc", update_database=True):
     # if we don't have expected number of root files back, tell DB there was an error
     if n_processed != n_zips:
         print("There was an error during processing. Missing root files for these %i zips:" % (n_zips - n_processed))
-        for zip in get_ziplist(name):
-            if not os.path.exists(proc_zip_dir + "/" + zip.replace(".zip", ".root")):
-                print("\t%s" % zip)
+        #for zip in get_ziplist(name):
+        #    if not os.path.exists(proc_zip_dir + "/" + zip.replace(".zip", ".root")):
+        #        print("\t%s" % zip)
         updatum["status"] = 'error'
 
     # if all root files present, then perform hadd, checksum, and register to database

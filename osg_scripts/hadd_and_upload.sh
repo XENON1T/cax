@@ -34,11 +34,9 @@ else
 fi
 
 source activate pax_$2
-source $HOME/cax/osg_scripts/setup_rucio.sh
+#source $HOME/cax/osg_scripts/setup_rucio.sh
 
-#export PYTHONPATH=/xenon/cax:$PYTHONPATH
 
-#cax_dir=/xenon/cax
 cax_dir=$HOME/cax
 
 #if [[ ! -e $rootfile ]]; then
@@ -58,58 +56,13 @@ python ${cax_dir}/osg_scripts/upload.py $1 $5 $2 $6 >> $post_log 2>&1
 if [[ $? -ne 0 ]]; then
     echo "hadd or DB stuff failed, exiting" >> $post_log
     exit 1
-#fi
 fi	  
 
 
-echo "SKIPPING TRANSFERS FOR NOW" >> $post_log
-exit 0
+# copy to midway
+source /cvmfs/xenon.opensciencegrid.org/releases/nT/development/setup.sh
 
+export X509_USER_PROXY=/xenon/grid_proxy/xenon_service_proxy
 
-echo "got here" >> $post_log
+gfal-copy -p -f file:///${rootfile} gsiftp://sdm06.rcc.uchicago.edu:2811/dali/lgrandi/xenon1t/processed/pax_$2/$1.root 2>&1
 
-# transfer to midway
-
-echo "Beginning cax transfer to midway" >> $post_log
-
-if [[ $6 == 'tpc' ]]; then
-    cax --once --run $3 --config ${cax_dir}/cax/cax_transfer.json >> $post_log 2>&1
-fi
-
-if [[ $6 == 'muon_veto' ]]; then
-    cax --once --name $1  --config ${cax_dir}/cax/cax_transfer.json >> $post_log 2>&1
-fi
-
-if [[ $? -ne 0 ]]; then
-    exit 1
-fi
-
-# need to get the rucio did for this run
-did=$(${cax_dir}/osg_scripts/get_rucio_did.py $3)
-
-if [[ $? -ne 0 ]]; then
-    echo "Error finding rucio did"
-    exit 1
-fi
-
-
-# submit massive-cax job to verify transfer
-if [[ $6 == 'tpc' ]]; then
-    echo "Submitting massive cax job on midway for tpc run $3" >> $post_log 
-    echo "ssh ershockley@midway2-login1.rcc.uchicago.edu -o StrictHostKeyChecking=no '/project/lgrandi/general_scripts/verify_stash_transfers.sh $3 $2 $did $6'" >> $post_log 2>&1
-    ssh ershockley@midway2-login1.rcc.uchicago.edu -o StrictHostKeyChecking=no "/project/lgrandi/general_scripts/verify_stash_transfers.sh $3 $2 $did $6" >> $post_log 2>&1
-
-    ex=$?
-fi
-
-if [[ $6 == 'muon_veto' ]]; then
-    echo "Submitting massive cax job on midway for MV run $1" >> $post_log
-    echo "ssh ershockley@midway2-login1.rcc.uchicago.edu -o StrictHostKeyChecking=no '/project/lgrandi/general_scripts/verify_stash_transfers.sh $1 $2 $did $6'" >> $post_log 2>&1
-    ssh ershockley@midway2-login1.rcc.uchicago.edu -o StrictHostKeyChecking=no "/project/lgrandi/general_scripts/verify_stash_transfers.sh $0 $2 $did $6" >> $post_log 2>&1
-
-    ex=$?
-fi
-
-echo "exiting with status $ex" >> $post_log
-
-exit $ex

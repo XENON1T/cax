@@ -19,13 +19,14 @@ echo
 echo $HOSTNAME
 echo
 echo $LD_LIBRARY_PATH
-export LD_LIBRARY_PATH=/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/envs/pax_$4_OSG/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/cvmfs/xenon.opensciencegrid.org/releases/anaconda/2.4/envs/pax_$4/lib:$LD_LIBRARY_PATH
 #export GFAL2_GRIDFTP_DEBUG=1
 echo $LD_LIBRARY_PATH
 # df -h
 echo 
 env | grep -i glidein 
 env | grep -i OSG
+env | grep X509
 echo
 
 source /cvmfs/xenon.opensciencegrid.org/releases/nT/development/setup.sh
@@ -39,8 +40,8 @@ jobuuid=`uuidgen`
 
 echo "start dir is $start_dir. Here's whats inside"
 ls -l 
-# if ls ${start_dir}/*cert* &> /dev/null; then export X509_USER_PROXY=$(ls ${start_dir}/*cert*); fi
-# if ls ${start_dir}/*proxy* &> /dev/null; then export X509_USER_PROXY=$(ls ${start_dir}/*proxy*); fi
+if ls ${start_dir}/*cert* &> /dev/null; then export X509_USER_PROXY=$(ls ${start_dir}/*cert*); fi
+if ls ${start_dir}/*proxy* &> /dev/null; then export X509_USER_PROXY=$(ls ${start_dir}/*proxy*); fi
 export TEMP_X509_USER_PROXY=$X509_USER_PROXY
 echo "Using this proxy: $X509_USER_PROXY"
 unset X509_USER_KEY
