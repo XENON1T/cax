@@ -64,5 +64,7 @@ source /cvmfs/xenon.opensciencegrid.org/releases/nT/development/setup.sh
 
 export X509_USER_PROXY=/xenon/grid_proxy/xenon_service_proxy
 
-gfal-copy -p -f file:///${rootfile} gsiftp://sdm06.rcc.uchicago.edu:2811/dali/lgrandi/xenon1t/processed/pax_$2/$1.root 2>&1
+MIDWAYLOC=gsiftp://sdm06.rcc.uchicago.edu:2811/dali/lgrandi/xenon1t/processed/pax_$2/$1.root
+gfal-copy -p -f file:///${rootfile} $MIDWAYLOC 2>&1
+gfal-chmod 744 $MIDWAYLOC
 
