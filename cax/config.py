@@ -55,6 +55,9 @@ def get_hostname():
     global HOST
     if '.' in HOST:
         HOST = HOST.split('.')[0]
+    if HOST in ['login', 'login-el7']:
+        HOST = 'login'
+    
     return HOST
 
 
