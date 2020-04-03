@@ -147,7 +147,7 @@ echo ${10}
 
 if [[ ${10} == 'True' ]]; then
 
-	#sleep $[ ( $RANDOM % 1200 )  + 1 ]s
+	sleep $[ ( $RANDOM % 600 )  + 1 ]s
 	echo "Performing rucio download"
 	echo "rucio -T 1200 download $2 --no-subdir --dir ${rawdata_path} --rse $rse"
 	download="rucio -T 1200 download $2 --no-subdir --dir ${rawdata_path} --rse $rse --ndownloader 1" #removed -v option
