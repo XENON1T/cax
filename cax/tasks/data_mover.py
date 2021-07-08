@@ -752,6 +752,37 @@ class CopyBase(Task):
             logging.info("Copy & rename: [succcessful] -> Checksums agree")
 
         tsm_upload_result = self.tsm.upload(raw_data_tsm + raw_data_filename)
+        
+        #Evaluate the upload dictionary with the keys which are
+        #put into the log file:
+        tsm_upload_result_evaluation = True
+        tsm_upload_keys = ['tno_backedup', 'tno_inspected', 'tno_failed', 'tno_bytes_transferred', 'tno_bytes_inspected', 'tno_data_transfer_time', 'tno_network_transfer_rate']
+        for i_key in tsm_upload_keys:
+            value = tsm_upload_result[ i_key ]
+            if value == -1:
+                tsm_upload_result_evaluation = False
+        if tsm_upload_result_evaluation == False:
+            #exit the upload procedure and mark the upload
+            #with error in the runDB:
+            if config.DATABASE_LOG:
+                self.collection.update({'_id': self.run_doc['_id'],
+                                        'data': {
+                                                '$elemMatch': datum_new
+                                                }
+                                        }, {'$set':{'data.$.status': "error",
+                                                    'data.$.location': "n/a",
+                                                    'data.$.checksum': "n/a",
+                                                    }
+                                        })
+            logging.info("The TSM upload information is not correct:")
+            for i_key in tsm_upload_keys:
+                value = tsm_upload_result[ i_key ]
+                logging.info("Key: {k} contains {info}".format(k=i_key, info=value))
+            logging.info("--> Stop upload here!")
+            return 0
+        else:
+            logging.info("TSM upload information is correct")
+        
         logging.info("Number of uploaded files: %s",
                      tsm_upload_result["tno_backedup"])
         logging.info("Number of inspected files: %s",
@@ -775,7 +806,38 @@ class CopyBase(Task):
         logging.info("Start the re-download to %s", test_download)
         tsm_download_result = self.tsm.download(
             raw_data_tsm + raw_data_filename, test_download, raw_data_filename)
-        logging.info("Finished the re-download")
+                
+        #Evaluate the download dictionary with the keys which are
+        #put into the log file:
+        tsm_download_result_evaluation = True
+        tsm_download_keys = ['tno_restored_objects', 'tno_restored_bytes', 'tno_network_transfer_rate', 'tno_data_transfer_time', 'tno_failed_objects']
+        for i_key in tsm_download_keys:
+            value = tsm_download_result[ i_key ]
+            if value == -1:
+                tsm_download_result_evaluation = False
+        if tsm_download_result_evaluation == False:
+            #exit the upload procedure and mark the upload
+            #with error in the runDB:
+            if config.DATABASE_LOG:
+                self.collection.update({'_id': self.run_doc['_id'],
+                                        'data': {
+                                                '$elemMatch': datum_new
+                                                }
+                                        }, {'$set':{'data.$.status': "error",
+                                                    'data.$.location': "n/a",
+                                                    'data.$.checksum': "n/a",
+                                                    }
+                                        })
+            logging.info("The TSM download information is not correct:")
+            for i_key in tsm_download_keys:
+                value = tsm_download_result[ i_key ]
+                logging.info("Key: {k} contains {info}".format(k=i_key, info=value))
+            logging.info("--> Stop tape backup here!")
+            return 0
+        else:
+            logging.info("Finished the re-download")
+        
+        
         if os.path.exists(test_download + "/" + raw_data_filename) == False:
             logging.info("Download to %s failed. Checksum will not match",
                          test_download + "/" + raw_data_filename)
@@ -783,8 +845,7 @@ class CopyBase(Task):
             logging.info("Download to %s succcessful. Folder exists",
                          test_download + "/" + raw_data_filename)
 
-        checksum_after = self.tsm.get_checksum_folder(
-            test_download + "/" + raw_data_filename)
+        checksum_after = self.tsm.get_checksum_folder(test_download + "/" + raw_data_filename)
         logging.info("Summary of the download for checksum comparison:")
         logging.info("Number of downloaded files: %s",
                      tsm_download_result["tno_restored_objects"])
